@@ -76,13 +76,6 @@ export default function Auth() {
     setLoading(false);
   }
 
-  async function signOut() {
-    setLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if (error) Alert.alert(error.message);
-    setLoading(false);
-  }
-
   return (
     <View style={styles.container}>
       {session && (
@@ -90,7 +83,6 @@ export default function Auth() {
           <Text style={styles.statusText}>
             Signed in as {session.user.email}
           </Text>
-          <Button title="Sign out" disabled={loading} onPress={signOut} />
         </View>
       )}
       <View style={[styles.verticallySpaced, styles.mt20]}>
