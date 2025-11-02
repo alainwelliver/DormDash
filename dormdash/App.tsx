@@ -30,17 +30,11 @@ export default function App() {
   }
 
   return (
-    <View>
-      {session ? (
-        <NavigationContainer>
-          <Stack.Navigator>
-            <Stack.Screen name="Feed" component={Feed} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      ) : (
-        <Auth />
-      )}
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen name="Feed" component={Feed} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }

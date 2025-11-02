@@ -1,25 +1,22 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Button } from "@rneui/themed";
+import { View, Text } from "react-native";
+import { supabase } from "../lib/supabase";
 
-export default function ProfileScreen() {
+const handleSignOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) console.error("Sign-out failed", error);
+};
+
+export default function Feed() {
+  const navigation = useNavigation<any>();
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile Page</Text>
-      <Text>This is where we’ll build the user profile later!</Text>
+    <View>
+      <Text>this is the feed</Text>
+      <Button title="Post" />
+      <Button title="Profile" onPress={() => navigation.navigate("Profile")} />
+      <Button title="Log out" onPress={handleSignOut} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-});
