@@ -2,12 +2,19 @@ import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-interface AuthRegisterProps {
-  onBackPress: () => void;
-}
+type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
 
-export default function AuthRegister({ onBackPress }: AuthRegisterProps) {
+type NavProp = NativeStackNavigationProp<AuthStackParamList, "Register">;
+
+export default function AuthRegister() {
+  const navigation = useNavigation<NavProp>();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -83,7 +90,7 @@ export default function AuthRegister({ onBackPress }: AuthRegisterProps) {
         <Button
           type="clear"
           icon={{ name: "chevron-left", type: "feather", size: 28 }}
-          onPress={onBackPress}
+          onPress={() => navigation.goBack()}
           containerStyle={styles.backButtonContainer}
         />
       </View>
