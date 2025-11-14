@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 const COLORS = {
   primaryBlue: "#1A73E8",
@@ -28,12 +30,18 @@ const FONTS = {
   button: "Poppins",
 };
 
+type MainStackNavigationProp = NativeStackNavigationProp<
+  { Feed: undefined; CreateListing: undefined },
+  "Feed"
+>;
+
 const handleSignOut = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) console.error("Sign-out failed", error);
 };
 
 const Feed: React.FC = () => {
+  const navigation = useNavigation<MainStackNavigationProp>();
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
@@ -41,7 +49,12 @@ const Feed: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>DormDash</Text>
         <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
-          <Icon name="logout" type="material-community" color={COLORS.white} size={24} />
+          <Icon
+            name="logout"
+            type="material-community"
+            color={COLORS.white}
+            size={24}
+          />
         </TouchableOpacity>
       </View>
 
@@ -53,8 +66,16 @@ const Feed: React.FC = () => {
       </View>
 
       {/* Floating New Post Button */}
-      <TouchableOpacity style={styles.fab}>
-        <Icon name="plus" type="material-community" color={COLORS.white} size={28} />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate("CreateListing")}
+      >
+        <Icon
+          name="plus"
+          type="material-community"
+          color={COLORS.white}
+          size={28}
+        />
       </TouchableOpacity>
     </SafeAreaView>
   );

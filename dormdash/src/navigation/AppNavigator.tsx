@@ -1,9 +1,32 @@
-import React, { useState, useEffect } from "react";
-import { View } from "react-native";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import AuthNavigator from "./AuthNavigator";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
+// Auth screens
+import AuthWelcome from "../screens/AuthWelcome";
+import AuthLogin from "../screens/AuthLogin";
+import AuthRegister from "../screens/AuthRegister";
+
+// Main screens
 import Feed from "../screens/Feed";
+import CreateListing from "../screens/CreateListing";
+
+type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
+type MainStackParamList = {
+  Feed: undefined;
+  HomePage: undefined;
+  CreateListing: undefined;
+};
+
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
@@ -20,11 +43,29 @@ export default function AppNavigator() {
     );
 
     return () => {
-      subscription.subscription.unsubscribe();
+      // unsubscribe safely across SDK versions
+      try {
+        subscription.subscription.unsubscribe();
+      } catch {
+        // ignore if shape differs
+      }
     };
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>{session ? <Feed /> : <AuthNavigator />}</View>
+    <NavigationContainer>
+      {!session ? (
+        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+          <AuthStack.Screen name="Welcome" component={AuthWelcome} />
+          <AuthStack.Screen name="Login" component={AuthLogin} />
+          <AuthStack.Screen name="Register" component={AuthRegister} />
+        </AuthStack.Navigator>
+      ) : (
+        <MainStack.Navigator>
+          <MainStack.Screen name="Feed" component={Feed} />
+          <MainStack.Screen name="CreateListing" component={CreateListing} />
+        </MainStack.Navigator>
+      )}
+    </NavigationContainer>
   );
 }
