@@ -1,16 +1,20 @@
 import React from "react";
-import { Alert, StyleSheet, Text, View, Image } from "react-native";
+import { StyleSheet, Text, View, Image } from "react-native";
 import { Button } from "@rneui/themed";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-interface AuthWelcomeProps {
-  onLoginPress: () => void;
-  onRegisterPress: () => void;
-}
+type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
 
-export default function AuthWelcome({
-  onLoginPress,
-  onRegisterPress,
-}: AuthWelcomeProps) {
+type NavProp = NativeStackNavigationProp<AuthStackParamList, "Welcome">;
+
+export default function AuthWelcome() {
+  const navigation = useNavigation<NavProp>();
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -27,14 +31,14 @@ export default function AuthWelcome({
           containerStyle={styles.loginButtonContainer}
           buttonStyle={styles.loginButton}
           titleStyle={styles.buttonTitle}
-          onPress={onLoginPress}
+          onPress={() => navigation.navigate("Login")}
         />
         <Button
           title="Register"
           containerStyle={styles.registerButtonContainer}
           buttonStyle={styles.registerButton}
           titleStyle={styles.registerButtonTitle}
-          onPress={onRegisterPress}
+          onPress={() => navigation.navigate("Register")}
         />
       </View>
     </View>

@@ -2,12 +2,20 @@ import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
+import { Colors, CommonStyles, Typography, Spacing } from "../assets/styles";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-interface AuthLoginProps {
-  onBackPress: () => void;
-}
+type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
 
-export default function AuthLogin({ onBackPress }: AuthLoginProps) {
+type NavProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
+
+export default function AuthLogin() {
+  const navigation = useNavigation<NavProp>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,25 +64,27 @@ export default function AuthLogin({ onBackPress }: AuthLoginProps) {
         <Button
           type="clear"
           icon={{ name: "chevron-left", type: "feather", size: 28 }}
-          onPress={onBackPress}
+          onPress={() => navigation.goBack()}
           containerStyle={styles.backButtonContainer}
         />
       </View>
 
       {/* Title */}
-      <Text style={styles.title}>Welcome back to DormDash!</Text>
+  <Text style={styles.title}>Welcome back to DormDash!</Text>
 
       {/* Email Input */}
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
           label="Penn Email"
-          leftIcon={{ type: "font-awesome", name: "envelope" }}
+          leftIcon={{ type: "font-awesome", name: "envelope", color: Colors.mutedGray }}
           onChangeText={(text: string) => setEmail(text)}
           value={email}
           placeholder="Enter your Penn email"
+          placeholderTextColor={Colors.lightGray}
           autoCapitalize="none"
           keyboardType="email-address"
           editable={!loading}
+          inputStyle={{ color: Colors.darkTeal }}
         />
       </View>
 
@@ -82,18 +92,21 @@ export default function AuthLogin({ onBackPress }: AuthLoginProps) {
       <View style={styles.verticallySpaced}>
         <Input
           label="Password"
-          leftIcon={{ type: "font-awesome", name: "lock" }}
+          leftIcon={{ type: "font-awesome", name: "lock", color: Colors.mutedGray }}
           rightIcon={{
             type: "font-awesome",
             name: showPassword ? "eye-slash" : "eye",
+            color: Colors.mutedGray,
             onPress: () => setShowPassword(!showPassword),
           }}
           onChangeText={(text: string) => setPassword(text)}
           value={password}
           secureTextEntry={!showPassword}
           placeholder="Enter your password"
+          placeholderTextColor={Colors.lightGray}
           autoCapitalize="none"
           editable={!loading}
+          inputStyle={{ color: Colors.darkTeal }}
         />
       </View>
 
@@ -108,7 +121,7 @@ export default function AuthLogin({ onBackPress }: AuthLoginProps) {
           title="Login"
           disabled={loading}
           loading={loading}
-          buttonStyle={styles.loginButton}
+          buttonStyle={[styles.loginButton, { backgroundColor: Colors.primary_blue }]}
           titleStyle={styles.buttonTitle}
           onPress={() => signInWithEmail()}
         />
@@ -119,9 +132,7 @@ export default function AuthLogin({ onBackPress }: AuthLoginProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
+    ...CommonStyles.container,
     paddingTop: 16,
   },
   headerContainer: {
@@ -136,9 +147,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 30,
-    fontWeight: "bold",
-    color: "#000000",
+    fontWeight: "700",
+    color: Colors.darkTeal,
     marginBottom: 30,
+    fontFamily: Typography.heading3.fontFamily,
   },
   verticallySpaced: {
     paddingTop: 4,
@@ -153,12 +165,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   forgotPasswordText: {
-    color: "#47BEBE",
+    color: Colors.secondary,
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: Typography.bodySmall.fontFamily,
   },
   loginButton: {
-    backgroundColor: "#31A1E9",
     paddingVertical: 12,
     borderRadius: 6,
   },
