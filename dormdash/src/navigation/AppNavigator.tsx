@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import Auth from "../screens/Auth";
+import AuthNavigator from "./AuthNavigator";
 import Feed from "../screens/Feed";
 
 export default function AppNavigator() {
@@ -24,5 +24,7 @@ export default function AppNavigator() {
     };
   }, []);
 
-  return <View style={{ flex: 1 }}>{session ? <Feed /> : <Auth />}</View>;
+  return (
+    <View style={{ flex: 1 }}>{session ? <Feed /> : <AuthNavigator />}</View>
+  );
 }
