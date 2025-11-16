@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import ListingCard from "../components/ListingCard";
+import { Colors } from "../assets/styles";
 
 const COLORS = {
   primaryBlue: "#1A73E8",
@@ -42,6 +47,66 @@ const handleSignOut = async () => {
 
 const Feed: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchListings = async () => {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*, listing_images(url)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching listings:", error.message);
+    } else {
+      setListings(data || []);
+    }
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchListings();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchListings();
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator size="large" color={COLORS.primaryBlue} style={{ marginTop: 20 }} />;
+    }
+
+    if (listings.length === 0) {
+      return (
+        <Text style={styles.emptyText}>
+          No posts yet. Start by creating one!
+        </Text>
+      );
+    }
+
+    return (
+      <FlatList
+        data={listings}
+        renderItem={({ item }) => <ListingCard listing={item} />}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+    );
+  };
+
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
@@ -60,9 +125,7 @@ const Feed: React.FC = () => {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.emptyText}>
-          No posts yet. Start by creating one!
-        </Text>
+        {renderContent()}
       </View>
 
       {/* Floating New Post Button */}
