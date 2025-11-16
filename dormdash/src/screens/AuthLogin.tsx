@@ -70,13 +70,17 @@ export default function AuthLogin() {
       </View>
 
       {/* Title */}
-  <Text style={styles.title}>Welcome back to DormDash!</Text>
+      <Text style={styles.title}>Welcome back to DormDash!</Text>
 
       {/* Email Input */}
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
           label="Penn Email"
-          leftIcon={{ type: "font-awesome", name: "envelope", color: Colors.mutedGray }}
+          leftIcon={{
+            type: "font-awesome",
+            name: "envelope",
+            color: Colors.mutedGray,
+          }}
           onChangeText={(text: string) => setEmail(text)}
           value={email}
           placeholder="Enter your Penn email"
@@ -92,7 +96,11 @@ export default function AuthLogin() {
       <View style={styles.verticallySpaced}>
         <Input
           label="Password"
-          leftIcon={{ type: "font-awesome", name: "lock", color: Colors.mutedGray }}
+          leftIcon={{
+            type: "font-awesome",
+            name: "lock",
+            color: Colors.mutedGray,
+          }}
           rightIcon={{
             type: "font-awesome",
             name: showPassword ? "eye-slash" : "eye",
@@ -121,7 +129,10 @@ export default function AuthLogin() {
           title="Login"
           disabled={loading}
           loading={loading}
-          buttonStyle={[styles.loginButton, { backgroundColor: Colors.primary_blue }]}
+          buttonStyle={[
+            styles.loginButton,
+            { backgroundColor: Colors.primary_blue },
+          ]}
           titleStyle={styles.buttonTitle}
           onPress={() => signInWithEmail()}
         />

@@ -12,6 +12,7 @@ import AuthRegister from "../screens/AuthRegister";
 // Main screens
 import Feed from "../screens/Feed";
 import CreateListing from "../screens/CreateListing";
+import PaymentPortal from "../screens/PaymentPortal";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -23,6 +24,7 @@ type MainStackParamList = {
   Feed: undefined;
   HomePage: undefined;
   CreateListing: undefined;
+  PaymentPortal: { priceCents: number; listingTitle: string };
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -39,7 +41,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      }
+      },
     );
 
     return () => {
@@ -64,6 +66,11 @@ export default function AppNavigator() {
         <MainStack.Navigator>
           <MainStack.Screen name="Feed" component={Feed} />
           <MainStack.Screen name="CreateListing" component={CreateListing} />
+          <MainStack.Screen
+            name="PaymentPortal"
+            component={PaymentPortal}
+            options={{ title: "Complete Payment" }}
+          />
         </MainStack.Navigator>
       )}
     </NavigationContainer>

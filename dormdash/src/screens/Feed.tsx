@@ -70,7 +70,7 @@ const Feed: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {
@@ -80,7 +80,13 @@ const Feed: React.FC = () => {
 
   const renderContent = () => {
     if (loading) {
-      return <ActivityIndicator size="large" color={COLORS.primaryBlue} style={{ marginTop: 20 }} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color={COLORS.primaryBlue}
+          style={{ marginTop: 20 }}
+        />
+      );
     }
 
     if (listings.length === 0) {
@@ -106,7 +112,6 @@ const Feed: React.FC = () => {
     );
   };
 
-
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
@@ -124,9 +129,7 @@ const Feed: React.FC = () => {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {renderContent()}
-      </View>
+      <View style={styles.content}>{renderContent()}</View>
 
       {/* Floating New Post Button */}
       <TouchableOpacity
@@ -176,6 +179,15 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     fontSize: 16,
     color: COLORS.subtleText,
+  },
+  row: {
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 80,
   },
   fab: {
     position: "absolute",

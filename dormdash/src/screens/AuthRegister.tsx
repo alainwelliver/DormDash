@@ -77,7 +77,7 @@ export default function AuthRegister() {
     } else if (!session) {
       Alert.alert(
         "Verification Required",
-        "Please check your inbox for email verification!"
+        "Please check your inbox for email verification!",
       );
     }
     setLoading(false);

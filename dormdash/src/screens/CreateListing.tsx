@@ -70,7 +70,7 @@ async function uploadImageRN(
   supabaseClient: typeof supabase,
   bucket: string,
   uri: string,
-  path: string
+  path: string,
 ) {
   const ext = guessExt(uri);
   const contentType = guessMime(ext);
@@ -154,7 +154,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     });
     if (!res.canceled && res.assets?.length) {
       setLocalImages((prev) =>
-        [...prev, ...res.assets.map((a) => a.uri)].slice(0, 5)
+        [...prev, ...res.assets.map((a) => a.uri)].slice(0, 5),
       );
     }
   };

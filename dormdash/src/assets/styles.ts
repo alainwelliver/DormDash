@@ -31,16 +31,49 @@ export const Fonts = {
 
 // Typography sizes and weights
 export const Typography = {
-  heading1: { fontSize: 48, fontWeight: "700" as const, fontFamily: Fonts.heading },
-  heading2: { fontSize: 40, fontWeight: "700" as const, fontFamily: Fonts.heading },
-  heading3: { fontSize: 32, fontWeight: "700" as const, fontFamily: Fonts.heading },
-  heading4: { fontSize: 24, fontWeight: "700" as const, fontFamily: Fonts.heading },
+  heading1: {
+    fontSize: 48,
+    fontWeight: "700" as const,
+    fontFamily: Fonts.heading,
+  },
+  heading2: {
+    fontSize: 40,
+    fontWeight: "700" as const,
+    fontFamily: Fonts.heading,
+  },
+  heading3: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    fontFamily: Fonts.heading,
+  },
+  heading4: {
+    fontSize: 24,
+    fontWeight: "700" as const,
+    fontFamily: Fonts.heading,
+  },
 
-  bodyLarge: { fontSize: 16, fontWeight: "500" as const, fontFamily: Fonts.body },
-  bodyMedium: { fontSize: 14, fontWeight: "500" as const, fontFamily: Fonts.body },
-  bodySmall: { fontSize: 12, fontWeight: "500" as const, fontFamily: Fonts.body },
+  bodyLarge: {
+    fontSize: 16,
+    fontWeight: "500" as const,
+    fontFamily: Fonts.body,
+  },
+  bodyMedium: {
+    fontSize: 14,
+    fontWeight: "500" as const,
+    fontFamily: Fonts.body,
+  },
+  bodySmall: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+    fontFamily: Fonts.body,
+  },
 
-  buttonText: { fontSize: 18, fontWeight: "600" as const, fontFamily: Fonts.heading, letterSpacing: 0.5 },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    fontFamily: Fonts.heading,
+    letterSpacing: 0.5,
+  },
   label: { fontSize: 14, fontWeight: "600" as const, fontFamily: Fonts.body },
 };
 

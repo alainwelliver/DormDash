@@ -1,6 +1,15 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 type ListingCardProps = {
   listing: {
@@ -10,10 +19,15 @@ type ListingCardProps = {
   };
 };
 
+type NavProp = NativeStackNavigationProp<{
+  PaymentPortal: { priceCents: number; listingTitle: string };
+}>;
+
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - Spacing.lg - Spacing.xs;
 
 export default function ListingCard({ listing }: ListingCardProps) {
+  const navigation = useNavigation<NavProp>();
   const price = (listing.price_cents / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -23,11 +37,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
   return (
     <View style={styles.card}>
       <Image
-        source={
-          imageUrl
-            ? { uri: imageUrl }
-            : require("../../assets/icon.png")
-        }
+        source={imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")}
         style={styles.image}
         resizeMode="cover"
       />
@@ -36,6 +46,17 @@ export default function ListingCard({ listing }: ListingCardProps) {
           {listing.title}
         </Text>
         <Text style={styles.price}>{price}</Text>
+        <TouchableOpacity
+          style={styles.buyButton}
+          onPress={() =>
+            navigation.navigate("PaymentPortal", {
+              priceCents: listing.price_cents,
+              listingTitle: listing.title,
+            })
+          }
+        >
+          <Text style={styles.buyButtonText}>Buy Now</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -68,5 +89,17 @@ const styles = StyleSheet.create({
     ...Typography.bodyLarge,
     fontWeight: "bold",
     color: Colors.primary_blue,
+    marginBottom: Spacing.sm,
+  },
+  buyButton: {
+    backgroundColor: Colors.primary_blue,
+    borderRadius: BorderRadius.small,
+    paddingVertical: Spacing.xs,
+    alignItems: "center",
+  },
+  buyButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.white,
+    fontWeight: "600",
   },
 });
