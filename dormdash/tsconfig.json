@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsx": "react",
     "strict": true,
+    "esModuleInterop": true,
     "lib": ["ES2016", "DOM"]
   },
   "include": ["**/*.ts", "**/*.tsx"]
