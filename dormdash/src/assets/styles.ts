@@ -18,7 +18,7 @@ export const Colors = {
   darkTeal: "#39605B",
   lightMint: "#E8F7F4",
   mutedGray: "#6B7D7E",
-  lightGray: "#B8C4C5",
+  lightGray: "#eef0f0ff",
 };
 
 // Fonts (app integrates Poppins and Open Sans)
@@ -81,12 +81,13 @@ export const Typography = {
 export const Spacing = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
+  md: 15,
+  lg: 20,
+  xl: 50,
+  xxl: 75,
+  xxxl: 100,
 };
+
 
 export const BorderRadius = {
   small: 4,

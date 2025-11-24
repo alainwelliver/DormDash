@@ -12,8 +12,16 @@ import AuthRegister from "../screens/AuthRegister";
 // Main screens
 import Feed from "../screens/Feed";
 import CreateListing from "../screens/CreateListing";
-import PaymentPortal from "../screens/PaymentPortal";
+import PaymentPortal from "../screens/ProfilePaymentPortal";
 import ProductDetail from "../screens/ProductDetail";
+import Cart from "../screens/Cart";
+import Profile from "../screens/Profile";
+import MyListings from "../screens/ProfileMyListings";
+import PastOrders from "../screens/ProfilePastOrders";
+import AddressList from "../screens/ProfileAddressList";
+import AddAddress from "../screens/ProfileAddAddress";
+import PaymentList from "../screens/ProfilePaymentList";
+import AddPayment from "../screens/ProfileAddPayment";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -27,6 +35,14 @@ type MainStackParamList = {
   CreateListing: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
+  Cart: undefined;
+  Profile: undefined;
+  MyListings: undefined;
+  PastOrders: undefined;
+  AddressList: undefined;
+  AddAddress: undefined;
+  PaymentList: undefined;
+  AddPayment: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -43,7 +59,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      },
+      }
     );
 
     return () => {
@@ -65,18 +81,30 @@ export default function AppNavigator() {
           <AuthStack.Screen name="Register" component={AuthRegister} />
         </AuthStack.Navigator>
       ) : (
-        <MainStack.Navigator>
+        <MainStack.Navigator screenOptions={{ headerShown: false }}>
           <MainStack.Screen name="Feed" component={Feed} />
-          <MainStack.Screen name="CreateListing" component={CreateListing} />
+          <MainStack.Screen name="Cart" component={Cart} />
+          <MainStack.Screen name="Profile" component={Profile} />
+          <MainStack.Screen name="MyListings" component={MyListings} />
+          <MainStack.Screen name="PastOrders" component={PastOrders} />
+          <MainStack.Screen name="AddressList" component={AddressList} />
+          <MainStack.Screen name="AddAddress" component={AddAddress} />
+          <MainStack.Screen name="PaymentList" component={PaymentList} />
+          <MainStack.Screen name="AddPayment" component={AddPayment} />
+          <MainStack.Screen
+            name="CreateListing"
+            component={CreateListing}
+            options={{ headerShown: false }}
+          />
           <MainStack.Screen
             name="ProductDetail"
             component={ProductDetail}
-            options={{ title: "Product Details" }}
+            options={{ headerShown: false, title: "Product Details" }}
           />
           <MainStack.Screen
             name="PaymentPortal"
             component={PaymentPortal}
-            options={{ title: "Complete Payment" }}
+            options={{ headerShown: true, title: "Complete Payment" }}
           />
         </MainStack.Navigator>
       )}

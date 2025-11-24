@@ -15,6 +15,7 @@ import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import ListingCard from "../components/ListingCard";
+import Navbar from "../components/Navbar";
 import { Colors } from "../assets/styles";
 
 const COLORS = {
@@ -70,7 +71,7 @@ const Feed: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, []),
+    }, [])
   );
 
   const onRefresh = () => {
@@ -143,6 +144,9 @@ const Feed: React.FC = () => {
           size={28}
         />
       </TouchableOpacity>
+
+      {/* Bottom Navigation Bar */}
+      <Navbar />
     </SafeAreaView>
   );
 };
@@ -159,6 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderRadius: 6,
   },
   headerTitle: {
     color: COLORS.white,
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: "absolute",
-    bottom: 24,
+    bottom: 84,
     right: 24,
     backgroundColor: COLORS.primaryBlue,
     width: 56,
