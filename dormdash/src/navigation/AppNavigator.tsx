@@ -15,6 +15,7 @@ import CreateListing from "../screens/CreateListing";
 import PaymentPortal from "../screens/ProfilePaymentPortal";
 import ProductDetail from "../screens/ProductDetail";
 import Cart from "../screens/Cart";
+import Checkout from "../screens/Checkout";
 import Profile from "../screens/Profile";
 import MyListings from "../screens/ProfileMyListings";
 import PastOrders from "../screens/ProfilePastOrders";
@@ -29,6 +30,13 @@ type AuthStackParamList = {
   Register: undefined;
 };
 
+interface CartItem {
+  id: number;
+  title: string;
+  price_cents: number;
+  quantity: number;
+}
+
 type MainStackParamList = {
   Feed: undefined;
   HomePage: undefined;
@@ -36,6 +44,7 @@ type MainStackParamList = {
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
   Cart: undefined;
+  Checkout: { selectedItems: CartItem[] };
   Profile: undefined;
   MyListings: undefined;
   PastOrders: undefined;
@@ -84,6 +93,7 @@ export default function AppNavigator() {
         <MainStack.Navigator screenOptions={{ headerShown: false }}>
           <MainStack.Screen name="Feed" component={Feed} />
           <MainStack.Screen name="Cart" component={Cart} />
+          <MainStack.Screen name="Checkout" component={Checkout} />
           <MainStack.Screen name="Profile" component={Profile} />
           <MainStack.Screen name="MyListings" component={MyListings} />
           <MainStack.Screen name="PastOrders" component={PastOrders} />
