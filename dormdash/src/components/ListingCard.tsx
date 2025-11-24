@@ -13,15 +13,19 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 type ListingCardProps = {
   listing: {
+    id: number;
     title: string;
     price_cents: number;
     listing_images: { url: string }[];
   };
 };
 
-type NavProp = NativeStackNavigationProp<{
+type MainStackParamList = {
+  ProductDetail: { listingId: number };
   PaymentPortal: { priceCents: number; listingTitle: string };
-}>;
+};
+
+type NavProp = NativeStackNavigationProp<MainStackParamList>;
 
 const { width } = Dimensions.get("window");
 const cardWidth = width / 2 - Spacing.lg - Spacing.xs;
@@ -34,8 +38,12 @@ export default function ListingCard({ listing }: ListingCardProps) {
   });
   const imageUrl = listing.listing_images?.[0]?.url;
 
+  const handleCardPress = () => {
+    navigation.navigate("ProductDetail", { listingId: listing.id });
+  };
+
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={handleCardPress}>
       <Image
         source={imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")}
         style={styles.image}
@@ -46,19 +54,8 @@ export default function ListingCard({ listing }: ListingCardProps) {
           {listing.title}
         </Text>
         <Text style={styles.price}>{price}</Text>
-        <TouchableOpacity
-          style={styles.buyButton}
-          onPress={() =>
-            navigation.navigate("PaymentPortal", {
-              priceCents: listing.price_cents,
-              listingTitle: listing.title,
-            })
-          }
-        >
-          <Text style={styles.buyButtonText}>Buy Now</Text>
-        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -66,40 +63,35 @@ const styles = StyleSheet.create({
   card: {
     width: cardWidth,
     backgroundColor: Colors.white,
-    borderRadius: BorderRadius.medium,
+    borderRadius: BorderRadius.large,
     marginBottom: Spacing.md,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
   image: {
     width: "100%",
     height: cardWidth,
+    backgroundColor: Colors.lightMint,
   },
   info: {
-    padding: Spacing.sm,
+    padding: Spacing.md,
   },
   title: {
-    ...Typography.bodyMedium,
-    color: Colors.darkTeal,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1F2937", // dark gray/black
     marginBottom: Spacing.xs,
-    minHeight: 36, // for 2 lines of text
+    minHeight: 36,
+    lineHeight: 22,
   },
   price: {
-    ...Typography.bodyLarge,
-    fontWeight: "bold",
-    color: Colors.primary_blue,
-    marginBottom: Spacing.sm,
-  },
-  buyButton: {
-    backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.small,
-    paddingVertical: Spacing.xs,
-    alignItems: "center",
-  },
-  buyButtonText: {
-    ...Typography.bodyMedium,
-    color: Colors.white,
+    fontSize: 15,
     fontWeight: "600",
+    color: "#6B7280", // medium gray
+    marginBottom: Spacing.md,
   },
 });

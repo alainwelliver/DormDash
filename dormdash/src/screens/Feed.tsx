@@ -183,6 +183,7 @@ const styles = StyleSheet.create({
   row: {
     justifyContent: "space-between",
     marginBottom: 16,
+    gap: 12,
   },
   listContent: {
     paddingHorizontal: 16,
