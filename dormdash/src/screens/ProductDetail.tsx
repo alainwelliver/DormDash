@@ -36,9 +36,9 @@ interface Listing {
   title: string;
   description: string;
   price_cents: number;
-  category: string;
-  user_id: string;
-  created_at: string;
+  type: string;
+  category_id: number;
+  categories?: { name: string } | null;
   listing_images: { url: string }[];
 }
 
@@ -83,7 +83,7 @@ export default function ProductDetail({
       // Fetch listing with images
       const { data: listingData, error: listingError } = await supabase
         .from("listings")
-        .select("*, listing_images(url)")
+        .select("*, listing_images(url), categories(name)")
         .eq("id", listingId)
         .single();
 
@@ -136,22 +136,63 @@ export default function ProductDetail({
     }
   };
 
-  const handleAddToCart = () => {
-    if (listing) {
-      // For now, we'll navigate to cart - in a real app, you'd add to a cart state/context
-      Alert.alert(
-        "Added to Cart",
-        `${listing.title} has been added to your cart!`,
-        [
-          { text: "Continue Shopping", style: "cancel" },
-          {
-            text: "View Cart",
-            onPress: () => navigation.navigate("Cart" as any),
-          },
-        ]
-      );
+const handleAddToCart = async () => {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+
+    if (!userId) {
+      Alert.alert("Login Required", "You must be logged in to add to cart.");
+      return;
     }
-  };
+
+    if (!listing) return;
+
+    // Check if item already exists in cart
+    const { data: existing, error: existingError } = await supabase
+      .from("cart_items")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("listing_id", listing.id)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Error checking cart:", existingError);
+      return;
+    }
+
+    // If in cart → increment quantity
+    if (existing) {
+      const { error: updateError } = await supabase
+        .from("cart_items")
+        .update({ quantity: existing.quantity + 1 })
+        .eq("id", existing.id);
+
+      if (updateError) throw updateError;
+    } else {
+      // Insert new cart item
+      const { error: insertError } = await supabase.from("cart_items").insert({
+        user_id: userId,
+        listing_id: listing.id,
+        quantity: 1,
+      });
+
+      if (insertError) throw insertError;
+    }
+
+    Alert.alert("Added to Cart", `${listing.title} was added to your cart.`, [
+      { text: "Continue", style: "cancel" },
+      {
+        text: "View Cart",
+        onPress: () => navigation.navigate("Cart" as any),
+      },
+    ]);
+  } catch (error) {
+    console.error("Add to cart error:", error);
+    Alert.alert("Error", "Could not add item to cart.");
+  }
+};
+
 
   const handleSubmitReview = async () => {
     try {
@@ -299,9 +340,10 @@ export default function ProductDetail({
           <Text style={styles.title}>{listing.title}</Text>
           <Text style={styles.price}>{price}</Text>
 
-          {listing.category && (
-            <Text style={styles.category}>Category: {listing.category}</Text>
-          )}
+          {listing.categories?.name && (
+  <Text style={styles.category}>Category: {listing.categories.name}</Text>
+)}
+
 
           <Text style={styles.description}>{listing.description}</Text>
         </View>
