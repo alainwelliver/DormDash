@@ -3,6 +3,8 @@ import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Icon } from "@rneui/themed";
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -11,6 +13,7 @@ import AuthRegister from "../screens/AuthRegister";
 
 // Main screens
 import Feed from "../screens/Feed";
+import Explore from "../screens/Explore";
 import CreateListing from "../screens/CreateListing";
 import PaymentPortal from "../screens/ProfilePaymentPortal";
 import ProductDetail from "../screens/ProductDetail";
@@ -30,6 +33,12 @@ type AuthStackParamList = {
   Register: undefined;
 };
 
+type MainTabParamList = {
+  FeedTab: undefined;
+  ExploreTab: undefined;
+  CreateListingTab: undefined;
+};
+
 interface CartItem {
   id: number;
   title: string;
@@ -38,9 +47,7 @@ interface CartItem {
 }
 
 type MainStackParamList = {
-  Feed: undefined;
-  HomePage: undefined;
-  CreateListing: undefined;
+  MainTabs: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
   Cart: undefined;
@@ -55,7 +62,66 @@ type MainStackParamList = {
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const MainTab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
+
+const COLORS = {
+  primaryBlue: "#1A73E8",
+  primaryGreen: "#60C694",
+  grayDisabled: "#A0A0A0",
+  white: "#FFFFFF",
+};
+
+function MainTabs() {
+  return (
+    <MainTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: COLORS.primaryGreen,
+        tabBarInactiveTintColor: COLORS.grayDisabled,
+        tabBarStyle: {
+          backgroundColor: COLORS.white,
+          borderTopWidth: 1,
+          borderTopColor: "#E5E7EB",
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        headerShown: false,
+      }}
+    >
+      <MainTab.Screen
+        name="FeedTab"
+        component={Feed}
+        options={{
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="ExploreTab"
+        component={Explore}
+        options={{
+          tabBarLabel: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="magnify" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="CreateListingTab"
+        component={CreateListing}
+        options={{
+          tabBarLabel: "Create",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="plus-circle" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+    </MainTab.Navigator>
+  );
+}
 
 export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
