@@ -59,7 +59,10 @@ interface Review {
   created_at: string;
 }
 
-export default function ProductDetail({ route, navigation }: ProductDetailProps) {
+export default function ProductDetail({
+  route,
+  navigation,
+}: ProductDetailProps) {
   const { listingId } = route.params;
 
   const [listing, setListing] = useState<Listing | null>(null);
@@ -121,7 +124,7 @@ export default function ProductDetail({ route, navigation }: ProductDetailProps)
                     rating: avgRating,
                     review_count: reviewsData.length,
                   }
-                : null,
+                : null
             );
           }
         }
@@ -133,12 +136,20 @@ export default function ProductDetail({ route, navigation }: ProductDetailProps)
     }
   };
 
-  const handleBuyNow = () => {
+  const handleAddToCart = () => {
     if (listing) {
-      navigation.navigate("PaymentPortal", {
-        priceCents: listing.price_cents,
-        listingTitle: listing.title,
-      });
+      // For now, we'll navigate to cart - in a real app, you'd add to a cart state/context
+      Alert.alert(
+        "Added to Cart",
+        `${listing.title} has been added to your cart!`,
+        [
+          { text: "Continue Shopping", style: "cancel" },
+          {
+            text: "View Cart",
+            onPress: () => navigation.navigate("Cart" as any),
+          },
+        ]
+      );
     }
   };
 
@@ -433,10 +444,17 @@ export default function ProductDetail({ route, navigation }: ProductDetailProps)
         )}
       </ScrollView>
 
-      {/* Buy Button */}
+      {/* Add to Cart Button */}
       <View style={styles.buyButtonContainer}>
-        <TouchableOpacity style={styles.buyButton} onPress={handleBuyNow}>
-          <Text style={styles.buyButtonText}>Buy Now</Text>
+        <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
+          <Icon
+            name="cart-plus"
+            type="material-community"
+            color={Colors.white}
+            size={24}
+            style={{ marginRight: Spacing.sm }}
+          />
+          <Text style={styles.buyButtonText}>Add to Cart</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -672,6 +690,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.medium,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
     elevation: 3,
     shadowColor: "#000",
     shadowOpacity: 0.15,
