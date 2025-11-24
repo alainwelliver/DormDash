@@ -13,6 +13,7 @@ import AuthRegister from "../screens/AuthRegister";
 import Feed from "../screens/Feed";
 import CreateListing from "../screens/CreateListing";
 import PaymentPortal from "../screens/PaymentPortal";
+import ProductDetail from "../screens/ProductDetail";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -25,6 +26,7 @@ type MainStackParamList = {
   HomePage: undefined;
   CreateListing: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
+  ProductDetail: { listingId: number };
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -66,6 +68,11 @@ export default function AppNavigator() {
         <MainStack.Navigator>
           <MainStack.Screen name="Feed" component={Feed} />
           <MainStack.Screen name="CreateListing" component={CreateListing} />
+          <MainStack.Screen
+            name="ProductDetail"
+            component={ProductDetail}
+            options={{ title: "Product Details" }}
+          />
           <MainStack.Screen
             name="PaymentPortal"
             component={PaymentPortal}
