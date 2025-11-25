@@ -32,28 +32,26 @@ type ProfileNavigationProp = NativeStackNavigationProp<{
 const Profile: React.FC = () => {
   const navigation = useNavigation<ProfileNavigationProp>();
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Gilbert Jones",
-    email: "Gilbertj@wharton.upenn.edu",
+    name: "Loading...",
+    email: "",
     phone: "111-222-3333",
   });
 
-  /**
-   * TODO: Uncomment and implement fetchUserProfile to get real user data
-   */
-  // useEffect(() => {
-  //   fetchUserProfile();
-  // }, []);
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
   const fetchUserProfile = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
     if (user) {
-      // You can fetch additional profile data from your profiles table
       setProfile({
-        name: user.user_metadata?.full_name || "User",
+        // Use username from Supabase metadata
+        name: user.user_metadata?.username || "User",
         email: user.email || "",
-        phone: user.user_metadata?.phone || "N/A",
+        phone: "111-222-3333",
       });
     }
   };
