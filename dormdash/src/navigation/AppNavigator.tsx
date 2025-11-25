@@ -12,7 +12,7 @@ import AuthRegister from "../screens/AuthRegister";
 // Main screens
 import Feed from "../screens/Feed";
 import CreateListing from "../screens/CreateListing";
-import PaymentPortal from "../screens/ProfilePaymentPortal";
+import PaymentPortal from "../screens/PaymentPortal";
 import ProductDetail from "../screens/ProductDetail";
 import Cart from "../screens/Cart";
 import Checkout from "../screens/Checkout";
