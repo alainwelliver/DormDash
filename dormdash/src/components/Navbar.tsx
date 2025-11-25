@@ -5,32 +5,49 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing } from "../assets/styles";
 
-type NavbarNavigationProp = NativeStackNavigationProp<{
-  Feed: undefined;
-  Cart: undefined;
-  Profile: undefined;
-}>;
+type RootStackParamList = {
+  Profile: { direction?: "left" | "right" } | undefined;
+  Feed: { direction?: "left" | "right" } | undefined;
+  Cart: { direction?: "left" | "right" } | undefined;
+};
+
+type NavbarNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Navbar: React.FC = () => {
   const navigation = useNavigation<NavbarNavigationProp>();
   const route = useRoute();
   const currentRoute = route.name;
 
+  // LEFT → CENTER → RIGHT layout
   const tabs = [
+    { name: "Profile", icon: "account", type: "material-community" },
     { name: "Feed", icon: "home", type: "material-community" },
     { name: "Cart", icon: "cart", type: "material-community" },
-    { name: "Profile", icon: "account", type: "material-community" },
   ];
+
+  const currentIndex = tabs.findIndex((t) => t.name === currentRoute);
+
+  const handleNavigate = (target: string) => {
+    const targetIndex = tabs.findIndex((t) => t.name === target);
+
+    const direction = targetIndex < currentIndex ? "left" : "right";
+
+    navigation.navigate(
+      target as keyof RootStackParamList,
+      { direction } as any
+    );
+  };
 
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
         const isActive = currentRoute === tab.name;
+
         return (
           <TouchableOpacity
             key={tab.name}
             style={styles.tab}
-            onPress={() => navigation.navigate(tab.name as any)}
+            onPress={() => handleNavigate(tab.name)}
           >
             <Icon
               name={tab.icon}

@@ -38,14 +38,14 @@ interface CartItem {
 }
 
 type MainStackParamList = {
-  Feed: undefined;
+  Feed: { direction?: "left" | "right" } | undefined;
   HomePage: undefined;
   CreateListing: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
-  Cart: undefined;
+  Cart: { direction?: "left" | "right" } | undefined;
   Checkout: { selectedItems: CartItem[] };
-  Profile: undefined;
+  Profile: { direction?: "left" | "right" } | undefined;
   MyListings: undefined;
   PastOrders: undefined;
   AddressList: undefined;
@@ -90,33 +90,52 @@ export default function AppNavigator() {
           <AuthStack.Screen name="Register" component={AuthRegister} />
         </AuthStack.Navigator>
       ) : (
-        <MainStack.Navigator screenOptions={{ headerShown: false }}>
-          <MainStack.Screen name="Feed" component={Feed} />
-          <MainStack.Screen name="Cart" component={Cart} />
-          <MainStack.Screen name="Checkout" component={Checkout} />
-          <MainStack.Screen name="Profile" component={Profile} />
-          <MainStack.Screen name="MyListings" component={MyListings} />
-          <MainStack.Screen name="PastOrders" component={PastOrders} />
-          <MainStack.Screen name="AddressList" component={AddressList} />
-          <MainStack.Screen name="AddAddress" component={AddAddress} />
-          <MainStack.Screen name="PaymentList" component={PaymentList} />
-          <MainStack.Screen name="AddPayment" component={AddPayment} />
-          <MainStack.Screen
-            name="CreateListing"
-            component={CreateListing}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="ProductDetail"
-            component={ProductDetail}
-            options={{ headerShown: false, title: "Product Details" }}
-          />
-          <MainStack.Screen
-            name="PaymentPortal"
-            component={PaymentPortal}
-            options={{ headerShown: true, title: "Complete Payment" }}
-          />
-        </MainStack.Navigator>
+        <MainStack.Navigator
+  screenOptions={({ route }) => {
+  const params = route.params as any;
+  const direction = params?.direction;
+
+    return {
+      headerShown: false,
+      animation:
+        direction === "left"
+          ? "slide_from_left"
+          : direction === "right"
+          ? "slide_from_right"
+          : "default",
+    };
+  }}
+>
+  <MainStack.Screen name="Feed" component={Feed} />
+  <MainStack.Screen name="Cart" component={Cart} />
+  <MainStack.Screen name="Checkout" component={Checkout} />
+  <MainStack.Screen name="Profile" component={Profile} />
+  <MainStack.Screen name="MyListings" component={MyListings} />
+  <MainStack.Screen name="PastOrders" component={PastOrders} />
+  <MainStack.Screen name="AddressList" component={AddressList} />
+  <MainStack.Screen name="AddAddress" component={AddAddress} />
+  <MainStack.Screen name="PaymentList" component={PaymentList} />
+  <MainStack.Screen name="AddPayment" component={AddPayment} />
+
+  <MainStack.Screen
+    name="CreateListing"
+    component={CreateListing}
+    options={{ headerShown: false }}
+  />
+
+  <MainStack.Screen
+    name="ProductDetail"
+    component={ProductDetail}
+    options={{ headerShown: false, title: "Product Details" }}
+  />
+
+  <MainStack.Screen
+    name="PaymentPortal"
+    component={PaymentPortal}
+    options={{ headerShown: true, title: "Complete Payment" }}
+  />
+</MainStack.Navigator>
+
       )}
     </NavigationContainer>
   );
