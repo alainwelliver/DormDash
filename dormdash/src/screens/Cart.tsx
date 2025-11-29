@@ -20,7 +20,6 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
-import Navbar from "../components/Navbar";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
@@ -180,7 +179,6 @@ const Cart: React.FC = () => {
           color={Colors.primary_blue}
           style={{ marginTop: 40 }}
         />
-        <Navbar />
       </SafeAreaView>
     );
   }
@@ -204,7 +202,6 @@ const Cart: React.FC = () => {
             Add items to your cart to get started.
           </Text>
         </View>
-        <Navbar />
       </SafeAreaView>
     );
   }
@@ -346,8 +343,6 @@ const Cart: React.FC = () => {
           />
         </TouchableOpacity>
       </View>
-
-      <Navbar />
     </SafeAreaView>
   );
 };

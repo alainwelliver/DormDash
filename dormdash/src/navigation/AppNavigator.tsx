@@ -3,6 +3,9 @@ import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Icon } from "@rneui/themed";
+import { Colors } from "../assets/styles";
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -11,6 +14,7 @@ import AuthRegister from "../screens/AuthRegister";
 
 // Main screens
 import Feed from "../screens/Feed";
+import Explore from "../screens/Explore";
 import CreateListing from "../screens/CreateListing";
 import PaymentPortal from "../screens/ProfilePaymentPortal";
 import ProductDetail from "../screens/ProductDetail";
@@ -30,6 +34,13 @@ type AuthStackParamList = {
   Register: undefined;
 };
 
+type MainTabParamList = {
+  FeedTab: undefined;
+  ExploreTab: undefined;
+  CartTab: undefined;
+  ProfileTab: undefined;
+};
+
 interface CartItem {
   id: number;
   title: string;
@@ -38,24 +49,83 @@ interface CartItem {
 }
 
 type MainStackParamList = {
-  Feed: undefined;
-  HomePage: undefined;
-  CreateListing: undefined;
+  MainTabs: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
-  Cart: undefined;
   Checkout: { selectedItems: CartItem[] };
-  Profile: undefined;
   MyListings: undefined;
   PastOrders: undefined;
   AddressList: undefined;
   AddAddress: undefined;
   PaymentList: undefined;
   AddPayment: undefined;
+  CreateListing: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const MainTab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
+
+function MainTabs() {
+  return (
+    <MainTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: Colors.primary_green,
+        tabBarInactiveTintColor: Colors.mutedGray,
+        tabBarStyle: {
+          backgroundColor: Colors.white,
+          borderTopWidth: 1,
+          borderTopColor: Colors.lightGray,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        headerShown: false,
+      }}
+    >
+      <MainTab.Screen
+        name="FeedTab"
+        component={Feed}
+        options={{
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="ExploreTab"
+        component={Explore}
+        options={{
+          tabBarLabel: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="magnify" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="CartTab"
+        component={Cart}
+        options={{
+          tabBarLabel: "Cart",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="cart" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="ProfileTab"
+        component={Profile}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="account" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+    </MainTab.Navigator>
+  );
+}
 
 export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
@@ -91,10 +161,8 @@ export default function AppNavigator() {
         </AuthStack.Navigator>
       ) : (
         <MainStack.Navigator screenOptions={{ headerShown: false }}>
-          <MainStack.Screen name="Feed" component={Feed} />
-          <MainStack.Screen name="Cart" component={Cart} />
+          <MainStack.Screen name="MainTabs" component={MainTabs} />
           <MainStack.Screen name="Checkout" component={Checkout} />
-          <MainStack.Screen name="Profile" component={Profile} />
           <MainStack.Screen name="MyListings" component={MyListings} />
           <MainStack.Screen name="PastOrders" component={PastOrders} />
           <MainStack.Screen name="AddressList" component={AddressList} />

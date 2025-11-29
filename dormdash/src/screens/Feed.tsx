@@ -17,7 +17,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
 
 import ListingCard from "../components/ListingCard";
-import Navbar from "../components/Navbar";
 import {
   Colors,
   Typography,
@@ -210,8 +209,6 @@ const Feed: React.FC = () => {
           setPriceRange(null);
         }}
       />
-
-      <Navbar />
     </SafeAreaView>
   );
 };
@@ -276,7 +273,7 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 80,
     paddingTop: Spacing.md,
   },
 
