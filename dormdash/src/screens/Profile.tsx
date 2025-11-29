@@ -13,7 +13,6 @@ import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing } from "../assets/styles";
-import Navbar from "../components/Navbar";
 import { supabase } from "../lib/supabase";
 
 interface UserProfile {
@@ -141,8 +140,6 @@ const Profile: React.FC = () => {
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
-
-      <Navbar />
     </SafeAreaView>
   );
 };
