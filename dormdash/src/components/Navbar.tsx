@@ -7,6 +7,7 @@ import { Colors, Typography, Spacing } from "../assets/styles";
 
 type NavbarNavigationProp = NativeStackNavigationProp<{
   Feed: undefined;
+  Explore: undefined;
   Cart: undefined;
   Profile: undefined;
 }>;
@@ -18,6 +19,7 @@ const Navbar: React.FC = () => {
 
   const tabs = [
     { name: "Feed", icon: "home", type: "material-community" },
+    { name: "Explore", icon: "magnify", type: "material-community" },
     { name: "Cart", icon: "cart", type: "material-community" },
     { name: "Profile", icon: "account", type: "material-community" },
   ];

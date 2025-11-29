@@ -1,4 +1,9 @@
-import React, { useState } from "react";
+// =============================
+//      CART.TSX (FINAL)
+//   Supabase-Connected Cart
+// =============================
+
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,55 +13,88 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
-import Navbar from "../components/Navbar";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
 }>;
 
 interface CartItem {
-  id: number;
+  id: number; // cart_items table id
+  listing_id: number;
   title: string;
   price_cents: number;
-  image_url?: string;
+  image_url?: string | null;
   quantity: number;
 }
 
 const Cart: React.FC = () => {
   const navigation = useNavigation<CartNavigationProp>();
 
-  // Mock cart items - in a real app, this would come from context/state management
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      title: "Uniqlo Airism Tee",
-      price_cents: 200,
-      image_url: undefined,
-      quantity: 1,
-    },
-    {
-      id: 2,
-      title: "Wooden Nightstand",
-      price_cents: 2000,
-      image_url: undefined,
-      quantity: 1,
-    },
-    {
-      id: 3,
-      title: "PSA 10 Charizard VMAX",
-      price_cents: 35000,
-      image_url: undefined,
-      quantity: 1,
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedItems, setSelectedItems] = useState<number[]>([1, 2, 3]);
+  // Fetch cart items from Supabase
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
 
+  const fetchCartItems = async () => {
+    setLoading(true);
+
+    // Get current user
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+
+    if (!userId) {
+      setCartItems([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("cart_items")
+      .select(`
+        id,
+        listing_id,
+        quantity,
+        listings (
+          id,
+          title,
+          price_cents,
+          listing_images ( url )
+        )
+      `)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Error loading cart:", error);
+      setLoading(false);
+      return;
+    }
+
+    const formatted = data.map((item: any) => ({
+      id: item.id,
+      listing_id: item.listing_id,
+      title: item.listings.title,
+      price_cents: item.listings.price_cents,
+      quantity: item.quantity,
+      image_url: item.listings.listing_images?.[0]?.url ?? null,
+    }));
+
+    setCartItems(formatted);
+    setSelectedItems(formatted.map((i) => i.id));
+    setLoading(false);
+  };
+
+  // Toggle select/unselect item
   const toggleItemSelection = (itemId: number) => {
     if (selectedItems.includes(itemId)) {
       setSelectedItems(selectedItems.filter((id) => id !== itemId));
@@ -65,34 +103,45 @@ const Cart: React.FC = () => {
     }
   };
 
-  const updateQuantity = (itemId: number, change: number) => {
+  // Update quantity in Supabase
+  const updateQuantity = async (cartItemId: number, change: number) => {
+    const item = cartItems.find((i) => i.id === cartItemId);
+    if (!item) return;
+
+    const newQty = Math.max(1, item.quantity + change);
+
+    const { error } = await supabase
+      .from("cart_items")
+      .update({ quantity: newQty })
+      .eq("id", cartItemId);
+
+    if (error) {
+      console.error("Error updating quantity:", error);
+      return;
+    }
+
     setCartItems(
-      cartItems.map((item) => {
-        if (item.id === itemId) {
-          const newQuantity = Math.max(1, item.quantity + change);
-          return { ...item, quantity: newQuantity };
-        }
-        return item;
-      })
+      cartItems.map((i) =>
+        i.id === cartItemId ? { ...i, quantity: newQty } : i
+      )
     );
   };
 
-  const removeItem = (itemId: number) => {
-    Alert.alert(
-      "Remove Item",
-      "Are you sure you want to remove this item from your cart?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => {
-            setCartItems(cartItems.filter((item) => item.id !== itemId));
-            setSelectedItems(selectedItems.filter((id) => id !== itemId));
-          },
+  // Remove item from Supabase
+  const removeItem = (cartItemId: number) => {
+    Alert.alert("Remove Item", "Are you sure you want to remove this item?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          await supabase.from("cart_items").delete().eq("id", cartItemId);
+
+          setCartItems(cartItems.filter((i) => i.id !== cartItemId));
+          setSelectedItems(selectedItems.filter((id) => id !== cartItemId));
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const calculateSubtotal = () => {
@@ -103,16 +152,14 @@ const Cart: React.FC = () => {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
-      Alert.alert(
-        "No Items Selected",
-        "Please select at least one item to checkout"
-      );
+      Alert.alert("No Items Selected", "Please select at least one item.");
       return;
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
       selectedItems.includes(item.id)
     );
+
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });
   };
 
@@ -123,6 +170,20 @@ const Cart: React.FC = () => {
     });
   };
 
+  // Loading State
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator
+          size="large"
+          color={Colors.primary_blue}
+          style={{ marginTop: 40 }}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Empty Cart
   if (cartItems.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -138,14 +199,14 @@ const Cart: React.FC = () => {
           />
           <Text style={styles.emptyText}>Your cart is empty</Text>
           <Text style={styles.emptySubtext}>
-            Add items to your cart to get started
+            Add items to your cart to get started.
           </Text>
         </View>
-        <Navbar />
       </SafeAreaView>
     );
   }
 
+  // Main Cart UI
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -184,7 +245,7 @@ const Cart: React.FC = () => {
               />
             </TouchableOpacity>
 
-            {/* Item Image */}
+            {/* Image */}
             <View style={styles.itemImage}>
               {item.image_url ? (
                 <Image source={{ uri: item.image_url }} style={styles.image} />
@@ -192,13 +253,13 @@ const Cart: React.FC = () => {
                 <Icon
                   name="image-outline"
                   type="material-community"
-                  color={Colors.mutedGray}
                   size={40}
+                  color={Colors.mutedGray}
                 />
               )}
             </View>
 
-            {/* Item Details */}
+            {/* Details */}
             <View style={styles.itemDetails}>
               <Text style={styles.itemTitle} numberOfLines={2}>
                 {item.title}
@@ -207,7 +268,7 @@ const Cart: React.FC = () => {
                 {formatPrice(item.price_cents)}
               </Text>
 
-              {/* Quantity Controls */}
+              {/* Quantity */}
               <View style={styles.quantityContainer}>
                 <TouchableOpacity
                   style={styles.quantityButton}
@@ -220,7 +281,9 @@ const Cart: React.FC = () => {
                     size={18}
                   />
                 </TouchableOpacity>
+
                 <Text style={styles.quantityText}>{item.quantity}</Text>
+
                 <TouchableOpacity
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, 1)}
@@ -235,7 +298,7 @@ const Cart: React.FC = () => {
               </View>
             </View>
 
-            {/* Remove Button */}
+            {/* Remove */}
             <TouchableOpacity
               style={styles.removeButton}
               onPress={() => removeItem(item.id)}
@@ -262,6 +325,7 @@ const Cart: React.FC = () => {
             {formatPrice(calculateSubtotal())}
           </Text>
         </View>
+
         <TouchableOpacity
           style={[
             styles.checkoutButton,
@@ -279,11 +343,15 @@ const Cart: React.FC = () => {
           />
         </TouchableOpacity>
       </View>
-
-      <Navbar />
     </SafeAreaView>
   );
 };
+
+export default Cart;
+
+// --------------------
+//     STYLES (same)
+// --------------------
 
 const styles = StyleSheet.create({
   container: {
@@ -431,10 +499,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
   checkoutButtonDisabled: {
     backgroundColor: Colors.mutedGray,
@@ -468,5 +532,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-
-export default Cart;

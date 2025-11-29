@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,64 +14,88 @@ import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import FilterModal from "../components/FilterModal";
+
 import ListingCard from "../components/ListingCard";
-import Navbar from "../components/Navbar";
-import { Colors } from "../assets/styles";
-
-const COLORS = {
-  primaryBlue: "#1A73E8",
-  primaryGreen: "#60C694",
-  teal: "#47B7C7",
-  lightMint: "#E6F5EE",
-  white: "#FFFFFF",
-  grayDisabled: "#A0A0A0",
-  bodyText: "#1F2937",
-  subtleText: "#6B7280",
-  border: "#E5E7EB",
-};
-
-const FONTS = {
-  heading: "Poppins",
-  body: "Open Sans",
-  button: "Poppins",
-};
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+} from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
-  { Feed: undefined; CreateListing: undefined },
+  {
+    Feed: undefined;
+    CreateListing: undefined;
+  },
   "Feed"
 >;
 
-const handleSignOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) console.error("Sign-out failed", error);
-};
-
 const Feed: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
+
   const [listings, setListings] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
+  // ---------- Load categories & tags ----------
+  const loadFilterData = async () => {
+    const { data: cats } = await supabase.from("categories").select("*").order("name");
+    const { data: tgs } = await supabase.from("tags").select("*").order("name");
+
+    setCategories(cats || []);
+    setTags(tgs || []);
+  };
+
+  useEffect(() => {
+    loadFilterData();
+  }, []);
+
+  // ---------- Fetch listings with filters ----------
   const fetchListings = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("listings")
-      .select("*, listing_images(url)")
+      .select("*, listing_images(url), categories(name)")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching listings:", error.message);
-    } else {
-      setListings(data || []);
+    if (selectedCategory) {
+      query = query.eq("category_id", selectedCategory);
     }
+
+    if (selectedTags.length > 0) {
+      query = query.contains("listing_tags", selectedTags);
+    }
+
+    if (priceRange) {
+      query = query
+        .gte("price_cents", priceRange[0])
+        .lte("price_cents", priceRange[1]);
+    }
+
+    const { data, error } = await query;
+
+    if (error) console.error("Error fetching listings:", error);
+    else setListings(data || []);
+
     setLoading(false);
     setRefreshing(false);
   };
 
+  // Refresh on screen focus
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [])
+    }, [selectedCategory, selectedTags, priceRange])
   );
 
   const onRefresh = () => {
@@ -79,13 +103,18 @@ const Feed: React.FC = () => {
     fetchListings();
   };
 
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Sign-out failed:", error);
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
         <ActivityIndicator
           size="large"
-          color={COLORS.primaryBlue}
-          style={{ marginTop: 20 }}
+          color={Colors.primary_blue}
+          style={{ marginTop: Spacing.xl }}
         />
       );
     }
@@ -93,7 +122,7 @@ const Feed: React.FC = () => {
     if (listings.length === 0) {
       return (
         <Text style={styles.emptyText}>
-          No posts yet. Start by creating one!
+          No posts found. Try adjusting your filters!
         </Text>
       );
     }
@@ -115,24 +144,41 @@ const Feed: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>DormDash</Text>
+
         <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
           <Icon
             name="logout"
             type="material-community"
-            color={COLORS.white}
-            size={24}
+            size={26}
+            color={Colors.white}
           />
         </TouchableOpacity>
       </View>
 
+      {/* Filter Button */}
+    <TouchableOpacity
+      style={styles.filterButton}
+      onPress={() => setShowFilters(true)}
+    >
+      <Icon
+        name="filter-variant"
+        type="material-community"
+        size={22}
+        color={Colors.darkTeal}
+      />
+      <Text style={styles.filterButtonText}>Filters</Text>
+    </TouchableOpacity>
+
+
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
-
-      {/* Floating New Post Button */}
+      
+      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate("CreateListing")}
@@ -140,13 +186,29 @@ const Feed: React.FC = () => {
         <Icon
           name="plus"
           type="material-community"
-          color={COLORS.white}
-          size={28}
+          size={30}
+          color={Colors.white}
         />
       </TouchableOpacity>
-
-      {/* Bottom Navigation Bar */}
-      <Navbar />
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        categories={categories}
+        tags={tags}
+        selectedCategory={selectedCategory}
+        selectedTags={selectedTags}
+        priceRange={priceRange}
+        onApply={({ category, tags, priceRange }) => {
+          setSelectedCategory(category);
+          setSelectedTags(tags);
+          setPriceRange(priceRange);
+        }}
+        onClear={() => {
+          setSelectedCategory(null);
+          setSelectedTags([]);
+          setPriceRange(null);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -154,62 +216,82 @@ const Feed: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
+
   header: {
-    backgroundColor: COLORS.primaryGreen,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: Colors.primary_green,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderRadius: 6,
   },
+
   headerTitle: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: "700",
-    fontFamily: FONTS.heading,
+    ...Typography.heading4,
+    color: Colors.white,
   },
+
   logoutButton: {
-    padding: 6,
+    padding: Spacing.xs,
   },
+
+  // Clean professional filter button
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.lightMint,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray,
+  },
+  filterButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.darkTeal,
+    fontWeight: "600",
+  },
+
   content: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
+
   emptyText: {
-    fontFamily: FONTS.body,
-    fontSize: 16,
-    color: COLORS.subtleText,
+    ...Typography.bodyLarge,
+    textAlign: "center",
+    marginTop: Spacing.xl,
+    color: Colors.mutedGray,
   },
+
   row: {
     justifyContent: "space-between",
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
+
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 80,
+    paddingTop: Spacing.md,
   },
+
   fab: {
     position: "absolute",
-    bottom: 84,
+    bottom: 85,
     right: 24,
-    backgroundColor: COLORS.primaryBlue,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    backgroundColor: Colors.primary_blue,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
   },
 });
 
