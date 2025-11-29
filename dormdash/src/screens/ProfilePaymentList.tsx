@@ -3,17 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Colors, Typography, Spacing } from "../assets/styles";
+import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type PaymentListNavigationProp = NativeStackNavigationProp<{
   AddPayment: undefined;
@@ -169,6 +170,7 @@ const PaymentList: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: Colors.lightGray,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
@@ -284,14 +286,14 @@ const styles = StyleSheet.create({
   cardCircle: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
   },
   cardCircleRed: {
-    backgroundColor: "#EB001B",
+    backgroundColor: Colors.mastercardRed,
     zIndex: 2,
   },
   cardCircleOrange: {
-    backgroundColor: "#F79E1B",
+    backgroundColor: Colors.mastercardOrange,
     marginLeft: -8,
     zIndex: 1,
   },
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: Colors.primary_blue,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
   },

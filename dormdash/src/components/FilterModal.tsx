@@ -199,7 +199,7 @@ const FilterModal: React.FC<Props> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "#00000055",
+    backgroundColor: Colors.overlay,
     justifyContent: "flex-end",
   },
   container: {
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: Colors.lightMint,
-    borderRadius: 20,
+    borderRadius: BorderRadius.medium,  // 8px
   },
   chipActive: {
     backgroundColor: Colors.primary_blue,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   tagChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: BorderRadius.medium,  // 8px
     backgroundColor: Colors.lightGray,
     borderWidth: 1,
     borderColor: Colors.mutedGray,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.lightGray,
     padding: Spacing.sm,
-    borderRadius: 10,
+    borderRadius: BorderRadius.medium,  // 8px
     color: Colors.darkTeal,
   },
   toText: {
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary_blue,
     paddingHorizontal: 24,
     paddingVertical: Spacing.md,
-    borderRadius: 14,
+    borderRadius: BorderRadius.medium,  // 8px
   },
   applyText: {
     ...Typography.bodyLarge,
