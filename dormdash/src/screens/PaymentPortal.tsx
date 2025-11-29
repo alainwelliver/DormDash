@@ -1,7 +1,7 @@
-import React from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { WebView } from "react-native-webview";
-import type { RouteProp } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator, StyleSheet, Text, Alert, Platform } from "react-native";
+import { WebView, type WebViewNavigation } from "react-native-webview";
+import type { RouteProp, NavigationProp } from "@react-navigation/native";
 import { Colors } from "../assets/styles";
 
 type MainStackParamList = {
@@ -12,102 +12,111 @@ type MainStackParamList = {
 };
 
 type PaymentPortalRouteProp = RouteProp<MainStackParamList, "PaymentPortal">;
+type PaymentPortalNavigationProp = NavigationProp<MainStackParamList, "PaymentPortal">;
 
 type Props = {
   route: PaymentPortalRouteProp;
+  navigation: PaymentPortalNavigationProp;
 };
 
-const PaymentPortal: React.FC<Props> = ({ route }) => {
+const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   const { priceCents, listingTitle } = route.params;
-  const priceUSD = (priceCents / 100).toFixed(2);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Note: Replace 'test' with your actual PayPal client-id for production.
-  const PAYPAL_CLIENT_ID = "AdmmYj55K7rZv4UulwRKmy0xC-2JF1fo8PYc1PYh_FupkJi1s_SQ_8RZ9Pub02Ju5zwGHaeFTR5zc8Yt";
+  // ---------------------------------------------------------
+  // NETWORK CONFIGURATION
+  // ---------------------------------------------------------
+  // You MUST run a separate node server for this to work.
+  // 10.0.2.2 is the Android Emulator's way of reaching your computer's localhost.
+  const LOCAL_SERVER_URL = Platform.OS === 'android' 
+    ? 'http://10.0.2.2:4242' 
+    : 'http://localhost:4242';
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <title>PayPal Checkout</title>
-    </head>
-    <body>
-        <div id="paypal-button-container"></div>
-        <script src="https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD"></script>
-        <script>
-            paypal.Buttons({
-                createOrder: function(data, actions) {
-                    return actions.order.create({
-                        purchase_units: [{
-                            description: "${listingTitle.replace(/"/g, '\\"')}",
-                            amount: {
-                                value: "${priceUSD}"
-                            }
-                        }]
-                    });
-                },
-                onApprove: function(data, actions) {
-                    return actions.order.capture().then(function(details) {
-                        // Send a message back to the React Native app
-                        window.ReactNativeWebView.postMessage(JSON.stringify({
-                            status: 'success',
-                            data: details
-                        }));
-                    });
-                },
-                onError: function(err) {
-                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                        status: 'error',
-                        data: err
-                    }));
-                }
-            }).render('#paypal-button-container');
-        </script>
-    </body>
-    </html>
-  `;
+  useEffect(() => {
+    const fetchCheckoutSession = async () => {
+      try {
+        console.log(`Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`);
+        
+        const response = await fetch(`${LOCAL_SERVER_URL}/create-checkout-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: listingTitle,
+            price: priceCents, // This requires a server to process safely
+          }),
+        });
 
-  const handleWebViewMessage = (event: any) => {
-    const message = JSON.parse(event.nativeEvent.data);
-    if (message.status === "success") {
-      alert("Payment Successful! Transaction ID: " + message.data.id);
-      // Here you would navigate back or to a success screen
-      // navigation.goBack();
-    } else {
-      alert("Payment Error. Please try again.");
+        const text = await response.text();
+        
+        // Safety check: Did the server return HTML (error) instead of JSON?
+        if (text.trim().startsWith('<')) {
+          console.error("Server returned HTML error:", text);
+          throw new Error("Server configuration error (Check backend logs)");
+        }
+
+        const data = JSON.parse(text);
+
+        if (data.url) {
+          setCheckoutUrl(data.url);
+        } else {
+          Alert.alert("Error", "Server failed to generate a Stripe URL");
+        }
+      } catch (error) {
+        console.error("Payment Error:", error);
+        Alert.alert("Connection Error", "Ensure your Node server is running on port 4242.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCheckoutSession();
+  }, [listingTitle, priceCents]);
+
+  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+    const { url } = navState;
+    // Handle redirects from Stripe
+    if (url.includes('/success')) {
+      Alert.alert("Success", "Payment confirmed!", [{ text: "OK", onPress: () => navigation.goBack() }]);
+    } else if (url.includes('/cancel')) {
+      Alert.alert("Cancelled", "Payment cancelled", [{ text: "OK", onPress: () => navigation.goBack() }]);
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary_blue} />
+        <Text style={{marginTop: 10}}>Connecting to Secure Server...</Text>
+      </View>
+    );
+  }
+
+  if (!checkoutUrl) {
+    return (
+      <View style={styles.center}>
+        <Text>Could not load payment page.</Text>
+        <Text style={{color: 'red', marginTop: 10}}>Is the backend running?</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <WebView
-        source={{ html: htmlContent }}
-        onMessage={handleWebViewMessage}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <ActivityIndicator
-            style={styles.loading}
-            size="large"
-            color={Colors.primary_blue}
-          />
-        )}
-      />
-    </View>
+    <WebView
+      source={{ uri: checkoutUrl }}
+      onNavigationStateChange={handleNavigationStateChange}
+      startInLoadingState
+      renderLoading={() => (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary_blue} />
+        </View>
+      )}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loading: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
 
 export default PaymentPortal;
