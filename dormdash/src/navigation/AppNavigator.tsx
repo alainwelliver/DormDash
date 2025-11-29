@@ -5,6 +5,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "@rneui/themed";
+import { Colors } from "../assets/styles";
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -36,7 +37,8 @@ type AuthStackParamList = {
 type MainTabParamList = {
   FeedTab: undefined;
   ExploreTab: undefined;
-  CreateListingTab: undefined;
+  CartTab: undefined;
+  ProfileTab: undefined;
 };
 
 interface CartItem {
@@ -50,38 +52,30 @@ type MainStackParamList = {
   MainTabs: undefined;
   PaymentPortal: { priceCents: number; listingTitle: string };
   ProductDetail: { listingId: number };
-  Cart: undefined;
   Checkout: { selectedItems: CartItem[] };
-  Profile: undefined;
   MyListings: undefined;
   PastOrders: undefined;
   AddressList: undefined;
   AddAddress: undefined;
   PaymentList: undefined;
   AddPayment: undefined;
+  CreateListing: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
-const COLORS = {
-  primaryBlue: "#1A73E8",
-  primaryGreen: "#60C694",
-  grayDisabled: "#A0A0A0",
-  white: "#FFFFFF",
-};
-
 function MainTabs() {
   return (
     <MainTab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: COLORS.primaryGreen,
-        tabBarInactiveTintColor: COLORS.grayDisabled,
+        tabBarActiveTintColor: Colors.primary_green,
+        tabBarInactiveTintColor: Colors.mutedGray,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
+          backgroundColor: Colors.white,
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: Colors.lightGray,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
@@ -110,12 +104,22 @@ function MainTabs() {
         }}
       />
       <MainTab.Screen
-        name="CreateListingTab"
-        component={CreateListing}
+        name="CartTab"
+        component={Cart}
         options={{
-          tabBarLabel: "Create",
+          tabBarLabel: "Cart",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="plus-circle" type="material-community" color={color} size={size} />
+            <Icon name="cart" type="material-community" color={color} size={size} />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="ProfileTab"
+        component={Profile}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="account" type="material-community" color={color} size={size} />
           ),
         }}
       />
@@ -157,10 +161,8 @@ export default function AppNavigator() {
         </AuthStack.Navigator>
       ) : (
         <MainStack.Navigator screenOptions={{ headerShown: false }}>
-          <MainStack.Screen name="Feed" component={Feed} />
-          <MainStack.Screen name="Cart" component={Cart} />
+          <MainStack.Screen name="MainTabs" component={MainTabs} />
           <MainStack.Screen name="Checkout" component={Checkout} />
-          <MainStack.Screen name="Profile" component={Profile} />
           <MainStack.Screen name="MyListings" component={MyListings} />
           <MainStack.Screen name="PastOrders" component={PastOrders} />
           <MainStack.Screen name="AddressList" component={AddressList} />
