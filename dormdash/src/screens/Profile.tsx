@@ -3,16 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Image,
   ScrollView,
   Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Colors, Typography, Spacing } from "../assets/styles";
+import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
 
 interface UserProfile {
@@ -80,6 +81,7 @@ const Profile: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -175,7 +177,7 @@ const styles = StyleSheet.create({
   infoCard: {
     width: "100%",
     backgroundColor: Colors.lightGray,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     backgroundColor: Colors.lightGray,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     padding: Spacing.md,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
   signOutButton: {
     marginHorizontal: Spacing.lg,
     backgroundColor: Colors.primary_blue,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
     marginBottom: Spacing.sm,
