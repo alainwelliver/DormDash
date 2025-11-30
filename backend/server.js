@@ -26,7 +26,7 @@ app.post('/create-checkout-session', async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: 'https://your-website.com/success', // or a deep link
+      success_url: 'https://your-website.com/success',
       cancel_url: 'https://your-website.com/cancel',
     });
 
