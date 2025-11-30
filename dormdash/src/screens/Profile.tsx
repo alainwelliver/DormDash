@@ -119,7 +119,7 @@ const Profile: React.FC = () => {
                 } else {
                   Alert.alert(
                     "Coming Soon",
-                    `${item.title} feature coming soon!`
+                    `${item.title} feature coming soon!`,
                   );
                 }
               }}

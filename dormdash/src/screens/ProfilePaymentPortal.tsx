@@ -22,7 +22,8 @@ const PaymentPortal: React.FC<Props> = ({ route }) => {
   const priceUSD = (priceCents / 100).toFixed(2);
 
   // Note: Replace 'test' with your actual PayPal client-id for production.
-  const PAYPAL_CLIENT_ID = "AdmmYj55K7rZv4UulwRKmy0xC-2JF1fo8PYc1PYh_FupkJi1s_SQ_8RZ9Pub02Ju5zwGHaeFTR5zc8Yt";
+  const PAYPAL_CLIENT_ID =
+    "AdmmYj55K7rZv4UulwRKmy0xC-2JF1fo8PYc1PYh_FupkJi1s_SQ_8RZ9Pub02Ju5zwGHaeFTR5zc8Yt";
 
   const htmlContent = `
     <!DOCTYPE html>

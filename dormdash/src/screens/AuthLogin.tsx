@@ -10,6 +10,7 @@ type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
 };
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
@@ -120,7 +121,12 @@ export default function AuthLogin() {
 
       {/* Forgot Password */}
       <View style={styles.forgotPasswordContainer}>
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        <Text
+          style={styles.forgotPasswordText}
+          onPress={() => navigation.navigate("ForgotPassword")}
+        >
+          Forgot Password?
+        </Text>
       </View>
 
       {/* Login Button */}

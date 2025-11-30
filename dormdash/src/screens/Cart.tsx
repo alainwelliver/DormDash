@@ -61,7 +61,8 @@ const Cart: React.FC = () => {
 
     const { data, error } = await supabase
       .from("cart_items")
-      .select(`
+      .select(
+        `
         id,
         listing_id,
         quantity,
@@ -71,7 +72,8 @@ const Cart: React.FC = () => {
           price_cents,
           listing_images ( url )
         )
-      `)
+      `,
+      )
       .eq("user_id", userId);
 
     if (error) {
@@ -122,8 +124,8 @@ const Cart: React.FC = () => {
 
     setCartItems(
       cartItems.map((i) =>
-        i.id === cartItemId ? { ...i, quantity: newQty } : i
-      )
+        i.id === cartItemId ? { ...i, quantity: newQty } : i,
+      ),
     );
   };
 
@@ -157,7 +159,7 @@ const Cart: React.FC = () => {
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id)
+      selectedItems.includes(item.id),
     );
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });

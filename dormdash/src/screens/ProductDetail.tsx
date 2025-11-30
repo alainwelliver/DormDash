@@ -136,63 +136,65 @@ export default function ProductDetail({
     }
   };
 
-const handleAddToCart = async () => {
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user?.id;
+  const handleAddToCart = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
 
-    if (!userId) {
-      Alert.alert("Login Required", "You must be logged in to add to cart.");
-      return;
-    }
+      if (!userId) {
+        Alert.alert("Login Required", "You must be logged in to add to cart.");
+        return;
+      }
 
-    if (!listing) return;
+      if (!listing) return;
 
-    // Check if item already exists in cart
-    const { data: existing, error: existingError } = await supabase
-      .from("cart_items")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("listing_id", listing.id)
-      .maybeSingle();
-
-    if (existingError) {
-      console.error("Error checking cart:", existingError);
-      return;
-    }
-
-    // If in cart → increment quantity
-    if (existing) {
-      const { error: updateError } = await supabase
+      // Check if item already exists in cart
+      const { data: existing, error: existingError } = await supabase
         .from("cart_items")
-        .update({ quantity: existing.quantity + 1 })
-        .eq("id", existing.id);
+        .select("*")
+        .eq("user_id", userId)
+        .eq("listing_id", listing.id)
+        .maybeSingle();
 
-      if (updateError) throw updateError;
-    } else {
-      // Insert new cart item
-      const { error: insertError } = await supabase.from("cart_items").insert({
-        user_id: userId,
-        listing_id: listing.id,
-        quantity: 1,
-      });
+      if (existingError) {
+        console.error("Error checking cart:", existingError);
+        return;
+      }
 
-      if (insertError) throw insertError;
+      // If in cart → increment quantity
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("cart_items")
+          .update({ quantity: existing.quantity + 1 })
+          .eq("id", existing.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new cart item
+        const { error: insertError } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: userId,
+            listing_id: listing.id,
+            quantity: 1,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      Alert.alert("Added to Cart", `${listing.title} was added to your cart.`, [
+        { text: "Continue", style: "cancel" },
+        {
+          text: "View Cart",
+          onPress: () =>
+            navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
+        },
+      ]);
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      Alert.alert("Error", "Could not add item to cart.");
     }
-
-    Alert.alert("Added to Cart", `${listing.title} was added to your cart.`, [
-      { text: "Continue", style: "cancel" },
-      {
-        text: "View Cart",
-        onPress: () => navigation.navigate("Cart" as any),
-      },
-    ]);
-  } catch (error) {
-    console.error("Add to cart error:", error);
-    Alert.alert("Error", "Could not add item to cart.");
-  }
-};
-
+  };
 
   const handleSubmitReview = async () => {
     try {
@@ -341,9 +343,10 @@ const handleAddToCart = async () => {
           <Text style={styles.price}>{price}</Text>
 
           {listing.categories?.name && (
-  <Text style={styles.category}>Category: {listing.categories.name}</Text>
-)}
-
+            <Text style={styles.category}>
+              Category: {listing.categories.name}
+            </Text>
+          )}
 
           <Text style={styles.description}>{listing.description}</Text>
         </View>

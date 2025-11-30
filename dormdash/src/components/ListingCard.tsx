@@ -48,7 +48,9 @@ export default function ListingCard({ listing }: ListingCardProps) {
       {/* Image wrapper to apply shadow */}
       <View style={styles.imageWrapper}>
         <Image
-          source={imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")}
+          source={
+            imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")
+          }
           style={styles.image}
           resizeMode="cover"
         />

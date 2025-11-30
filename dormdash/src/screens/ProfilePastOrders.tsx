@@ -57,7 +57,7 @@ const PastOrders: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchOrders();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {

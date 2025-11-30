@@ -17,12 +17,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
 
 import ListingCard from "../components/ListingCard";
-import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-} from "../assets/styles";
+import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -49,7 +44,10 @@ const Feed: React.FC = () => {
 
   // ---------- Load categories & tags ----------
   const loadFilterData = async () => {
-    const { data: cats } = await supabase.from("categories").select("*").order("name");
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name");
     const { data: tgs } = await supabase.from("tags").select("*").order("name");
 
     setCategories(cats || []);
@@ -95,7 +93,7 @@ const Feed: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange])
+    }, [selectedCategory, selectedTags, priceRange]),
   );
 
   const onRefresh = () => {
@@ -161,23 +159,22 @@ const Feed: React.FC = () => {
       </View>
 
       {/* Filter Button */}
-    <TouchableOpacity
-      style={styles.filterButton}
-      onPress={() => setShowFilters(true)}
-    >
-      <Icon
-        name="filter-variant"
-        type="material-community"
-        size={22}
-        color={Colors.darkTeal}
-      />
-      <Text style={styles.filterButtonText}>Filters</Text>
-    </TouchableOpacity>
-
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => setShowFilters(true)}
+      >
+        <Icon
+          name="filter-variant"
+          type="material-community"
+          size={22}
+          color={Colors.darkTeal}
+        />
+        <Text style={styles.filterButtonText}>Filters</Text>
+      </TouchableOpacity>
 
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
-      
+
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}

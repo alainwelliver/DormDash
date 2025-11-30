@@ -52,7 +52,7 @@ const PaymentList: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchPaymentMethods();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {

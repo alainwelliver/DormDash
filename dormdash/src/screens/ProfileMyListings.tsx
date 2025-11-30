@@ -54,7 +54,7 @@ const MyListings: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchMyListings();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {

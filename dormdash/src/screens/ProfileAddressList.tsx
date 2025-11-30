@@ -50,7 +50,7 @@ const AddressList: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchAddresses();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {

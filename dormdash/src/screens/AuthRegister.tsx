@@ -22,6 +22,7 @@ export default function AuthRegister() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [phone, setPhone] = useState("");
 
   const allowedEmailEndings = [
     "@seas.upenn.edu",
@@ -68,6 +69,7 @@ export default function AuthRegister() {
       options: {
         data: {
           username: username.trim(),
+          phone: phone.trim(),
         },
       },
     });
@@ -121,6 +123,19 @@ export default function AuthRegister() {
           placeholder="Enter your Penn email"
           autoCapitalize="none"
           keyboardType="email-address"
+          editable={!loading}
+        />
+      </View>
+
+      {/* Phone Number Input */}
+      <View style={styles.verticallySpaced}>
+        <Input
+          label="Phone Number"
+          leftIcon={{ type: "font-awesome", name: "phone" }}
+          onChangeText={(text: string) => setPhone(text)}
+          value={phone}
+          placeholder="Enter your phone number"
+          keyboardType="phone-pad"
           editable={!loading}
         />
       </View>

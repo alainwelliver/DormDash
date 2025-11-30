@@ -88,7 +88,6 @@ export const Spacing = {
   xxxl: 100,
 };
 
-
 export const BorderRadius = {
   small: 4,
   medium: 6,

@@ -54,27 +54,26 @@ const FilterModal: React.FC<Props> = ({
   const [category, setCategory] = useState<number | null>(selectedCategory);
   const [tagIds, setTagIds] = useState<number[]>(selectedTags);
   const [minPrice, setMinPrice] = useState(
-    priceRange ? String(priceRange[0] / 100) : ""
+    priceRange ? String(priceRange[0] / 100) : "",
   );
   const [maxPrice, setMaxPrice] = useState(
-    priceRange ? String(priceRange[1] / 100) : ""
+    priceRange ? String(priceRange[1] / 100) : "",
   );
 
   const toggleTag = (id: number) => {
     setTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   };
 
   const applyFilters = () => {
     const convertedRange: [number, number] | null =
-        minPrice || maxPrice
-            ? [
-                minPrice ? Math.floor(Number(minPrice) * 100) : 0,
-                maxPrice ? Math.floor(Number(maxPrice) * 100) : 99999999,
-            ] as [number, number]
-            : null;
-
+      minPrice || maxPrice
+        ? ([
+            minPrice ? Math.floor(Number(minPrice) * 100) : 0,
+            maxPrice ? Math.floor(Number(maxPrice) * 100) : 99999999,
+          ] as [number, number])
+        : null;
 
     onApply({
       category,

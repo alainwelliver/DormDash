@@ -11,6 +11,7 @@ import { Colors } from "../assets/styles";
 import AuthWelcome from "../screens/AuthWelcome";
 import AuthLogin from "../screens/AuthLogin";
 import AuthRegister from "../screens/AuthRegister";
+import AuthForgotPassword from "../screens/AuthForgotPassword";
 
 // Main screens
 import Feed from "../screens/Feed";
@@ -32,6 +33,7 @@ type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
 };
 
 type MainTabParamList = {
@@ -89,7 +91,12 @@ function MainTabs() {
         options={{
           tabBarLabel: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="home" type="material-community" color={color} size={size} />
+            <Icon
+              name="home"
+              type="material-community"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -99,7 +106,12 @@ function MainTabs() {
         options={{
           tabBarLabel: "Explore",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="magnify" type="material-community" color={color} size={size} />
+            <Icon
+              name="magnify"
+              type="material-community"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -109,7 +121,12 @@ function MainTabs() {
         options={{
           tabBarLabel: "Cart",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="cart" type="material-community" color={color} size={size} />
+            <Icon
+              name="cart"
+              type="material-community"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -119,7 +136,12 @@ function MainTabs() {
         options={{
           tabBarLabel: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Icon name="account" type="material-community" color={color} size={size} />
+            <Icon
+              name="account"
+              type="material-community"
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -138,7 +160,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      }
+      },
     );
 
     return () => {
@@ -158,6 +180,10 @@ export default function AppNavigator() {
           <AuthStack.Screen name="Welcome" component={AuthWelcome} />
           <AuthStack.Screen name="Login" component={AuthLogin} />
           <AuthStack.Screen name="Register" component={AuthRegister} />
+          <AuthStack.Screen
+            name="ForgotPassword"
+            component={AuthForgotPassword}
+          />
         </AuthStack.Navigator>
       ) : (
         <MainStack.Navigator screenOptions={{ headerShown: false }}>
