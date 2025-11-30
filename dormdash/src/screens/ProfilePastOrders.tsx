@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     padding: Spacing.md,
     marginBottom: Spacing.md,
   },

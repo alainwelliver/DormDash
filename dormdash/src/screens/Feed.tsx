@@ -62,7 +62,7 @@ const Feed: React.FC = () => {
   const fetchListings = async () => {
     let query = supabase
       .from("listings")
-      .select("*, listing_images(url), categories(name)")
+      .select("*, listing_images(url, sort_order), categories(name)")
       .order("created_at", { ascending: false });
 
     if (selectedCategory) {

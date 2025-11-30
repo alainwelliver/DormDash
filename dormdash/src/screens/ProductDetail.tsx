@@ -124,7 +124,7 @@ export default function ProductDetail({
                     rating: avgRating,
                     review_count: reviewsData.length,
                   }
-                : null
+                : null,
             );
           }
         }

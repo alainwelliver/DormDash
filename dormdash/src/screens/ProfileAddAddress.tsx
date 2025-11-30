@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     padding: Spacing.md,
     fontSize: 16,
     fontFamily: Typography.bodyMedium.fontFamily,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
   },

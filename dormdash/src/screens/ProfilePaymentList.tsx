@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   cardCircle: {
     width: 24,
     height: 24,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
   },
   cardCircleRed: {
     backgroundColor: Colors.mastercardRed,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
   },

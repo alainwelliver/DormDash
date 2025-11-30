@@ -17,7 +17,13 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import ListingCard from "../components/ListingCard";
 import FilterModal from "../components/FilterModal";
-import { Colors, Fonts, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Fonts,
+  Typography,
+  Spacing,
+  BorderRadius,
+} from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -57,7 +63,7 @@ const Explore: React.FC = () => {
   const fetchListings = async () => {
     let query = supabase
       .from("listings")
-      .select("*, listing_images(url), categories(name)")
+      .select("*, listing_images(url, sort_order), categories(name)")
       .order("created_at", { ascending: false });
 
     if (selectedCategory) {
@@ -254,18 +260,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   header: {
-    backgroundColor: Colors.primary_green,  // #2ECC71 (style guide green)
-    paddingHorizontal: Spacing.lg,  // 16px (was 20)
-    paddingVertical: Spacing.lg,  // 16px
+    backgroundColor: Colors.primary_green, // #2ECC71 (style guide green)
+    paddingHorizontal: Spacing.lg, // 16px (was 20)
+    paddingVertical: Spacing.lg, // 16px
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
     color: Colors.white,
-    fontSize: Typography.heading4.fontSize,  // 24px
-    fontWeight: Typography.heading4.fontWeight,  // 700
-    fontFamily: Fonts.heading,  // Angora
+    fontSize: Typography.heading4.fontSize, // 24px
+    fontWeight: Typography.heading4.fontWeight, // 700
+    fontFamily: Fonts.heading, // Angora
   },
   newListingButton: {
     flexDirection: "row",
@@ -275,7 +281,7 @@ const styles = StyleSheet.create({
   },
   newListingText: {
     color: Colors.white,
-    fontSize: Typography.bodySmall.fontSize,  // 12px
+    fontSize: Typography.bodySmall.fontSize, // 12px
     fontWeight: "500",
   },
   searchContainer: {
@@ -284,26 +290,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px (was 12)
-    marginHorizontal: Spacing.lg,  // 16px
-    marginVertical: Spacing.md,  // 12px
-    paddingHorizontal: Spacing.md,  // 12px
+    borderRadius: BorderRadius.medium, // 8px (was 12)
+    marginHorizontal: Spacing.lg, // 16px
+    marginVertical: Spacing.md, // 12px
+    paddingHorizontal: Spacing.md, // 12px
     height: 48,
   },
   searchIcon: {
-    marginRight: Spacing.sm,  // 8px
+    marginRight: Spacing.sm, // 8px
   },
   searchInput: {
     flex: 1,
-    fontSize: Typography.bodyLarge.fontSize,  // 16px
-    fontFamily: Fonts.body,  // Open Sans
+    fontSize: Typography.bodyLarge.fontSize, // 16px
+    fontFamily: Fonts.body, // Open Sans
     color: Colors.darkTeal,
   },
   clearIcon: {
-    marginLeft: Spacing.sm,  // 8px
+    marginLeft: Spacing.sm, // 8px
   },
   filterIconContainer: {
-    marginLeft: Spacing.md,  // 12px
+    marginLeft: Spacing.md, // 12px
     padding: 4,
     justifyContent: "center",
     alignItems: "center",
@@ -315,15 +321,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   emptyText: {
-    fontFamily: Fonts.body,  // Open Sans
-    fontSize: Typography.bodyLarge.fontSize,  // 16px
+    fontFamily: Fonts.body, // Open Sans
+    fontSize: Typography.bodyLarge.fontSize, // 16px
     color: Colors.mutedGray,
   },
   row: {
     justifyContent: "space-between",
     marginBottom: 15,
-    paddingHorizontal: Spacing.lg,  // 16px (was 20)
-    gap: Spacing.sm,  // 8px
+    paddingHorizontal: Spacing.lg, // 16px (was 20)
+    gap: Spacing.sm, // 8px
   },
   listContent: {
     paddingTop: 15,

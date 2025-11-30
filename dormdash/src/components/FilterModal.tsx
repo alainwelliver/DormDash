@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: Colors.lightMint,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
   },
   chipActive: {
     backgroundColor: Colors.primary_blue,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   tagChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     backgroundColor: Colors.lightGray,
     borderWidth: 1,
     borderColor: Colors.mutedGray,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.lightGray,
     padding: Spacing.sm,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     color: Colors.darkTeal,
   },
   toText: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary_blue,
     paddingHorizontal: 24,
     paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
   },
   applyText: {
     ...Typography.bodyLarge,

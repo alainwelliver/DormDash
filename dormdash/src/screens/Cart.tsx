@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   quantityButton: {
     width: 20,
     height: 20,
-    borderRadius: BorderRadius.medium,  // 8px (was 14)
+    borderRadius: BorderRadius.medium, // 8px (was 14)
     backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",

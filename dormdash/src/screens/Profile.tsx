@@ -76,7 +76,6 @@ const Profile: React.FC = () => {
     { title: "My Listings", icon: "format-list-bulleted", route: "MyListings" },
     { title: "Past Orders", icon: "history", route: "PastOrders" },
     { title: "Address", icon: "map-marker", route: "AddressList" },
-    { title: "Payment", icon: "credit-card", route: "PaymentList" },
   ];
 
   return (
@@ -177,7 +176,7 @@ const styles = StyleSheet.create({
   infoCard: {
     width: "100%",
     backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     padding: Spacing.md,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -239,7 +238,7 @@ const styles = StyleSheet.create({
   signOutButton: {
     marginHorizontal: Spacing.lg,
     backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,  // 8px
+    borderRadius: BorderRadius.medium, // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
     marginBottom: Spacing.sm,

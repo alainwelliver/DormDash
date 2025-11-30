@@ -27,7 +27,12 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <View style={[styles.container, { paddingBottom: (insets.bottom || 0) + Spacing.md }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingBottom: (insets.bottom || 0) + Spacing.md },
+      ]}
+    >
       {tabs.map((tab) => {
         const isActive = currentRoute === tab.name;
         return (

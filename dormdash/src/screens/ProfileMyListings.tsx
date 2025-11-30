@@ -38,7 +38,7 @@ const MyListings: React.FC = () => {
 
     const { data, error } = await supabase
       .from("listings")
-      .select("*, listing_images(url)")
+      .select("*, listing_images(url, sort_order)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

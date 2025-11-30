@@ -8,7 +8,8 @@ import {
   Platform,
 } from "react-native";
 import { WebView, type WebViewNavigation } from "react-native-webview";
-import type { RouteProp, NavigationProp } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
 import { Colors } from "../assets/styles";
 
 type MainStackParamList = {
@@ -17,9 +18,8 @@ type MainStackParamList = {
     listingTitle: string;
   };
 };
-
 type PaymentPortalRouteProp = RouteProp<MainStackParamList, "PaymentPortal">;
-type PaymentPortalNavigationProp = NavigationProp<
+type PaymentPortalNavigationProp = StackNavigationProp<
   MainStackParamList,
   "PaymentPortal"
 >;
@@ -48,7 +48,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     const fetchCheckoutSession = async () => {
       try {
         console.log(
-          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`
+          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`,
         );
 
         const response = await fetch(
@@ -60,7 +60,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
               name: listingTitle,
               price: priceCents, // This requires a server to process safely
             }),
-          }
+          },
         );
 
         const text = await response.text();
@@ -82,7 +82,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
         console.error("Payment Error:", error);
         Alert.alert(
           "Connection Error",
-          "Ensure your Node server is running on port 4242."
+          "Ensure your Node server is running on port 4242.",
         );
       } finally {
         setLoading(false);

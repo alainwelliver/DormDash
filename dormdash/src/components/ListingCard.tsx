@@ -16,7 +16,7 @@ type ListingCardProps = {
     id: number;
     title: string;
     price_cents: number;
-    listing_images: { url: string }[];
+    listing_images: { url: string; sort_order?: number }[];
   };
 };
 
@@ -37,7 +37,11 @@ export default function ListingCard({ listing }: ListingCardProps) {
     currency: "USD",
   });
 
-  const imageUrl = listing.listing_images?.[0]?.url;
+  // Sort images by sort_order and get the first one
+  const sortedImages = [...(listing.listing_images || [])].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  );
+  const imageUrl = sortedImages[0]?.url;
 
   const handleCardPress = () => {
     navigation.navigate("ProductDetail", { listingId: listing.id });
