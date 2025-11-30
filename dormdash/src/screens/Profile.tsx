@@ -8,6 +8,9 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -15,6 +18,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
+import * as ImagePicker from "expo-image-picker";
 
 interface UserProfile {
   name: string;
@@ -31,30 +35,109 @@ type ProfileNavigationProp = NativeStackNavigationProp<{
 
 const Profile: React.FC = () => {
   const navigation = useNavigation<ProfileNavigationProp>();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Gilbert Jones",
-    email: "Gilbertj@wharton.upenn.edu",
-    phone: "111-222-3333",
+    name: "",
+    email: "",
+    phone: "",
   });
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
-  /**
-   * TODO: Uncomment and implement fetchUserProfile to get real user data
-   */
-  // useEffect(() => {
-  //   fetchUserProfile();
-  // }, []);
+  const formatPhoneNumber = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, "");
+
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+
+    // Format as xxx-xxx-xxxx
+    if (limited.length <= 3) {
+      return limited;
+    } else if (limited.length <= 6) {
+      return `${limited.slice(0, 3)}-${limited.slice(3)}`;
+    } else {
+      return `${limited.slice(0, 3)}-${limited.slice(3, 6)}-${limited.slice(6)}`;
+    }
+  };
+
+  const handlePhoneChange = (text: string) => {
+    setEditPhone(formatPhoneNumber(text));
+  };
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const handleEditProfile = () => {
+    setEditName(profile.name);
+    setEditPhone(
+      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone)
+    );
+    setIsEditModalVisible(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert("Error", "Name cannot be empty");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: editName.trim(),
+          phone: editPhone.trim(),
+        },
+      });
+
+      if (error) {
+        Alert.alert("Error", error.message);
+        return;
+      }
+
+      setProfile({
+        ...profile,
+        name: editName.trim(),
+        phone: editPhone.trim() || "N/A",
+      });
+      setIsEditModalVisible(false);
+      Alert.alert("Success", "Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const fetchUserProfile = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      // You can fetch additional profile data from your profiles table
-      setProfile({
-        name: user.user_metadata?.full_name || "User",
-        email: user.email || "",
-        phone: user.user_metadata?.phone || "N/A",
-      });
+    try {
+      setLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setProfile({
+          name: user.user_metadata?.full_name || "User",
+          email: user.email || "",
+          phone: user.user_metadata?.phone || "N/A",
+        });
+        // Fetch avatar URL if exists
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,11 +148,88 @@ const Profile: React.FC = () => {
         text: "Sign Out",
         style: "destructive",
         onPress: async () => {
-          const { error } = await supabase.auth.signOut();
-          if (error) console.error("Sign-out failed", error);
+          try {
+            const { error } = await supabase.auth.signOut({ scope: "local" });
+            if (error && error.name !== "AuthSessionMissingError") {
+              console.error("Sign-out failed", error);
+            }
+          } catch (e) {
+            // Ignore session missing errors - user is effectively signed out
+            console.log("Sign out completed");
+          }
         },
       },
     ]);
+  };
+
+  const handleUploadAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      setUploadingAvatar(true);
+      const localUri = result.assets[0].uri;
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert("Error", "User not found");
+        return;
+      }
+
+      // Upload to Supabase Storage
+      const ext = localUri.match(/\.(\w+)(?:\?|$)/)?.[1] || "jpg";
+      const fileName = `${user.id}/${Date.now()}.${ext}`;
+      const contentType = ext === "png" ? "image/png" : "image/jpeg";
+
+      // Read file as base64 for React Native compatibility
+      const base64Response = await fetch(localUri);
+      const arrayBuffer = await base64Response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, uint8Array, { upsert: true, contentType });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Update user metadata with avatar URL
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl },
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setAvatarUrl(publicUrl);
+      setIsAvatarModalVisible(false);
+      Alert.alert("Success", "Profile picture updated!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      Alert.alert("Error", "Failed to upload profile picture");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const menuItems = [
@@ -87,21 +247,43 @@ const Profile: React.FC = () => {
       >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: "https://via.placeholder.com/120" }}
-              style={styles.avatar}
-            />
-          </View>
+          <TouchableOpacity
+            style={styles.avatarWrapper}
+            onPress={() => setIsAvatarModalVisible(true)}
+          >
+            <View style={styles.avatarContainer}>
+              <Image
+                source={
+                  avatarUrl
+                    ? { uri: avatarUrl }
+                    : { uri: "https://via.placeholder.com/120" }
+                }
+                style={styles.avatar}
+              />
+            </View>
+            <View style={styles.avatarPlusButton}>
+              <Icon
+                name="plus"
+                type="material-community"
+                color={Colors.white}
+                size={18}
+              />
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <View style={styles.infoContent}>
-                <Text style={styles.name}>{profile.name}</Text>
-                <Text style={styles.email}>{profile.email}</Text>
-                <Text style={styles.phone}>{profile.phone}</Text>
+                <Text style={styles.name}>
+                  {loading ? "Loading..." : profile.name}
+                </Text>
+                <Text style={styles.email}>{loading ? "" : profile.email}</Text>
+                <Text style={styles.phone}>{loading ? "" : profile.phone}</Text>
               </View>
-              <TouchableOpacity style={styles.editButton}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={handleEditProfile}
+              >
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
@@ -120,7 +302,7 @@ const Profile: React.FC = () => {
                 } else {
                   Alert.alert(
                     "Coming Soon",
-                    `${item.title} feature coming soon!`,
+                    `${item.title} feature coming soon!`
                   );
                 }
               }}
@@ -141,6 +323,112 @@ const Profile: React.FC = () => {
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+
+            <Text style={styles.inputLabel}>Full Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Enter your full name"
+              autoCapitalize="words"
+            />
+
+            <Text style={styles.inputLabel}>Phone Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editPhone}
+              onChangeText={handlePhoneChange}
+              placeholder="xxx-xxx-xxxx"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.emailNote}>
+              Email cannot be changed: {profile.email}
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setIsEditModalVisible(false)}
+                disabled={saving}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveProfile}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Avatar Modal */}
+      <Modal
+        visible={isAvatarModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setIsAvatarModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.avatarModalContent}>
+            <TouchableOpacity
+              style={styles.avatarModalClose}
+              onPress={() => setIsAvatarModalVisible(false)}
+            >
+              <Icon
+                name="close"
+                type="material-community"
+                color={Colors.darkTeal}
+                size={24}
+              />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Profile Picture</Text>
+
+            <View style={styles.avatarPreviewContainer}>
+              <Image
+                source={
+                  avatarUrl
+                    ? { uri: avatarUrl }
+                    : { uri: "https://via.placeholder.com/150" }
+                }
+                style={styles.avatarPreview}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handleUploadAvatar}
+              disabled={uploadingAvatar}
+            >
+              {uploadingAvatar ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <Text style={styles.uploadButtonText}>Upload New Picture</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -161,13 +449,29 @@ const styles = StyleSheet.create({
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
   },
+  avatarWrapper: {
+    position: "relative",
+    marginBottom: Spacing.lg,
+  },
   avatarContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
     backgroundColor: Colors.lightGray,
     overflow: "hidden",
-    marginBottom: Spacing.lg,
+  },
+  avatarPlusButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary_blue,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: Colors.white,
   },
   avatar: {
     width: "100%",
@@ -248,6 +552,115 @@ const styles = StyleSheet.create({
   signOutButtonText: {
     fontSize: 18,
     fontFamily: Typography.buttonText.fontFamily,
+    fontWeight: "600",
+    color: Colors.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "85%",
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+    marginBottom: Spacing.lg,
+    textAlign: "center",
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    marginBottom: Spacing.xs,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: Colors.lightGray,
+    borderRadius: BorderRadius.small,
+    padding: Spacing.md,
+    fontSize: 16,
+    marginBottom: Spacing.md,
+    backgroundColor: Colors.base_bg,
+  },
+  emailNote: {
+    fontSize: 12,
+    color: Colors.mutedGray,
+    fontStyle: "italic",
+    marginBottom: Spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    marginRight: Spacing.sm,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.mutedGray,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.mutedGray,
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    marginLeft: Spacing.sm,
+    borderRadius: BorderRadius.medium,
+    backgroundColor: Colors.primary_blue,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.white,
+  },
+  avatarModalContent: {
+    width: "85%",
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  avatarModalClose: {
+    position: "absolute",
+    top: Spacing.md,
+    right: Spacing.md,
+    zIndex: 1,
+  },
+  avatarPreviewContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: Colors.lightGray,
+    overflow: "hidden",
+    marginBottom: Spacing.lg,
+  },
+  avatarPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  uploadButton: {
+    backgroundColor: Colors.primary_blue,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.medium,
+    width: "100%",
+    alignItems: "center",
+  },
+  uploadButtonText: {
+    fontSize: 16,
     fontWeight: "600",
     color: Colors.white,
   },

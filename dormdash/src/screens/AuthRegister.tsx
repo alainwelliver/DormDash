@@ -15,6 +15,7 @@ type NavProp = NativeStackNavigationProp<AuthStackParamList, "Register">;
 
 export default function AuthRegister() {
   const navigation = useNavigation<NavProp>();
+  const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +40,12 @@ export default function AuthRegister() {
 
   async function signUpWithEmail() {
     // Validation
-    if (!username.trim() || !email.trim() || !password.trim()) {
+    if (
+      !fullName.trim() ||
+      !username.trim() ||
+      !email.trim() ||
+      !password.trim()
+    ) {
       Alert.alert("Please fill in all fields");
       return;
     }
@@ -68,6 +74,7 @@ export default function AuthRegister() {
       password: password,
       options: {
         data: {
+          full_name: fullName.trim(),
           username: username.trim(),
           phone: phone.trim(),
         },
@@ -79,7 +86,7 @@ export default function AuthRegister() {
     } else if (!session) {
       Alert.alert(
         "Verification Required",
-        "Please check your inbox for email verification!",
+        "Please check your inbox for email verification!"
       );
     }
     setLoading(false);
@@ -100,11 +107,24 @@ export default function AuthRegister() {
       {/* Title */}
       <Text style={styles.title}>Create New Account</Text>
 
-      {/* Username Input */}
+      {/* Full Name Input */}
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input
-          label="Username"
+          label="Full Name"
           leftIcon={{ type: "font-awesome", name: "user" }}
+          onChangeText={(text: string) => setFullName(text)}
+          value={fullName}
+          placeholder="Enter your full name"
+          autoCapitalize="words"
+          editable={!loading}
+        />
+      </View>
+
+      {/* Username Input */}
+      <View style={styles.verticallySpaced}>
+        <Input
+          label="Username"
+          leftIcon={{ type: "font-awesome", name: "at" }}
           onChangeText={(text: string) => setUsername(text)}
           value={username}
           placeholder="Choose a username"
