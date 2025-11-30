@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   FlatList,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -101,11 +101,6 @@ const Feed: React.FC = () => {
     fetchListings();
   };
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error("Sign-out failed:", error);
-  };
-
   const renderContent = () => {
     if (loading) {
       return (
@@ -148,13 +143,17 @@ const Feed: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>DormDash</Text>
 
-        <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("CreateListing")}
+          style={styles.newListingButton}
+        >
           <Icon
-            name="logout"
+            name="plus"
             type="material-community"
-            size={26}
+            size={20}
             color={Colors.white}
           />
+          <Text style={styles.newListingText}>new listing</Text>
         </TouchableOpacity>
       </View>
 
@@ -175,18 +174,6 @@ const Feed: React.FC = () => {
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("CreateListing")}
-      >
-        <Icon
-          name="plus"
-          type="material-community"
-          size={30}
-          color={Colors.white}
-        />
-      </TouchableOpacity>
       <FilterModal
         visible={showFilters}
         onClose={() => setShowFilters(false)}
@@ -219,7 +206,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: Colors.primary_green,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -230,8 +217,17 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 
-  logoutButton: {
+  newListingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     padding: Spacing.xs,
+  },
+
+  newListingText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: "500",
   },
 
   // Clean professional filter button
@@ -272,23 +268,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 80,
     paddingTop: Spacing.md,
-  },
-
-  fab: {
-    position: "absolute",
-    bottom: 85,
-    right: 24,
-    backgroundColor: Colors.primary_blue,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
   },
 });
 

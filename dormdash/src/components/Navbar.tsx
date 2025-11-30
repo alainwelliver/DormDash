@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Typography, Spacing } from "../assets/styles";
 
 type NavbarNavigationProp = NativeStackNavigationProp<{
@@ -16,6 +17,7 @@ const Navbar: React.FC = () => {
   const navigation = useNavigation<NavbarNavigationProp>();
   const route = useRoute();
   const currentRoute = route.name;
+  const insets = useSafeAreaInsets();
 
   const tabs = [
     { name: "Feed", icon: "home", type: "material-community" },
@@ -25,7 +27,7 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: (insets.bottom || 0) + Spacing.md }]}>
       {tabs.map((tab) => {
         const isActive = currentRoute === tab.name;
         return (

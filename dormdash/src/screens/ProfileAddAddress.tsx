@@ -3,16 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   TextInput,
   Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Colors, Typography, Spacing } from "../assets/styles";
+import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
 
 type AddAddressNavigationProp = NativeStackNavigationProp<any>;
@@ -53,6 +54,7 @@ const AddAddress: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -187,11 +189,11 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: Colors.lightGray,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     padding: Spacing.md,
     fontSize: 16,
     fontFamily: Typography.bodyMedium.fontFamily,
-    color: "#000000",
+    color: Colors.darkTeal,
     marginBottom: Spacing.md,
   },
   dividerContainer: {
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: Colors.primary_blue,
-    borderRadius: 12,
+    borderRadius: BorderRadius.medium,  // 8px
     paddingVertical: Spacing.md,
     alignItems: "center",
   },

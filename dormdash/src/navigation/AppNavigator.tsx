@@ -5,6 +5,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "@rneui/themed";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../assets/styles";
 
 // Auth screens
@@ -69,6 +70,8 @@ const MainTab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <MainTab.Navigator
       screenOptions={{
@@ -78,8 +81,8 @@ function MainTabs() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.lightGray,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + (insets.bottom || 0),
+          paddingBottom: (insets.bottom || 0) + 8,
           paddingTop: 8,
         },
         headerShown: false,

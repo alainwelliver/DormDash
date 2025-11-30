@@ -3,48 +3,78 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import ListingCard from "../components/ListingCard";
+import FilterModal from "../components/FilterModal";
+import { Colors, Fonts, Typography, Spacing, BorderRadius } from "../assets/styles";
 
-const COLORS = {
-  primaryBlue: "#1A73E8",
-  primaryGreen: "#60C694",
-  teal: "#47B7C7",
-  lightMint: "#E6F5EE",
-  white: "#FFFFFF",
-  grayDisabled: "#A0A0A0",
-  bodyText: "#1F2937",
-  subtleText: "#6B7280",
-  border: "#E5E7EB",
-};
-
-const FONTS = {
-  heading: "Poppins",
-  body: "Open Sans",
-  button: "Poppins",
-};
+type MainStackNavigationProp = NativeStackNavigationProp<
+  {
+    Explore: undefined;
+    CreateListing: undefined;
+  },
+  "Explore"
+>;
 
 const Explore: React.FC = () => {
+  const navigation = useNavigation<MainStackNavigationProp>();
   const [listings, setListings] = useState<any[]>([]);
   const [filteredListings, setFilteredListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Filter state
+  const [categories, setCategories] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const loadFilterData = async () => {
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name");
+    const { data: tgs } = await supabase.from("tags").select("*").order("name");
+
+    setCategories(cats || []);
+    setTags(tgs || []);
+  };
+
   const fetchListings = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("listings")
-      .select("*, listing_images(url)")
+      .select("*, listing_images(url), categories(name)")
       .order("created_at", { ascending: false });
+
+    if (selectedCategory) {
+      query = query.eq("category_id", selectedCategory);
+    }
+
+    if (selectedTags.length > 0) {
+      query = query.contains("listing_tags", selectedTags);
+    }
+
+    if (priceRange) {
+      query = query
+        .gte("price_cents", priceRange[0])
+        .lte("price_cents", priceRange[1]);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching listings:", error.message);
@@ -56,11 +86,15 @@ const Explore: React.FC = () => {
     setRefreshing(false);
   };
 
+  useEffect(() => {
+    loadFilterData();
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, []),
+    }, [selectedCategory, selectedTags, priceRange]),
   );
 
   useEffect(() => {
@@ -89,20 +123,22 @@ const Explore: React.FC = () => {
       return (
         <ActivityIndicator
           size="large"
-          color={COLORS.primaryBlue}
+          color={Colors.primary_blue}
           style={{ marginTop: 20 }}
         />
       );
     }
 
     if (filteredListings.length === 0) {
-      return (
-        <Text style={styles.emptyText}>
-          {searchQuery.trim() === ""
-            ? "No listings available"
-            : "No results found"}
-        </Text>
-      );
+      let emptyMessage = "No listings available";
+
+      if (selectedCategory || selectedTags.length > 0 || priceRange) {
+        emptyMessage = "No results found. Try adjusting your filters!";
+      } else if (searchQuery.trim() !== "") {
+        emptyMessage = "No results found";
+      }
+
+      return <Text style={styles.emptyText}>{emptyMessage}</Text>;
     }
 
     return (
@@ -122,10 +158,23 @@ const Explore: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Explore</Text>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("CreateListing")}
+          style={styles.newListingButton}
+        >
+          <Icon
+            name="plus"
+            type="material-community"
+            size={20}
+            color={Colors.white}
+          />
+          <Text style={styles.newListingText}>new listing</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -134,34 +183,67 @@ const Explore: React.FC = () => {
           <Icon
             name="magnify"
             type="material-community"
-            color={COLORS.subtleText}
+            color={Colors.mutedGray}
             size={20}
           />
         </View>
         <TextInput
           style={styles.searchInput}
           placeholder="Search for products..."
-          placeholderTextColor={COLORS.subtleText}
+          placeholderTextColor={Colors.mutedGray}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
           autoCorrect={false}
         />
         {searchQuery.length > 0 && (
-          <View style={styles.clearIcon}>
+          <TouchableOpacity
+            style={styles.clearIcon}
+            onPress={() => setSearchQuery("")}
+          >
             <Icon
               name="close-circle"
               type="material-community"
-              color={COLORS.subtleText}
+              color={Colors.mutedGray}
               size={20}
-              onPress={() => setSearchQuery("")}
             />
-          </View>
+          </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={styles.filterIconContainer}
+          onPress={() => setShowFilters(true)}
+        >
+          <Icon
+            name="filter-variant"
+            type="material-community"
+            color={Colors.primary_blue}
+            size={20}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
+
+      <FilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        categories={categories}
+        tags={tags}
+        selectedCategory={selectedCategory}
+        selectedTags={selectedTags}
+        priceRange={priceRange}
+        onApply={({ category, tags, priceRange }) => {
+          setSelectedCategory(category);
+          setSelectedTags(tags);
+          setPriceRange(priceRange);
+        }}
+        onClear={() => {
+          setSelectedCategory(null);
+          setSelectedTags([]);
+          setPriceRange(null);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -169,64 +251,82 @@ const Explore: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
   header: {
-    backgroundColor: COLORS.primaryGreen,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: Colors.primary_green,  // #2ECC71 (style guide green)
+    paddingHorizontal: Spacing.lg,  // 16px (was 20)
+    paddingVertical: Spacing.lg,  // 16px
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: "700",
-    fontFamily: FONTS.heading,
+    color: Colors.white,
+    fontSize: Typography.heading4.fontSize,  // 24px
+    fontWeight: Typography.heading4.fontWeight,  // 700
+    fontFamily: Fonts.heading,  // Angora
+  },
+  newListingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    padding: 4,
+  },
+  newListingText: {
+    color: Colors.white,
+    fontSize: Typography.bodySmall.fontSize,  // 12px
+    fontWeight: "500",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
+    borderColor: Colors.lightGray,
+    borderRadius: BorderRadius.medium,  // 8px (was 12)
+    marginHorizontal: Spacing.lg,  // 16px
+    marginVertical: Spacing.md,  // 12px
+    paddingHorizontal: Spacing.md,  // 12px
     height: 48,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: Spacing.sm,  // 8px
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: FONTS.body,
-    color: COLORS.bodyText,
+    fontSize: Typography.bodyLarge.fontSize,  // 16px
+    fontFamily: Fonts.body,  // Open Sans
+    color: Colors.darkTeal,
   },
   clearIcon: {
-    marginLeft: 8,
+    marginLeft: Spacing.sm,  // 8px
+  },
+  filterIconContainer: {
+    marginLeft: Spacing.md,  // 12px
+    padding: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
   emptyText: {
-    fontFamily: FONTS.body,
-    fontSize: 16,
-    color: COLORS.subtleText,
+    fontFamily: Fonts.body,  // Open Sans
+    fontSize: Typography.bodyLarge.fontSize,  // 16px
+    color: Colors.mutedGray,
   },
   row: {
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 15,
+    paddingHorizontal: Spacing.lg,  // 16px (was 20)
+    gap: Spacing.sm,  // 8px
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 15,
     paddingBottom: 80,
   },
 });

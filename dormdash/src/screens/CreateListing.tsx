@@ -7,12 +7,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Input } from "@rneui/themed";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Colors, Fonts, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   { Feed: undefined; CreateListing: undefined },
@@ -24,36 +27,6 @@ type Tag = { id: number; name: string };
 type Props = { onCancel?: () => void; onCreated?: (listingId: number) => void };
 
 const BUCKET = "listings";
-
-/** ---- Style Guide Tokens ----
- * Colors from your guide (best-effort matches):
- * Primary Blue:   #1A73E8
- * Primary Green:  #60C694
- * Teal Accent:    #47B7C7
- * Light Mint:     #E6F5EE
- * White:          #FFFFFF
- * Gray Disabled:  #A0A0A0
- */
-const COLORS = {
-  primaryBlue: "#1A73E8",
-  primaryGreen: "#60C694",
-  teal: "#47B7C7",
-  lightMint: "#E6F5EE",
-  white: "#FFFFFF",
-  grayDisabled: "#A0A0A0",
-  bodyText: "#1F2937", // neutral-800
-  subtleText: "#6B7280", // neutral-500
-  border: "#E5E7EB", // neutral-200
-};
-
-/** Typography (guide: Headings = Poppins, Body = Open Sans).
- * If you haven’t loaded fonts yet, these will fall back gracefully.
- */
-const FONTS = {
-  heading: "Poppins",
-  body: "Open Sans",
-  button: "Poppins",
-};
 
 // ---------- RN-safe image upload helpers ----------
 function guessExt(uri: string) {
@@ -255,10 +228,12 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: COLORS.white }]}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
+    <SafeAreaView style={[styles.safe, { backgroundColor: Colors.white }]}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Create a Post</Text>
         <View style={styles.headerUnderline} />
@@ -403,7 +378,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
           onPress={pickImages}
           buttonStyle={styles.primaryButton}
           titleStyle={styles.primaryButtonTitle}
-          disabledStyle={{ backgroundColor: COLORS.grayDisabled }}
+          disabledStyle={{ backgroundColor: Colors.grayDisabled }}
         />
         <Text style={styles.subtleText}>{localImages.length}/5</Text>
       </View>
@@ -418,7 +393,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
             >
               <Image
                 source={{ uri }}
-                style={{ width: 140, height: 140, borderRadius: 12 }}
+                style={{ width: 140, height: 140, borderRadius: BorderRadius.medium }}
               />
               <Text
                 style={[
@@ -452,51 +427,59 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
           containerStyle={{ flex: 1 }}
           buttonStyle={styles.primaryButton}
           titleStyle={styles.primaryButtonTitle}
-          disabledStyle={{ backgroundColor: COLORS.grayDisabled }}
+          disabledStyle={{ backgroundColor: Colors.grayDisabled }}
         />
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  safe: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  container: {
+    flex: 1,
+    padding: Spacing.lg,  // 16px
+  },
 
-  // Headings: Poppins, bold
-  headerWrap: { marginBottom: 8 },
+  // Headings: Angora, bold
+  headerWrap: { marginBottom: Spacing.sm },  // 8px
   header: {
     fontSize: 28,
     fontWeight: "700",
-    color: COLORS.bodyText,
-    fontFamily: FONTS.heading,
+    color: Colors.darkTeal,
+    fontFamily: Fonts.heading,  // Angora
   },
   headerUnderline: {
     height: 6,
     width: 72,
-    backgroundColor: COLORS.teal,
-    borderRadius: 3,
-    marginTop: 8,
+    backgroundColor: Colors.secondary,  // Teal #1ABC9C
+    borderRadius: BorderRadius.medium,  // 8px (was 3)
+    marginTop: Spacing.sm,  // 8px
   },
 
   sectionTitle: {
-    marginTop: 20,
+    marginTop: Spacing.lg,  // 16px (was 20)
     marginBottom: 6,
     fontSize: 18,
     fontWeight: "600",
-    color: COLORS.bodyText,
-    fontFamily: FONTS.heading,
+    color: Colors.darkTeal,
+    fontFamily: Fonts.heading,  // Angora
   },
 
   // Inputs: light borders, body font
   inputContainer: { paddingHorizontal: 0 },
   inputLabel: {
-    color: COLORS.subtleText,
-    fontFamily: FONTS.body,
+    color: Colors.mutedGray,
+    fontFamily: Fonts.body,  // Open Sans
     fontSize: 14,
   },
   inputText: {
-    color: COLORS.bodyText,
-    fontFamily: FONTS.body,
+    color: Colors.darkTeal,
+    fontFamily: Fonts.body,  // Open Sans
     fontSize: 16,
   },
 
@@ -509,119 +492,122 @@ const styles = StyleSheet.create({
   toggleBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 12,
+    borderColor: Colors.lightGray,
+    borderRadius: BorderRadius.medium,  // 8px (was 12)
+    padding: Spacing.md,  // 12px
     marginHorizontal: 4,
     alignItems: "center",
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
   toggleActive: {
-    backgroundColor: COLORS.lightMint,
-    borderColor: COLORS.teal,
+    backgroundColor: Colors.lightMint,
+    borderColor: Colors.secondary,  // Teal #1ABC9C
   },
   toggleText: {
-    color: COLORS.subtleText,
-    fontFamily: FONTS.body,
+    color: Colors.mutedGray,
+    fontFamily: Fonts.body,  // Open Sans
     fontSize: 15,
   },
   toggleTextActive: {
     fontWeight: "700",
-    color: COLORS.bodyText,
-    fontFamily: FONTS.body,
+    color: Colors.darkTeal,
+    fontFamily: Fonts.body,  // Open Sans
   },
 
   // Category chips
-  categoryList: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  categoryList: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },  // 8px
   categoryChip: {
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 24,
+    borderColor: Colors.lightGray,
+    borderRadius: BorderRadius.medium,  // 8px (was 24)
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: Spacing.sm,  // 8px
     marginVertical: 4,
-    backgroundColor: COLORS.white,
+    backgroundColor: Colors.white,
   },
   categoryActive: {
-    backgroundColor: COLORS.primaryBlue + "22", // subtle tint
-    borderColor: COLORS.primaryBlue,
+    backgroundColor: Colors.primary_blue + "22", // subtle tint
+    borderColor: Colors.primary_blue,  // #3498DB
   },
   categoryText: {
-    color: COLORS.subtleText,
-    fontFamily: FONTS.body,
+    color: Colors.mutedGray,
+    fontFamily: Fonts.body,  // Open Sans
   },
   categoryTextActive: {
     fontWeight: "700",
-    color: COLORS.bodyText,
-    fontFamily: FONTS.body,
+    color: Colors.darkTeal,
+    fontFamily: Fonts.body,  // Open Sans
   },
 
   // Tags
   tagContainer: { flexDirection: "row", flexWrap: "wrap", marginVertical: 10 },
   tagChip: {
-    backgroundColor: COLORS.lightMint,
-    borderRadius: 20,
-    paddingHorizontal: 12,
+    backgroundColor: Colors.lightMint,
+    borderRadius: BorderRadius.medium,  // 8px (was 20)
+    paddingHorizontal: Spacing.md,  // 12px
     paddingVertical: 6,
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: Spacing.sm,  // 8px
+    marginBottom: Spacing.sm,  // 8px
     borderWidth: 1,
-    borderColor: COLORS.teal,
+    borderColor: Colors.secondary,  // Teal #1ABC9C
   },
   customTagChip: {
-    backgroundColor: COLORS.white,
-    borderColor: COLORS.border,
+    backgroundColor: Colors.white,
+    borderColor: Colors.lightGray,
   },
   tagChipActive: {
-    backgroundColor: COLORS.primaryBlue,
-    borderColor: COLORS.primaryBlue,
+    backgroundColor: Colors.primary_blue,  // #3498DB
+    borderColor: Colors.primary_blue,
   },
   tagText: {
-    color: COLORS.teal,
+    color: Colors.secondary,  // Teal #1ABC9C
     fontSize: 14,
-    fontFamily: FONTS.body,
+    fontFamily: Fonts.body,  // Open Sans
   },
   tagTextActive: {
-    color: COLORS.white,
+    color: Colors.white,
     fontWeight: "700",
-    fontFamily: FONTS.body,
+    fontFamily: Fonts.body,  // Open Sans
   },
 
   subtleText: {
-    color: COLORS.subtleText,
-    fontFamily: FONTS.body,
+    color: Colors.mutedGray,
+    fontFamily: Fonts.body,  // Open Sans
   },
 
-  // Buttons (Primary/Secondary from guide)
+  // Buttons (Primary/Secondary per style guide)
   primaryButton: {
-    backgroundColor: COLORS.primaryBlue,
-    borderRadius: 12,
-    paddingVertical: 12,
+    backgroundColor: Colors.primary_blue,  // #3498DB
+    borderRadius: BorderRadius.medium,  // 8px (was 12)
+    paddingVertical: Spacing.md,  // 12px
   },
   primaryButtonTitle: {
-    fontFamily: FONTS.button,
+    fontFamily: Fonts.heading,  // Angora
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: Typography.buttonText.letterSpacing,  // 1.2
+    fontSize: Typography.buttonText.fontSize,  // 14px
   },
   secondaryButton: {
-    borderColor: COLORS.primaryBlue,
+    borderColor: Colors.borderLight,  // #ECF0F1
     borderWidth: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingVertical: 12,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,  // 8px (was 12)
+    paddingVertical: Spacing.md,  // 12px
   },
   secondaryButtonTitle: {
-    color: COLORS.primaryBlue,
-    fontFamily: FONTS.button,
+    color: Colors.secondaryText,  // #2E86C1
+    fontFamily: Fonts.heading,  // Angora
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: Typography.buttonText.letterSpacing,  // 1.2
+    fontSize: Typography.buttonText.fontSize,  // 14px
   },
   linkButtonTitle: {
-    color: COLORS.primaryBlue,
-    fontFamily: FONTS.button,
+    color: Colors.primary_blue,  // #3498DB
+    fontFamily: Fonts.heading,  // Angora
     fontWeight: "600",
-    letterSpacing: 0.5,
+    letterSpacing: Typography.buttonText.letterSpacing,  // 1.2
+    fontSize: Typography.buttonText.fontSize,  // 14px
   },
 
-  buttonRow: { flexDirection: "row", marginTop: 24 },
+  buttonRow: { flexDirection: "row", marginTop: Spacing.xl },  // 24px
 });

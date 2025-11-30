@@ -8,13 +8,14 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
   Alert,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -176,6 +177,7 @@ const Cart: React.FC = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
         <ActivityIndicator
           size="large"
           color={Colors.primary_blue}
@@ -189,6 +191,7 @@ const Cart: React.FC = () => {
   if (cartItems.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Shopping Cart</Text>
         </View>
@@ -211,6 +214,7 @@ const Cart: React.FC = () => {
   // Main Cart UI
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Shopping Cart</Text>
@@ -308,7 +312,7 @@ const Cart: React.FC = () => {
               <Icon
                 name="trash-can-outline"
                 type="material-community"
-                color="#EF4444"
+                color={Colors.error}
                 size={24}
               />
             </TouchableOpacity>
@@ -439,7 +443,7 @@ const styles = StyleSheet.create({
   quantityButton: {
     width: 20,
     height: 20,
-    borderRadius: 14,
+    borderRadius: BorderRadius.medium,  // 8px (was 14)
     backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",

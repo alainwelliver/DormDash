@@ -3,11 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -84,6 +85,7 @@ const Checkout: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -372,11 +374,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   cardCircleRed: {
-    backgroundColor: "#EB001B",
+    backgroundColor: Colors.mastercardRed,
     zIndex: 2,
   },
   cardCircleOrange: {
-    backgroundColor: "#F79E1B",
+    backgroundColor: Colors.mastercardOrange,
     marginLeft: -8,
     zIndex: 1,
   },
