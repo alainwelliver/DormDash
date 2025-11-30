@@ -73,6 +73,8 @@ export default function ProductDetail({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchListingDetails();
@@ -80,6 +82,11 @@ export default function ProductDetail({
 
   const fetchListingDetails = async () => {
     try {
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Fetch listing with images
       const { data: listingData, error: listingError } = await supabase
         .from("listings")
@@ -90,6 +97,11 @@ export default function ProductDetail({
       if (listingError) throw listingError;
 
       setListing(listingData);
+
+      // Check if current user is the owner
+      if (user && listingData?.user_id === user.id) {
+        setIsOwner(true);
+      }
 
       if (listingData?.user_id) {
         // Create a seller object with basic info
@@ -240,6 +252,66 @@ export default function ProductDetail({
     }
   };
 
+  const handleDeleteListing = () => {
+    Alert.alert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+
+              // Delete related records first (due to foreign key constraints)
+              await supabase
+                .from("listing_images")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("listing_tags")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("reviews")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("cart_items")
+                .delete()
+                .eq("listing_id", listingId);
+
+              // Delete the listing itself
+              const { error } = await supabase
+                .from("listings")
+                .delete()
+                .eq("id", listingId);
+
+              if (error) throw error;
+
+              Alert.alert("Success", "Listing has been deleted.", [
+                { text: "OK", onPress: () => navigation.goBack() },
+              ]);
+            } catch (error) {
+              console.error("Error deleting listing:", error);
+              Alert.alert(
+                "Error",
+                "Failed to delete listing. Please try again.",
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const calculateAverageRating = (): number => {
     if (reviews.length === 0) return 0;
     const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
@@ -302,7 +374,18 @@ export default function ProductDetail({
           <Icon name="arrow-left" type="material-community" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
-        <View style={{ width: 24 }} />
+        {isOwner ? (
+          <TouchableOpacity onPress={handleDeleteListing} disabled={deleting}>
+            <Icon
+              name="delete"
+              type="material-community"
+              size={24}
+              color={deleting ? Colors.lightGray : Colors.error || "#E74C3C"}
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

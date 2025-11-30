@@ -132,7 +132,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
 
   const pickImages = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.85,
       selectionLimit: 5,
