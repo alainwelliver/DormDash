@@ -29,6 +29,8 @@ import AddressList from "../screens/ProfileAddressList";
 import AddAddress from "../screens/ProfileAddAddress";
 import PaymentList from "../screens/ProfilePaymentList";
 import AddPayment from "../screens/ProfileAddPayment";
+import PaymentSuccess from "../screens/PaymentSuccess";
+import PaymentFailed from "../screens/PaymentFailed";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -63,6 +65,8 @@ type MainStackParamList = {
   PaymentList: undefined;
   AddPayment: undefined;
   CreateListing: undefined;
+  PaymentSuccess: undefined;
+  PaymentFailed: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -163,7 +167,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      },
+      }
     );
 
     return () => {
@@ -212,6 +216,16 @@ export default function AppNavigator() {
             name="PaymentPortal"
             component={PaymentPortal}
             options={{ headerShown: true, title: "Complete Payment" }}
+          />
+          <MainStack.Screen
+            name="PaymentSuccess"
+            component={PaymentSuccess}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="PaymentFailed"
+            component={PaymentFailed}
+            options={{ headerShown: false }}
           />
         </MainStack.Navigator>
       )}

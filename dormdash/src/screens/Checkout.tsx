@@ -37,14 +37,13 @@ const Checkout: React.FC = () => {
   };
 
   const [selectedAddress, setSelectedAddress] = useState(
-    "Gutmann College House",
+    "Gutmann College House"
   );
-  const [selectedPayment, setSelectedPayment] = useState("**** 4187");
 
   const calculateSubtotal = () => {
     return selectedItems.reduce(
       (sum, item) => sum + item.price_cents * item.quantity,
-      0,
+      0
     );
   };
 
@@ -79,7 +78,7 @@ const Checkout: React.FC = () => {
             });
           },
         },
-      ],
+      ]
     );
   };
 
@@ -160,36 +159,6 @@ const Checkout: React.FC = () => {
               </View>
             ))}
           </View>
-        </View>
-
-        {/* Payment Method Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Icon
-              name="credit-card"
-              type="material-community"
-              color={Colors.primary_blue}
-              size={24}
-            />
-            <Text style={styles.sectionTitle}>Payment Method</Text>
-          </View>
-          <TouchableOpacity style={styles.selectionCard}>
-            <View style={styles.selectionContent}>
-              <View style={styles.paymentMethod}>
-                <View style={styles.cardLogoContainer}>
-                  <View style={[styles.cardCircle, styles.cardCircleRed]} />
-                  <View style={[styles.cardCircle, styles.cardCircleOrange]} />
-                </View>
-                <Text style={styles.selectionText}>{selectedPayment}</Text>
-              </View>
-            </View>
-            <Icon
-              name="chevron-right"
-              type="material-community"
-              color={Colors.mutedGray}
-              size={24}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Price Breakdown Section */}
@@ -358,29 +327,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodyMedium.fontFamily,
     fontWeight: "700",
     color: Colors.primary_blue,
-  },
-  paymentMethod: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cardLogoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: Spacing.md,
-  },
-  cardCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  cardCircleRed: {
-    backgroundColor: Colors.mastercardRed,
-    zIndex: 2,
-  },
-  cardCircleOrange: {
-    backgroundColor: Colors.mastercardOrange,
-    marginLeft: -8,
-    zIndex: 1,
   },
   priceCard: {
     backgroundColor: Colors.lightGray,

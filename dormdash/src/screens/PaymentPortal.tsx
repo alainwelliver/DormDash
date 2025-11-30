@@ -48,7 +48,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     const fetchCheckoutSession = async () => {
       try {
         console.log(
-          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`,
+          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`
         );
 
         const response = await fetch(
@@ -60,7 +60,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
               name: listingTitle,
               price: priceCents, // This requires a server to process safely
             }),
-          },
+          }
         );
 
         const text = await response.text();
@@ -82,7 +82,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
         console.error("Payment Error:", error);
         Alert.alert(
           "Connection Error",
-          "Ensure your Node server is running on port 4242.",
+          "Ensure your Node server is running on port 4242."
         );
       } finally {
         setLoading(false);
@@ -96,13 +96,9 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     const { url } = navState;
     // Handle redirects from Stripe
     if (url.includes("/success")) {
-      Alert.alert("Success", "Payment confirmed!", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      navigation.replace("PaymentSuccess" as any);
     } else if (url.includes("/cancel")) {
-      Alert.alert("Cancelled", "Payment cancelled", [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      navigation.replace("PaymentFailed" as any);
     }
   };
 
