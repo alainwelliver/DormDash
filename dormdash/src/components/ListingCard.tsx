@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   Platform,
   useWindowDimensions,
   Animated,
+  Modal,
+  Pressable,
 } from "react-native";
+import { Icon } from "@rneui/themed";
 import {
   Colors,
   Typography,
@@ -30,6 +33,9 @@ type ListingCardProps = {
     categories?: { name: string } | null;
   };
   numColumns?: number;
+  showMenu?: boolean;
+  onEdit?: (listingId: number) => void;
+  onDelete?: (listingId: number) => void;
 };
 
 type MainStackParamList = {
@@ -41,11 +47,15 @@ type NavProp = NativeStackNavigationProp<MainStackParamList>;
 export default function ListingCard({
   listing,
   numColumns = 2,
+  showMenu = false,
+  onEdit,
+  onDelete,
 }: ListingCardProps) {
   const navigation = useNavigation<NavProp>();
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // Calculate card width based on number of columns and container width
   const getCardWidth = () => {
@@ -105,6 +115,21 @@ export default function ListingCard({
       }
     : {};
 
+  const handleMenuPress = (e: any) => {
+    e.stopPropagation();
+    setMenuVisible(true);
+  };
+
+  const handleEditPress = () => {
+    setMenuVisible(false);
+    onEdit?.(listing.id);
+  };
+
+  const handleDeletePress = () => {
+    setMenuVisible(false);
+    onDelete?.(listing.id);
+  };
+
   return (
     <TouchableOpacity
       style={[styles.cardContainer, { width: cardWidth }]}
@@ -135,6 +160,21 @@ export default function ListingCard({
               <Badge label="New" variant="new" size="sm" />
             </View>
           )}
+          {/* Menu button */}
+          {showMenu && (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={handleMenuPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon
+                name="dots-three-vertical"
+                type="entypo"
+                size={16}
+                color={Colors.white}
+              />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.info}>
@@ -151,6 +191,46 @@ export default function ListingCard({
           <Text style={styles.price}>{price}</Text>
         </View>
       </Animated.View>
+
+      {/* Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleEditPress}>
+              <Icon
+                name="pencil"
+                type="material-community"
+                size={20}
+                color={Colors.darkTeal}
+              />
+              <Text style={styles.menuItemText}>Edit Listing</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleDeletePress}
+            >
+              <Icon
+                name="delete"
+                type="material-community"
+                size={20}
+                color={Colors.error || "#E74C3C"}
+              />
+              <Text style={[styles.menuItemText, styles.deleteText]}>
+                Delete Listing
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </TouchableOpacity>
   );
 }
@@ -231,5 +311,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: Colors.primary_green,
+  },
+
+  menuButton: {
+    position: "absolute",
+    top: Spacing.sm,
+    right: Spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  menuContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    minWidth: 200,
+    paddingVertical: Spacing.sm,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: Colors.darkTeal,
+  },
+
+  menuDivider: {
+    height: 1,
+    backgroundColor: Colors.lightGray,
+    marginHorizontal: Spacing.md,
+  },
+
+  deleteText: {
+    color: Colors.error || "#E74C3C",
   },
 });

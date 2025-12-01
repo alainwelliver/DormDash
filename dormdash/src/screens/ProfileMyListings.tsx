@@ -8,6 +8,8 @@ import {
   RefreshControl,
   TouchableOpacity,
   StatusBar,
+  Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -18,6 +20,31 @@ import ListingCard from "../components/ListingCard";
 import { Colors, Typography, Spacing } from "../assets/styles";
 
 type MyListingsNavigationProp = NativeStackNavigationProp<any>;
+
+const showAlert = (
+  title: string,
+  message: string,
+  buttons?: Array<{
+    text: string;
+    style?: "default" | "cancel" | "destructive";
+    onPress?: () => void;
+  }>
+) => {
+  if (Platform.OS === "web") {
+    if (buttons && buttons.length > 1) {
+      const confirmed = window.confirm(`${title}\n\n${message}`);
+      if (confirmed) {
+        const destructiveBtn = buttons.find((b) => b.style === "destructive");
+        destructiveBtn?.onPress?.();
+      }
+    } else {
+      window.alert(`${title}\n\n${message}`);
+      buttons?.[0]?.onPress?.();
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
 
 const MyListings: React.FC = () => {
   const navigation = useNavigation<MyListingsNavigationProp>();
@@ -55,12 +82,70 @@ const MyListings: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchMyListings();
-    }, []),
+    }, [])
   );
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchMyListings();
+  };
+
+  const handleEditListing = (listingId: number) => {
+    navigation.navigate("EditListing", { listingId });
+  };
+
+  const handleDeleteListing = (listingId: number) => {
+    showAlert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Delete related records first (due to foreign key constraints)
+              await supabase
+                .from("listing_images")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("listing_tags")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("reviews")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("cart_items")
+                .delete()
+                .eq("listing_id", listingId);
+
+              // Delete the listing itself
+              const { error } = await supabase
+                .from("listings")
+                .delete()
+                .eq("id", listingId);
+
+              if (error) throw error;
+
+              // Update local state to remove the deleted listing
+              setListings((prev) => prev.filter((l) => l.id !== listingId));
+
+              showAlert("Success", "Listing has been deleted.");
+            } catch (error) {
+              console.error("Error deleting listing:", error);
+              showAlert("Error", "Failed to delete listing. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderContent = () => {
@@ -94,7 +179,14 @@ const MyListings: React.FC = () => {
     return (
       <FlatList
         data={listings}
-        renderItem={({ item }) => <ListingCard listing={item} />}
+        renderItem={({ item }) => (
+          <ListingCard
+            listing={item}
+            showMenu
+            onEdit={handleEditListing}
+            onDelete={handleDeleteListing}
+          />
+        )}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
         columnWrapperStyle={styles.row}

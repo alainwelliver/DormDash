@@ -13,6 +13,8 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -28,6 +30,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type MainStackParamList = {
   ProductDetail: { listingId: number };
+  EditListing: { listingId: number };
   PaymentPortal: { priceCents: number; listingTitle: string };
 };
 
@@ -81,6 +84,7 @@ export default function ProductDetail({
   const [isOwner, setIsOwner] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const addToCartScale = useRef(new Animated.Value(1)).current;
 
@@ -278,7 +282,13 @@ export default function ProductDetail({
     }
   };
 
+  const handleEditListing = () => {
+    setMenuVisible(false);
+    navigation.navigate("EditListing", { listingId });
+  };
+
   const handleDeleteListing = () => {
+    setMenuVisible(false);
     alert(
       "Delete Listing",
       "Are you sure you want to delete this listing? This action cannot be undone.",
@@ -398,18 +408,64 @@ export default function ProductDetail({
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
         {isOwner ? (
-          <TouchableOpacity onPress={handleDeleteListing} disabled={deleting}>
+          <TouchableOpacity
+            onPress={() => setMenuVisible(true)}
+            disabled={deleting}
+          >
             <Icon
-              name="delete"
-              type="material-community"
-              size={24}
-              color={deleting ? Colors.lightGray : Colors.error || "#E74C3C"}
+              name="dots-three-vertical"
+              type="entypo"
+              size={20}
+              color={deleting ? Colors.lightGray : Colors.darkTeal}
             />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 24 }} />
         )}
       </View>
+
+      {/* Owner Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleEditListing}
+            >
+              <Icon
+                name="pencil"
+                type="material-community"
+                size={20}
+                color={Colors.darkTeal}
+              />
+              <Text style={styles.menuItemText}>Edit Listing</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleDeleteListing}
+            >
+              <Icon
+                name="delete"
+                type="material-community"
+                size={20}
+                color={Colors.error || "#E74C3C"}
+              />
+              <Text style={[styles.menuItemText, styles.deleteText]}>
+                Delete Listing
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Image Carousel */}
@@ -938,5 +994,44 @@ const styles = StyleSheet.create({
     ...Typography.bodyLarge,
     color: Colors.white,
     fontWeight: "600",
+  },
+
+  // Menu Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    minWidth: 200,
+    paddingVertical: Spacing.sm,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: Colors.darkTeal,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Colors.lightGray,
+    marginHorizontal: Spacing.md,
+  },
+  deleteText: {
+    color: Colors.error || "#E74C3C",
   },
 });

@@ -32,6 +32,7 @@ import PaymentList from "../screens/ProfilePaymentList";
 import AddPayment from "../screens/ProfileAddPayment";
 import PaymentSuccess from "../screens/PaymentSuccess";
 import PaymentFailed from "../screens/PaymentFailed";
+import EditListing from "../screens/EditListing";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -66,6 +67,7 @@ type MainStackParamList = {
   PaymentList: undefined;
   AddPayment: undefined;
   CreateListing: undefined;
+  EditListing: { listingId: number };
   PaymentSuccess: undefined;
   PaymentFailed: undefined;
 };
@@ -184,7 +186,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      },
+      }
     );
 
     return () => {
@@ -222,6 +224,11 @@ export default function AppNavigator() {
           <MainStack.Screen
             name="CreateListing"
             component={CreateListing}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="EditListing"
+            component={EditListing}
             options={{ headerShown: false }}
           />
           <MainStack.Screen
