@@ -28,7 +28,7 @@ const showAlert = (
     text: string;
     style?: "default" | "cancel" | "destructive";
     onPress?: () => void;
-  }>
+  }>,
 ) => {
   if (Platform.OS === "web") {
     if (buttons && buttons.length > 1) {
@@ -82,7 +82,7 @@ const MyListings: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchMyListings();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {
@@ -144,7 +144,7 @@ const MyListings: React.FC = () => {
             }
           },
         },
-      ]
+      ],
     );
   };
 

@@ -125,7 +125,7 @@ const Feed: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange])
+    }, [selectedCategory, selectedTags, priceRange]),
   );
 
   const onRefresh = () => {

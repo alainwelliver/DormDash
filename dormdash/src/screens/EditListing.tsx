@@ -103,7 +103,7 @@ export default function EditListing({ route, navigation }: EditListingProps) {
         const { data: listing, error } = await supabase
           .from("listings")
           .select(
-            "*, listing_images(id, url, sort_order), listing_tags(tag_id)"
+            "*, listing_images(id, url, sort_order), listing_tags(tag_id)",
           )
           .eq("id", listingId)
           .single();
@@ -114,22 +114,22 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           setTitle(listing.title || "");
           setDescription(listing.description || "");
           setPrice(
-            listing.price_cents ? (listing.price_cents / 100).toString() : ""
+            listing.price_cents ? (listing.price_cents / 100).toString() : "",
           );
           setType(listing.type || "item");
           setCategoryId(listing.category_id);
 
           // Sort and set existing images
           const sortedImages = [...(listing.listing_images || [])].sort(
-            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
           );
           setExistingImages(
-            sortedImages.map((img: any) => ({ id: img.id, url: img.url }))
+            sortedImages.map((img: any) => ({ id: img.id, url: img.url })),
           );
 
           // Set selected tags
           const tagIds = (listing.listing_tags || []).map(
-            (lt: any) => lt.tag_id
+            (lt: any) => lt.tag_id,
           );
           setSelectedTagIds(new Set(tagIds));
         }
@@ -236,7 +236,7 @@ export default function EditListing({ route, navigation }: EditListingProps) {
 
       // 3) Upload new images
       const currentImageCount = existingImages.filter(
-        (img) => !imagesToDelete.includes(img.id)
+        (img) => !imagesToDelete.includes(img.id),
       ).length;
 
       for (let i = 0; i < localImages.length; i++) {
@@ -250,13 +250,11 @@ export default function EditListing({ route, navigation }: EditListingProps) {
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
         const url = pub?.publicUrl ?? null;
 
-        const { error } = await supabase
-          .from("listing_images")
-          .insert({
-            listing_id: listingId,
-            url,
-            sort_order: currentImageCount + i,
-          });
+        const { error } = await supabase.from("listing_images").insert({
+          listing_id: listingId,
+          url,
+          sort_order: currentImageCount + i,
+        });
         if (error) throw error;
       }
 
@@ -309,7 +307,7 @@ export default function EditListing({ route, navigation }: EditListingProps) {
   }
 
   const visibleExistingImages = existingImages.filter(
-    (img) => !imagesToDelete.includes(img.id)
+    (img) => !imagesToDelete.includes(img.id),
   );
   const totalImages = visibleExistingImages.length + localImages.length;
 

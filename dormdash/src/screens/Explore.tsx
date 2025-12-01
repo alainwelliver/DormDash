@@ -128,7 +128,7 @@ const Explore: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange])
+    }, [selectedCategory, selectedTags, priceRange]),
   );
 
   useEffect(() => {

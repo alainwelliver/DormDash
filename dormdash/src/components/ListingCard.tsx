@@ -75,7 +75,7 @@ export default function ListingCard({
 
   // Sort images by sort_order and get the first one
   const sortedImages = [...(listing.listing_images || [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
   const imageUrl = sortedImages[0]?.url;
 

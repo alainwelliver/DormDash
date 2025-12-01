@@ -186,7 +186,7 @@ export default function AppNavigator() {
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-      }
+      },
     );
 
     return () => {

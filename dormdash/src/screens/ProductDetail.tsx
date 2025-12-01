@@ -15,6 +15,8 @@ import {
   FlatList,
   Modal,
   Pressable,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -86,7 +88,34 @@ export default function ProductDetail({
   const [addingToCart, setAddingToCart] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const imageScrollRef = useRef<ScrollView>(null);
   const addToCartScale = useRef(new Animated.Value(1)).current;
+
+  const handleImageScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const newIndex = Math.round(offsetX / SCREEN_WIDTH);
+    if (newIndex !== imageIndex && listing?.listing_images) {
+      setImageIndex(
+        Math.max(0, Math.min(newIndex, listing.listing_images.length - 1)),
+      );
+    }
+  };
+
+  const scrollToImage = (index: number) => {
+    if (imageScrollRef.current && listing?.listing_images) {
+      const clampedIndex = Math.max(
+        0,
+        Math.min(index, listing.listing_images.length - 1),
+      );
+      imageScrollRef.current.scrollTo({
+        x: clampedIndex * SCREEN_WIDTH,
+        animated: true,
+      });
+      setImageIndex(clampedIndex);
+    }
+  };
 
   useEffect(() => {
     fetchListingDetails();
@@ -148,7 +177,7 @@ export default function ProductDetail({
                     rating: avgRating,
                     review_count: reviewsData.length,
                   }
-                : null
+                : null,
             );
           }
         }
@@ -341,7 +370,7 @@ export default function ProductDetail({
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -470,12 +499,58 @@ export default function ProductDetail({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Image Carousel */}
         {listing.listing_images && listing.listing_images.length > 0 ? (
-          <View>
-            <Image
-              source={{ uri: listing.listing_images[imageIndex]?.url }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
+          <View style={styles.imageCarouselContainer}>
+            <ScrollView
+              ref={imageScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleImageScroll}
+              scrollEventThrottle={16}
+            >
+              {listing.listing_images.map((img, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: img.url }}
+                  style={[styles.productImage, { width: SCREEN_WIDTH }]}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+
+            {/* Arrow buttons */}
+            {listing.listing_images.length > 1 && (
+              <>
+                {imageIndex > 0 && (
+                  <TouchableOpacity
+                    style={[styles.arrowButton, styles.arrowLeft]}
+                    onPress={() => scrollToImage(imageIndex - 1)}
+                  >
+                    <Icon
+                      name="chevron-left"
+                      type="material-community"
+                      size={28}
+                      color={Colors.white}
+                    />
+                  </TouchableOpacity>
+                )}
+                {imageIndex < listing.listing_images.length - 1 && (
+                  <TouchableOpacity
+                    style={[styles.arrowButton, styles.arrowRight]}
+                    onPress={() => scrollToImage(imageIndex + 1)}
+                  >
+                    <Icon
+                      name="chevron-right"
+                      type="material-community"
+                      size={28}
+                      color={Colors.white}
+                    />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            {/* Indicators */}
             {listing.listing_images.length > 1 && (
               <View style={styles.imageIndicators}>
                 {listing.listing_images.map((_, index) => (
@@ -485,7 +560,7 @@ export default function ProductDetail({
                       styles.indicator,
                       index === imageIndex && styles.indicatorActive,
                     ]}
-                    onPress={() => setImageIndex(index)}
+                    onPress={() => scrollToImage(index)}
                   />
                 ))}
               </View>
@@ -709,10 +784,31 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
+  imageCarouselContainer: {
+    position: "relative",
+  },
   productImage: {
     width: "100%",
     height: 420,
     backgroundColor: Colors.lightMint,
+  },
+  arrowButton: {
+    position: "absolute",
+    top: "50%",
+    marginTop: -24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  arrowLeft: {
+    left: Spacing.md,
+  },
+  arrowRight: {
+    right: Spacing.md,
   },
   imageIndicators: {
     flexDirection: "row",

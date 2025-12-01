@@ -42,7 +42,7 @@ const Loading: React.FC<LoadingProps> = ({
             duration: 800,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulse.start();
       return () => pulse.stop();

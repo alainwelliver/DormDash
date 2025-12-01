@@ -135,7 +135,7 @@ const Profile: React.FC = () => {
   const handleEditProfile = () => {
     setEditName(profile.name);
     setEditPhone(
-      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone)
+      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone),
     );
     setIsEditModalVisible(true);
   };
@@ -255,7 +255,7 @@ const Profile: React.FC = () => {
         "avatars",
         localUri,
         fileName,
-        contentType
+        contentType,
       );
 
       // Get public URL

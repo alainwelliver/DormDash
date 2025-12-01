@@ -31,7 +31,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           duration: 1000,
           useNativeDriver: Platform.OS !== "web",
         }),
-      ])
+      ]),
     );
     shimmer.start();
     return () => shimmer.stop();
