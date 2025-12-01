@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StatusBar,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   Platform,
   useWindowDimensions,
@@ -17,6 +16,8 @@ import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
+import EmptyState from "../components/EmptyState";
+import { ListingGridSkeleton } from "../components/SkeletonLoader";
 
 import ListingCard from "../components/ListingCard";
 import {
@@ -49,6 +50,17 @@ const Feed: React.FC = () => {
   };
 
   const numColumns = getNumColumns();
+
+  // Calculate card width for skeleton
+  const getCardWidth = () => {
+    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const totalGap = (numColumns - 1) * Spacing.lg;
+    const horizontalPadding = Spacing.lg * 2;
+    const availableWidth = containerWidth - horizontalPadding - totalGap;
+    return Math.floor(availableWidth / numColumns);
+  };
+
+  const cardWidth = getCardWidth();
 
   const [listings, setListings] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -113,7 +125,7 @@ const Feed: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange]),
+    }, [selectedCategory, selectedTags, priceRange])
   );
 
   const onRefresh = () => {
@@ -124,19 +136,23 @@ const Feed: React.FC = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <ActivityIndicator
-          size="large"
-          color={Colors.primary_blue}
-          style={{ marginTop: Spacing.xl }}
+        <ListingGridSkeleton
+          numColumns={numColumns}
+          count={numColumns * 3}
+          cardWidth={cardWidth}
         />
       );
     }
 
     if (listings.length === 0) {
       return (
-        <Text style={styles.emptyText}>
-          No posts found. Try adjusting your filters!
-        </Text>
+        <EmptyState
+          icon="package-variant"
+          title="No listings yet"
+          subtitle="Try adjusting your filters or be the first to create a listing!"
+          actionLabel="Create Listing"
+          onAction={() => navigation.navigate("CreateListing")}
+        />
       );
     }
 
@@ -161,7 +177,13 @@ const Feed: React.FC = () => {
           isWeb && styles.webListContent,
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.primary_green}
+            colors={[Colors.primary_green, Colors.primary_blue]}
+            progressBackgroundColor={Colors.white}
+          />
         }
       />
     );
@@ -174,19 +196,24 @@ const Feed: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
-          <Text style={styles.headerTitle}>DormDash</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>DormDash</Text>
+            <Text style={styles.headerSubtitle}>Campus Marketplace</Text>
+          </View>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("CreateListing")}
             style={[styles.newListingButton, isWeb && styles.webButton]}
           >
-            <Icon
-              name="plus"
-              type="material-community"
-              size={20}
-              color={Colors.white}
-            />
-            <Text style={styles.newListingText}>new listing</Text>
+            <View style={styles.newListingButtonInner}>
+              <Icon
+                name="plus"
+                type="material-community"
+                size={20}
+                color={Colors.primary_green}
+              />
+              <Text style={styles.newListingText}>Sell</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -242,6 +269,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: Colors.primary_green,
     paddingVertical: Spacing.lg,
+    paddingTop: Spacing.xl,
   },
 
   headerContent: {
@@ -257,22 +285,47 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
+  headerLeft: {
+    flex: 1,
+  },
+
   headerTitle: {
     ...Typography.heading4,
     color: Colors.white,
+    fontWeight: "700",
+  },
+
+  headerSubtitle: {
+    fontSize: 12,
+    color: Colors.lightMint,
+    marginTop: 2,
+    fontWeight: "500",
+    opacity: 0.9,
   },
 
   newListingButton: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  newListingButtonInner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    padding: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
   },
 
   newListingText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: "500",
+    color: Colors.primary_green,
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   // Web button styles

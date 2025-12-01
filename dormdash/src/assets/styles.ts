@@ -30,11 +30,15 @@ export const Colors = {
   secondaryText: "#2E86C1", // Secondary button text
   secondaryHover: "#2C6FA6", // Secondary button hover text
   error: "#E74C3C", // Error states (style guide forms section)
+  success: "#27AE60", // Success states
+  warning: "#F39C12", // Warning states
+  info: "#3498DB", // Info states
 
   // Brand-specific colors (keep separate from style guide)
   mastercardRed: "#EB001B",
   mastercardOrange: "#F79E1B",
   overlay: "rgba(0, 0, 0, 0.3)", // Modal overlays
+  overlayDark: "rgba(0, 0, 0, 0.5)", // Darker modal overlays
 };
 
 // Fonts (per DORMDASH_STYLE_GUIDE.md)

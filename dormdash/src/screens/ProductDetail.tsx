@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   ScrollView,
   ActivityIndicator,
   TextInput,
+  Animated,
+  Dimensions,
+  FlatList,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -20,6 +23,8 @@ import type {
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 type MainStackParamList = {
   ProductDetail: { listingId: number };
@@ -75,6 +80,9 @@ export default function ProductDetail({
   const [submittingReview, setSubmittingReview] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const addToCartScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     fetchListingDetails();
@@ -136,7 +144,7 @@ export default function ProductDetail({
                     rating: avgRating,
                     review_count: reviewsData.length,
                   }
-                : null,
+                : null
             );
           }
         }
@@ -149,11 +157,27 @@ export default function ProductDetail({
   };
 
   const handleAddToCart = async () => {
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(addToCartScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(addToCartScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     try {
+      setAddingToCart(true);
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user?.id;
 
       if (!userId) {
+        setAddingToCart(false);
         alert("Login Required", "You must be logged in to add to cart.");
         return;
       }
@@ -205,6 +229,8 @@ export default function ProductDetail({
     } catch (error) {
       console.error("Add to cart error:", error);
       alert("Error", "Could not add item to cart.");
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -305,7 +331,7 @@ export default function ProductDetail({
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -571,16 +597,31 @@ export default function ProductDetail({
 
       {/* Add to Cart Button */}
       <View style={styles.buyButtonContainer}>
-        <TouchableOpacity style={styles.buyButton} onPress={handleAddToCart}>
-          <Icon
-            name="cart-plus"
-            type="material-community"
-            color={Colors.white}
-            size={24}
-            style={{ marginRight: Spacing.sm }}
-          />
-          <Text style={styles.buyButtonText}>Add to Cart</Text>
-        </TouchableOpacity>
+        <Animated.View
+          style={{ transform: [{ scale: addToCartScale }], width: "100%" }}
+        >
+          <TouchableOpacity
+            style={[styles.buyButton, addingToCart && styles.buyButtonDisabled]}
+            onPress={handleAddToCart}
+            disabled={addingToCart}
+            activeOpacity={0.8}
+          >
+            {addingToCart ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <>
+                <Icon
+                  name="cart-plus"
+                  type="material-community"
+                  color={Colors.white}
+                  size={24}
+                  style={{ marginRight: Spacing.sm }}
+                />
+                <Text style={styles.buyButtonText}>Add to Cart</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -822,6 +863,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+  },
+  buyButtonDisabled: {
+    backgroundColor: Colors.borderGray,
   },
   buyButtonText: {
     ...Typography.bodyLarge,

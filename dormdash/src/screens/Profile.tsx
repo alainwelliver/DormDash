@@ -36,6 +36,12 @@ interface UserProfile {
   phone: string;
 }
 
+interface UserStats {
+  listingsCount: number;
+  ordersCount: number;
+  reviewsCount: number;
+}
+
 type ProfileNavigationProp = NativeStackNavigationProp<{
   MyListings: undefined;
   PastOrders: undefined;
@@ -59,6 +65,11 @@ const Profile: React.FC = () => {
   });
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [stats, setStats] = useState<UserStats>({
+    listingsCount: 0,
+    ordersCount: 0,
+    reviewsCount: 0,
+  });
 
   const formatPhoneNumber = (text: string) => {
     // Remove all non-numeric characters
@@ -83,12 +94,48 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     fetchUserProfile();
+    fetchUserStats();
   }, []);
+
+  const fetchUserStats = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch listings count
+      const { count: listingsCount } = await supabase
+        .from("listings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      // Fetch orders count
+      const { count: ordersCount } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      // Fetch reviews given
+      const { count: reviewsCount } = await supabase
+        .from("reviews")
+        .select("*", { count: "exact", head: true })
+        .eq("reviewer_id", user.id);
+
+      setStats({
+        listingsCount: listingsCount || 0,
+        ordersCount: ordersCount || 0,
+        reviewsCount: reviewsCount || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    }
+  };
 
   const handleEditProfile = () => {
     setEditName(profile.name);
     setEditPhone(
-      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone),
+      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone)
     );
     setIsEditModalVisible(true);
   };
@@ -208,7 +255,7 @@ const Profile: React.FC = () => {
         "avatars",
         localUri,
         fileName,
-        contentType,
+        contentType
       );
 
       // Get public URL
@@ -296,6 +343,26 @@ const Profile: React.FC = () => {
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+
+        {/* Stats Section */}
+        <View
+          style={[styles.statsContainer, isWeb && styles.webStatsContainer]}
+        >
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{stats.listingsCount}</Text>
+            <Text style={styles.statLabel}>Listings</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{stats.ordersCount}</Text>
+            <Text style={styles.statLabel}>Orders</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{stats.reviewsCount}</Text>
+            <Text style={styles.statLabel}>Reviews</Text>
           </View>
         </View>
 
@@ -464,6 +531,45 @@ const styles = StyleSheet.create({
   },
   webProfileHeader: {
     maxWidth: WebLayout.maxFormWidth,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    backgroundColor: Colors.lightMint,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  webStatsContainer: {
+    maxWidth: WebLayout.maxFormWidth,
+    width: "100%",
+    alignSelf: "center",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontFamily: Typography.heading4.fontFamily,
+    fontWeight: "700",
+    color: Colors.primary_green,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.darkTeal,
+    marginTop: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Colors.secondary,
+    opacity: 0.3,
   },
   avatarWrapper: {
     position: "relative",

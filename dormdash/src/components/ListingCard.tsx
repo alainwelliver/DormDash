@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  Animated,
 } from "react-native";
 import {
   Colors,
@@ -17,6 +18,7 @@ import {
 } from "../assets/styles";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import Badge from "./Badge";
 
 type ListingCardProps = {
   listing: {
@@ -24,6 +26,8 @@ type ListingCardProps = {
     title: string;
     price_cents: number;
     listing_images: { url: string; sort_order?: number }[];
+    created_at?: string;
+    categories?: { name: string } | null;
   };
   numColumns?: number;
 };
@@ -41,6 +45,7 @@ export default function ListingCard({
   const navigation = useNavigation<NavProp>();
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   // Calculate card width based on number of columns and container width
   const getCardWidth = () => {
@@ -60,12 +65,38 @@ export default function ListingCard({
 
   // Sort images by sort_order and get the first one
   const sortedImages = [...(listing.listing_images || [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
   const imageUrl = sortedImages[0]?.url;
 
+  // Check if listing is new (created within last 24 hours)
+  const isNew = () => {
+    if (!listing.created_at) return false;
+    const createdDate = new Date(listing.created_at);
+    const now = new Date();
+    const hoursDiff =
+      (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+    return hoursDiff < 24;
+  };
+
   const handleCardPress = () => {
     navigation.navigate("ProductDetail", { listingId: listing.id });
+  };
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      friction: 8,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 8,
+    }).start();
   };
 
   const webCardStyle = isWeb
@@ -76,33 +107,58 @@ export default function ListingCard({
 
   return (
     <TouchableOpacity
-      style={[styles.card, { width: cardWidth }, webCardStyle]}
+      style={[styles.cardContainer, { width: cardWidth }]}
       onPress={handleCardPress}
-      activeOpacity={isWeb ? 0.8 : 0.7}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={1}
     >
-      {/* Image wrapper to apply shadow */}
-      <View style={[styles.imageWrapper, { height: cardWidth * 0.72 }]}>
-        <Image
-          source={
-            imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")
-          }
-          style={styles.image}
-          resizeMode="cover"
-        />
-      </View>
+      <Animated.View
+        style={[
+          styles.card,
+          webCardStyle,
+          { transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        {/* Image wrapper to apply shadow */}
+        <View style={[styles.imageWrapper, { height: cardWidth * 0.72 }]}>
+          <Image
+            source={
+              imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")
+            }
+            style={styles.image}
+            resizeMode="cover"
+          />
+          {/* New badge */}
+          {isNew() && (
+            <View style={styles.badgeContainer}>
+              <Badge label="New" variant="new" size="sm" />
+            </View>
+          )}
+        </View>
 
-      <View style={styles.info}>
-        <Text numberOfLines={2} style={styles.title}>
-          {listing.title}
-        </Text>
+        <View style={styles.info}>
+          {/* Category tag */}
+          {listing.categories?.name && (
+            <Text style={styles.category} numberOfLines={1}>
+              {listing.categories.name}
+            </Text>
+          )}
+          <Text numberOfLines={2} style={styles.title}>
+            {listing.title}
+          </Text>
 
-        <Text style={styles.price}>{price}</Text>
-      </View>
+          <Text style={styles.price}>{price}</Text>
+        </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
+  cardContainer: {
+    // Container doesn't need styling, just holds animated view
+  },
   card: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.medium,
@@ -114,10 +170,10 @@ const styles = StyleSheet.create({
 
     // subtle overall card shadow
     shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
 
   // Only the image gets depth
@@ -144,8 +200,23 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.small,
   },
 
+  badgeContainer: {
+    position: "absolute",
+    top: Spacing.sm,
+    left: Spacing.sm,
+  },
+
   info: {
     paddingHorizontal: Spacing.md,
+  },
+
+  category: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: Colors.secondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
 
   title: {
@@ -153,11 +224,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Colors.darkTeal,
     lineHeight: 20,
-    marginBottom: 2,
+    marginBottom: 4,
   },
 
   price: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
     color: Colors.primary_green,
   },

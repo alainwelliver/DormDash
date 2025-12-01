@@ -28,6 +28,8 @@ import {
   WebLayout,
 } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
+import EmptyState from "../components/EmptyState";
+import { CartItemSkeleton } from "../components/SkeletonLoader";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
@@ -81,7 +83,7 @@ const Cart: React.FC = () => {
           price_cents,
           listing_images ( url )
         )
-      `,
+      `
       )
       .eq("user_id", userId);
 
@@ -133,8 +135,8 @@ const Cart: React.FC = () => {
 
     setCartItems(
       cartItems.map((i) =>
-        i.id === cartItemId ? { ...i, quantity: newQty } : i,
-      ),
+        i.id === cartItemId ? { ...i, quantity: newQty } : i
+      )
     );
   };
 
@@ -168,7 +170,7 @@ const Cart: React.FC = () => {
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id),
+      selectedItems.includes(item.id)
     );
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });
@@ -186,11 +188,18 @@ const Cart: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <ActivityIndicator
-          size="large"
-          color={Colors.primary_blue}
-          style={{ marginTop: 40 }}
-        />
+        <View style={[styles.header, isWeb && styles.webHeader]}>
+          <View
+            style={[styles.headerContent, isWeb && styles.webHeaderContent]}
+          >
+            <Text style={styles.headerTitle}>Shopping Cart</Text>
+          </View>
+        </View>
+        <View style={styles.scrollContent}>
+          <CartItemSkeleton />
+          <CartItemSkeleton />
+          <CartItemSkeleton />
+        </View>
       </SafeAreaView>
     );
   }
@@ -207,18 +216,11 @@ const Cart: React.FC = () => {
             <Text style={styles.headerTitle}>Shopping Cart</Text>
           </View>
         </View>
-        <View style={styles.emptyContainer}>
-          <Icon
-            name="cart-outline"
-            type="material-community"
-            color={Colors.lightGray}
-            size={100}
-          />
-          <Text style={styles.emptyText}>Your cart is empty</Text>
-          <Text style={styles.emptySubtext}>
-            Add items to your cart to get started.
-          </Text>
-        </View>
+        <EmptyState
+          icon="cart-outline"
+          title="Your cart is empty"
+          subtitle="Add items to your cart to get started shopping!"
+        />
       </SafeAreaView>
     );
   }

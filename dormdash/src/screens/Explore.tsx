@@ -5,9 +5,7 @@ import {
   StyleSheet,
   StatusBar,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
-  TextInput,
   TouchableOpacity,
   Platform,
   useWindowDimensions,
@@ -19,6 +17,9 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import ListingCard from "../components/ListingCard";
 import FilterModal from "../components/FilterModal";
+import SearchBar from "../components/SearchBar";
+import EmptyState from "../components/EmptyState";
+import { ListingGridSkeleton } from "../components/SkeletonLoader";
 import {
   Colors,
   Fonts,
@@ -50,6 +51,18 @@ const Explore: React.FC = () => {
   };
 
   const numColumns = getNumColumns();
+
+  // Calculate card width for skeleton
+  const getCardWidth = () => {
+    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const totalGap = (numColumns - 1) * Spacing.lg;
+    const horizontalPadding = Spacing.lg * 2;
+    const availableWidth = containerWidth - horizontalPadding - totalGap;
+    return Math.floor(availableWidth / numColumns);
+  };
+
+  const cardWidth = getCardWidth();
+
   const [listings, setListings] = useState<any[]>([]);
   const [filteredListings, setFilteredListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +128,7 @@ const Explore: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange]),
+    }, [selectedCategory, selectedTags, priceRange])
   );
 
   useEffect(() => {
@@ -142,24 +155,49 @@ const Explore: React.FC = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <ActivityIndicator
-          size="large"
-          color={Colors.primary_blue}
-          style={{ marginTop: 20 }}
+        <ListingGridSkeleton
+          numColumns={numColumns}
+          count={numColumns * 3}
+          cardWidth={cardWidth}
         />
       );
     }
 
     if (filteredListings.length === 0) {
-      let emptyMessage = "No listings available";
-
       if (selectedCategory || selectedTags.length > 0 || priceRange) {
-        emptyMessage = "No results found. Try adjusting your filters!";
+        return (
+          <EmptyState
+            icon="filter-off"
+            title="No results found"
+            subtitle="Try adjusting your filters to see more listings"
+            actionLabel="Clear Filters"
+            onAction={() => {
+              setSelectedCategory(null);
+              setSelectedTags([]);
+              setPriceRange(null);
+            }}
+          />
+        );
       } else if (searchQuery.trim() !== "") {
-        emptyMessage = "No results found";
+        return (
+          <EmptyState
+            icon="magnify-close"
+            title="No results found"
+            subtitle={`We couldn't find anything matching "${searchQuery}"`}
+            actionLabel="Clear Search"
+            onAction={() => setSearchQuery("")}
+          />
+        );
       }
-
-      return <Text style={styles.emptyText}>{emptyMessage}</Text>;
+      return (
+        <EmptyState
+          icon="package-variant"
+          title="No listings available"
+          subtitle="Be the first to create a listing!"
+          actionLabel="Create Listing"
+          onAction={() => navigation.navigate("CreateListing")}
+        />
+      );
     }
 
     return (
@@ -214,49 +252,46 @@ const Explore: React.FC = () => {
 
       {/* Search Bar */}
       <View style={[styles.searchWrapper, isWeb && styles.webSearchWrapper]}>
-        <View style={styles.searchContainer}>
-          <View style={styles.searchIcon}>
-            <Icon
-              name="magnify"
-              type="material-community"
-              color={Colors.mutedGray}
-              size={20}
-            />
-          </View>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for products..."
-            placeholderTextColor={Colors.mutedGray}
+        <View style={styles.searchRow}>
+          <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
+            placeholder="Search for products..."
+            style={styles.searchBar}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearIcon}
-              onPress={() => setSearchQuery("")}
-            >
-              <Icon
-                name="close-circle"
-                type="material-community"
-                color={Colors.mutedGray}
-                size={20}
-              />
-            </TouchableOpacity>
-          )}
           <TouchableOpacity
-            style={[styles.filterIconContainer, isWeb && styles.webButton]}
+            style={[styles.filterButton, isWeb && styles.webButton]}
             onPress={() => setShowFilters(true)}
           >
             <Icon
               name="filter-variant"
               type="material-community"
-              color={Colors.primary_blue}
-              size={20}
+              color={Colors.white}
+              size={22}
             />
           </TouchableOpacity>
         </View>
+        {/* Active filters indicator */}
+        {(selectedCategory || selectedTags.length > 0 || priceRange) && (
+          <View style={styles.activeFiltersRow}>
+            <Icon
+              name="filter-check"
+              type="material-community"
+              color={Colors.primary_green}
+              size={16}
+            />
+            <Text style={styles.activeFiltersText}>Filters active</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedCategory(null);
+                setSelectedTags([]);
+                setPriceRange(null);
+              }}
+            >
+              <Text style={styles.clearFiltersText}>Clear all</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Content */}
@@ -332,40 +367,48 @@ const styles = StyleSheet.create({
   webSearchWrapper: {
     alignItems: "center",
   },
-  searchContainer: {
+  searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,
-    paddingHorizontal: Spacing.md,
-    height: 48,
+    gap: Spacing.md,
     width: "100%",
     maxWidth: WebLayout.maxContentWidth,
   },
-  searchIcon: {
-    marginRight: Spacing.sm,
-  },
-  searchInput: {
+  searchBar: {
     flex: 1,
-    fontSize: Typography.bodyLarge.fontSize,
-    fontFamily: Fonts.body,
-    color: Colors.darkTeal,
   },
-  clearIcon: {
-    marginLeft: Spacing.sm,
-  },
-  filterIconContainer: {
-    marginLeft: Spacing.md,
-    padding: 4,
-    justifyContent: "center",
+  filterButton: {
+    backgroundColor: Colors.primary_blue,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.medium,
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.primary_blue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activeFiltersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  activeFiltersText: {
+    fontSize: 12,
+    color: Colors.primary_green,
+    fontWeight: "500",
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    color: Colors.primary_blue,
+    fontWeight: "600",
+    marginLeft: Spacing.sm,
   },
   content: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: Colors.white,
   },
   emptyText: {
