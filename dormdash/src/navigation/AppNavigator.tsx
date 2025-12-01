@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Platform, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer } from "@react-navigation/native";
@@ -6,7 +7,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "@rneui/themed";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors } from "../assets/styles";
+import { Colors, WebLayout } from "../assets/styles";
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -75,6 +76,7 @@ const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === "web";
 
   return (
     <MainTab.Navigator
@@ -85,10 +87,25 @@ function MainTabs() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.lightGray,
-          height: 60 + (insets.bottom || 0),
-          paddingBottom: (insets.bottom || 0) + 8,
+          height: isWeb ? 60 : 60 + (insets.bottom || 0),
+          paddingBottom: isWeb ? 8 : (insets.bottom || 0) + 8,
           paddingTop: 8,
+          // Web-specific: center the tab bar
+          ...(isWeb && {
+            maxWidth: WebLayout.tabBarMaxWidth,
+            alignSelf: "center" as const,
+            width: "100%",
+            borderRadius: 12,
+            marginBottom: 8,
+            borderWidth: 1,
+            borderColor: Colors.lightGray,
+          }),
         },
+        tabBarItemStyle: isWeb
+          ? {
+              cursor: "pointer" as any,
+            }
+          : undefined,
         headerShown: false,
       }}
     >

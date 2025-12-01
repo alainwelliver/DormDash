@@ -37,13 +37,13 @@ const Checkout: React.FC = () => {
   };
 
   const [selectedAddress, setSelectedAddress] = useState(
-    "Gutmann College House"
+    "Gutmann College House",
   );
 
   const calculateSubtotal = () => {
     return selectedItems.reduce(
       (sum, item) => sum + item.price_cents * item.quantity,
-      0
+      0,
     );
   };
 
@@ -78,7 +78,7 @@ const Checkout: React.FC = () => {
             });
           },
         },
-      ]
+      ],
     );
   };
 

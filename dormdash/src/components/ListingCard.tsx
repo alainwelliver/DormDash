@@ -4,10 +4,17 @@ import {
   Text,
   Image,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
-import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  WebLayout,
+} from "../assets/styles";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -18,6 +25,7 @@ type ListingCardProps = {
     price_cents: number;
     listing_images: { url: string; sort_order?: number }[];
   };
+  numColumns?: number;
 };
 
 type MainStackParamList = {
@@ -26,11 +34,24 @@ type MainStackParamList = {
 
 type NavProp = NativeStackNavigationProp<MainStackParamList>;
 
-const { width } = Dimensions.get("window");
-const cardWidth = width / 2 - Spacing.lg - Spacing.xs;
-
-export default function ListingCard({ listing }: ListingCardProps) {
+export default function ListingCard({
+  listing,
+  numColumns = 2,
+}: ListingCardProps) {
   const navigation = useNavigation<NavProp>();
+  const { width: windowWidth } = useWindowDimensions();
+  const isWeb = Platform.OS === "web";
+
+  // Calculate card width based on number of columns and container width
+  const getCardWidth = () => {
+    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const totalGap = (numColumns - 1) * Spacing.lg;
+    const horizontalPadding = Spacing.lg * 2;
+    const availableWidth = containerWidth - horizontalPadding - totalGap;
+    return Math.floor(availableWidth / numColumns);
+  };
+
+  const cardWidth = getCardWidth();
 
   const price = (listing.price_cents / 100).toLocaleString("en-US", {
     style: "currency",
@@ -47,10 +68,20 @@ export default function ListingCard({ listing }: ListingCardProps) {
     navigation.navigate("ProductDetail", { listingId: listing.id });
   };
 
+  const webCardStyle = isWeb
+    ? {
+        cursor: "pointer" as const,
+      }
+    : {};
+
   return (
-    <TouchableOpacity style={styles.card} onPress={handleCardPress}>
+    <TouchableOpacity
+      style={[styles.card, { width: cardWidth }, webCardStyle]}
+      onPress={handleCardPress}
+      activeOpacity={isWeb ? 0.8 : 0.7}
+    >
       {/* Image wrapper to apply shadow */}
-      <View style={styles.imageWrapper}>
+      <View style={[styles.imageWrapper, { height: cardWidth * 0.72 }]}>
         <Image
           source={
             imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")
@@ -73,10 +104,8 @@ export default function ListingCard({ listing }: ListingCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: cardWidth,
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.medium,
-    marginBottom: Spacing.md,
     paddingBottom: Spacing.sm,
 
     // subtle structure - very premium
@@ -91,10 +120,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  // NEW: Only the image gets depth (Option C)
+  // Only the image gets depth
   imageWrapper: {
     width: "100%",
-    height: cardWidth * 0.72,
     borderRadius: BorderRadius.small,
     overflow: "hidden",
 

@@ -9,6 +9,8 @@ import {
   RefreshControl,
   TextInput,
   TouchableOpacity,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -23,6 +25,7 @@ import {
   Typography,
   Spacing,
   BorderRadius,
+  WebLayout,
 } from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
@@ -35,6 +38,18 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 
 const Explore: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
+  const { width: windowWidth } = useWindowDimensions();
+  const isWeb = Platform.OS === "web";
+
+  // Calculate number of columns based on screen width
+  const getNumColumns = () => {
+    if (windowWidth >= 1200) return 5;
+    if (windowWidth >= 900) return 4;
+    if (windowWidth >= 600) return 3;
+    return 2;
+  };
+
+  const numColumns = getNumColumns();
   const [listings, setListings] = useState<any[]>([]);
   const [filteredListings, setFilteredListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,11 +165,23 @@ const Explore: React.FC = () => {
     return (
       <FlatList
         data={filteredListings}
-        renderItem={({ item }) => <ListingCard listing={item} />}
+        renderItem={({ item }) => (
+          <ListingCard listing={item} numColumns={numColumns} />
+        )}
         keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContent}
+        numColumns={numColumns}
+        key={numColumns}
+        columnWrapperStyle={[
+          styles.row,
+          isWeb && {
+            maxWidth: WebLayout.maxContentWidth,
+            alignSelf: "center" as const,
+          },
+        ]}
+        contentContainerStyle={[
+          styles.listContent,
+          isWeb && styles.webListContent,
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -167,65 +194,69 @@ const Explore: React.FC = () => {
       <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
+        <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
+          <Text style={styles.headerTitle}>Explore</Text>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate("CreateListing")}
-          style={styles.newListingButton}
-        >
-          <Icon
-            name="plus"
-            type="material-community"
-            size={20}
-            color={Colors.white}
-          />
-          <Text style={styles.newListingText}>new listing</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("CreateListing")}
+            style={[styles.newListingButton, isWeb && styles.webButton]}
+          >
+            <Icon
+              name="plus"
+              type="material-community"
+              size={20}
+              color={Colors.white}
+            />
+            <Text style={styles.newListingText}>new listing</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchIcon}>
-          <Icon
-            name="magnify"
-            type="material-community"
-            color={Colors.mutedGray}
-            size={20}
-          />
-        </View>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for products..."
-          placeholderTextColor={Colors.mutedGray}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearIcon}
-            onPress={() => setSearchQuery("")}
-          >
+      <View style={[styles.searchWrapper, isWeb && styles.webSearchWrapper]}>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchIcon}>
             <Icon
-              name="close-circle"
+              name="magnify"
               type="material-community"
               color={Colors.mutedGray}
               size={20}
             />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={styles.filterIconContainer}
-          onPress={() => setShowFilters(true)}
-        >
-          <Icon
-            name="filter-variant"
-            type="material-community"
-            color={Colors.primary_blue}
-            size={20}
+          </View>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for products..."
+            placeholderTextColor={Colors.mutedGray}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-        </TouchableOpacity>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearIcon}
+              onPress={() => setSearchQuery("")}
+            >
+              <Icon
+                name="close-circle"
+                type="material-community"
+                color={Colors.mutedGray}
+                size={20}
+              />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.filterIconContainer, isWeb && styles.webButton]}
+            onPress={() => setShowFilters(true)}
+          >
+            <Icon
+              name="filter-variant"
+              type="material-community"
+              color={Colors.primary_blue}
+              size={20}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}
@@ -260,18 +291,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   header: {
-    backgroundColor: Colors.primary_green, // #2ECC71 (style guide green)
-    paddingHorizontal: Spacing.lg, // 16px (was 20)
-    paddingVertical: Spacing.lg, // 16px
+    backgroundColor: Colors.primary_green,
+    paddingVertical: Spacing.lg,
+  },
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+  },
+  webHeaderContent: {
+    maxWidth: WebLayout.maxContentWidth,
+    width: "100%",
+    alignSelf: "center",
   },
   headerTitle: {
     color: Colors.white,
-    fontSize: Typography.heading4.fontSize, // 24px
-    fontWeight: Typography.heading4.fontWeight, // 700
-    fontFamily: Fonts.heading, // Angora
+    fontSize: Typography.heading4.fontSize,
+    fontWeight: Typography.heading4.fontWeight,
+    fontFamily: Fonts.heading,
   },
   newListingButton: {
     flexDirection: "row",
@@ -281,8 +319,18 @@ const styles = StyleSheet.create({
   },
   newListingText: {
     color: Colors.white,
-    fontSize: Typography.bodySmall.fontSize, // 12px
+    fontSize: Typography.bodySmall.fontSize,
     fontWeight: "500",
+  },
+  webButton: {
+    cursor: "pointer",
+  } as any,
+  searchWrapper: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  webSearchWrapper: {
+    alignItems: "center",
   },
   searchContainer: {
     flexDirection: "row",
@@ -290,26 +338,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium, // 8px (was 12)
-    marginHorizontal: Spacing.lg, // 16px
-    marginVertical: Spacing.md, // 12px
-    paddingHorizontal: Spacing.md, // 12px
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
     height: 48,
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
   },
   searchIcon: {
-    marginRight: Spacing.sm, // 8px
+    marginRight: Spacing.sm,
   },
   searchInput: {
     flex: 1,
-    fontSize: Typography.bodyLarge.fontSize, // 16px
-    fontFamily: Fonts.body, // Open Sans
+    fontSize: Typography.bodyLarge.fontSize,
+    fontFamily: Fonts.body,
     color: Colors.darkTeal,
   },
   clearIcon: {
-    marginLeft: Spacing.sm, // 8px
+    marginLeft: Spacing.sm,
   },
   filterIconContainer: {
-    marginLeft: Spacing.md, // 12px
+    marginLeft: Spacing.md,
     padding: 4,
     justifyContent: "center",
     alignItems: "center",
@@ -321,19 +369,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   emptyText: {
-    fontFamily: Fonts.body, // Open Sans
-    fontSize: Typography.bodyLarge.fontSize, // 16px
+    fontFamily: Fonts.body,
+    fontSize: Typography.bodyLarge.fontSize,
     color: Colors.mutedGray,
   },
   row: {
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: 15,
-    paddingHorizontal: Spacing.lg, // 16px (was 20)
-    gap: Spacing.sm, // 8px
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.lg,
+    width: "100%",
   },
   listContent: {
     paddingTop: 15,
     paddingBottom: 80,
+  },
+  webListContent: {
+    alignItems: "center",
   },
 });
 

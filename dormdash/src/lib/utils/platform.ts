@@ -11,13 +11,13 @@ export const alert = (
     text: string;
     onPress?: () => void;
     style?: "default" | "cancel" | "destructive";
-  }>
+  }>,
 ) => {
   if (Platform.OS === "web") {
     // Web: Use window.confirm for simple alerts with buttons
     if (buttons && buttons.length > 1) {
       const confirmButton = buttons.find(
-        (b) => b.style !== "cancel" && b.style !== "destructive"
+        (b) => b.style !== "cancel" && b.style !== "destructive",
       );
       const destructiveButton = buttons.find((b) => b.style === "destructive");
       const actionButton = destructiveButton || confirmButton;
@@ -119,7 +119,7 @@ export const uploadImageToSupabase = async (
   bucket: string,
   localUri: string,
   path: string,
-  contentType: string = "image/jpeg"
+  contentType: string = "image/jpeg",
 ): Promise<void> => {
   if (Platform.OS === "web") {
     // Web: fetch blob directly works

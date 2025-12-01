@@ -116,6 +116,20 @@ export const Spacing = {
   xxxl: 100, // Keep for special cases (large margins)
 };
 
+// Web-specific responsive breakpoints and max-widths
+export const WebLayout = {
+  maxContentWidth: 1200, // Max width for content area
+  maxFormWidth: 480, // Max width for forms (login, register)
+  maxCardWidth: 320, // Max width for individual cards
+  tabBarMaxWidth: 600, // Max width for bottom tab bar
+  breakpoints: {
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+  },
+};
+
 // Border radius (8px for all UI elements per style guide)
 export const BorderRadius = {
   small: 8, // was 4 - standardize to 8px
@@ -209,6 +223,41 @@ export const CommonStyles = {
   },
 };
 
+// Web-specific styles for responsive layouts
+export const WebStyles = {
+  // Centered container with max-width for web
+  webContainer: {
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
+    marginHorizontal: "auto",
+    alignSelf: "center" as const,
+  },
+  // Narrow container for forms
+  formContainer: {
+    width: "100%",
+    maxWidth: WebLayout.maxFormWidth,
+    marginHorizontal: "auto",
+    alignSelf: "center" as const,
+    paddingHorizontal: Spacing.xl,
+  },
+  // Web button with hover cursor
+  webButton: {
+    cursor: "pointer" as const,
+  },
+  // Web card with hover effect preparation
+  webCard: {
+    cursor: "pointer" as const,
+    transition: "transform 0.2s, box-shadow 0.2s",
+  },
+  // Grid layout for cards on web
+  webGrid: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    justifyContent: "flex-start" as const,
+    gap: Spacing.lg,
+  },
+};
+
 export default {
   Colors,
   Fonts,
@@ -216,4 +265,6 @@ export default {
   Spacing,
   BorderRadius,
   CommonStyles,
+  WebLayout,
+  WebStyles,
 };

@@ -1,8 +1,14 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Platform } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
-import { Colors, CommonStyles, Typography, Spacing } from "../assets/styles";
+import {
+  Colors,
+  CommonStyles,
+  Typography,
+  Spacing,
+  WebLayout,
+} from "../assets/styles";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { alert } from "../lib/utils/platform";
@@ -18,6 +24,7 @@ type NavProp = NativeStackNavigationProp<AuthStackParamList, "Login">;
 
 export default function AuthLogin() {
   const navigation = useNavigation<NavProp>();
+  const isWeb = Platform.OS === "web";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,89 +67,91 @@ export default function AuthLogin() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Back Button */}
-      <View style={styles.headerContainer}>
-        <Button
-          type="clear"
-          icon={{ name: "chevron-left", type: "feather", size: 28 }}
-          onPress={() => navigation.goBack()}
-          containerStyle={styles.backButtonContainer}
-        />
-      </View>
+    <View style={[styles.container, isWeb && styles.webContainer]}>
+      <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
+        {/* Back Button */}
+        <View style={styles.headerContainer}>
+          <Button
+            type="clear"
+            icon={{ name: "chevron-left", type: "feather", size: 28 }}
+            onPress={() => navigation.goBack()}
+            containerStyle={styles.backButtonContainer}
+          />
+        </View>
 
-      {/* Title */}
-      <Text style={styles.title}>Welcome back to DormDash!</Text>
+        {/* Title */}
+        <Text style={styles.title}>Welcome back to DormDash!</Text>
 
-      {/* Email Input */}
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
-          label="Penn Email"
-          leftIcon={{
-            type: "font-awesome",
-            name: "envelope",
-            color: Colors.mutedGray,
-          }}
-          onChangeText={(text: string) => setEmail(text)}
-          value={email}
-          placeholder="Enter your Penn email"
-          placeholderTextColor={Colors.lightGray}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!loading}
-          inputStyle={{ color: Colors.darkTeal }}
-        />
-      </View>
+        {/* Email Input */}
+        <View style={[styles.verticallySpaced, styles.mt20]}>
+          <Input
+            label="Penn Email"
+            leftIcon={{
+              type: "font-awesome",
+              name: "envelope",
+              color: Colors.mutedGray,
+            }}
+            onChangeText={(text: string) => setEmail(text)}
+            value={email}
+            placeholder="Enter your Penn email"
+            placeholderTextColor={Colors.lightGray}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!loading}
+            inputStyle={{ color: Colors.darkTeal }}
+          />
+        </View>
 
-      {/* Password Input */}
-      <View style={styles.verticallySpaced}>
-        <Input
-          label="Password"
-          leftIcon={{
-            type: "font-awesome",
-            name: "lock",
-            color: Colors.mutedGray,
-          }}
-          rightIcon={{
-            type: "font-awesome",
-            name: showPassword ? "eye-slash" : "eye",
-            color: Colors.mutedGray,
-            onPress: () => setShowPassword(!showPassword),
-          }}
-          onChangeText={(text: string) => setPassword(text)}
-          value={password}
-          secureTextEntry={!showPassword}
-          placeholder="Enter your password"
-          placeholderTextColor={Colors.lightGray}
-          autoCapitalize="none"
-          editable={!loading}
-          inputStyle={{ color: Colors.darkTeal }}
-        />
-      </View>
+        {/* Password Input */}
+        <View style={styles.verticallySpaced}>
+          <Input
+            label="Password"
+            leftIcon={{
+              type: "font-awesome",
+              name: "lock",
+              color: Colors.mutedGray,
+            }}
+            rightIcon={{
+              type: "font-awesome",
+              name: showPassword ? "eye-slash" : "eye",
+              color: Colors.mutedGray,
+              onPress: () => setShowPassword(!showPassword),
+            }}
+            onChangeText={(text: string) => setPassword(text)}
+            value={password}
+            secureTextEntry={!showPassword}
+            placeholder="Enter your password"
+            placeholderTextColor={Colors.lightGray}
+            autoCapitalize="none"
+            editable={!loading}
+            inputStyle={{ color: Colors.darkTeal }}
+          />
+        </View>
 
-      {/* Forgot Password */}
-      <View style={styles.forgotPasswordContainer}>
-        <Text
-          style={styles.forgotPasswordText}
-          onPress={() => navigation.navigate("ForgotPassword")}
-        >
-          Forgot Password?
-        </Text>
-      </View>
+        {/* Forgot Password */}
+        <View style={styles.forgotPasswordContainer}>
+          <Text
+            style={styles.forgotPasswordText}
+            onPress={() => navigation.navigate("ForgotPassword")}
+          >
+            Forgot Password?
+          </Text>
+        </View>
 
-      {/* Login Button */}
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button
-          title="Login"
-          disabled={loading}
-          loading={loading}
-          buttonStyle={[
-            styles.loginButton,
-            { backgroundColor: Colors.primary_blue },
-          ]}
-          titleStyle={styles.buttonTitle}
-          onPress={() => signInWithEmail()}
-        />
+        {/* Login Button */}
+        <View style={[styles.verticallySpaced, styles.mt20]}>
+          <Button
+            title="Login"
+            disabled={loading}
+            loading={loading}
+            buttonStyle={[
+              styles.loginButton,
+              { backgroundColor: Colors.primary_blue },
+            ]}
+            titleStyle={styles.buttonTitle}
+            onPress={() => signInWithEmail()}
+          />
+        </View>
       </View>
     </View>
   );
@@ -152,6 +161,17 @@ const styles = StyleSheet.create({
   container: {
     ...CommonStyles.container,
     paddingTop: 16,
+  },
+  webContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  formWrapper: {
+    width: "100%",
+  },
+  webFormWrapper: {
+    maxWidth: WebLayout.maxFormWidth,
+    paddingHorizontal: Spacing.xl,
   },
   headerContainer: {
     marginBottom: 20,

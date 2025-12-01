@@ -16,7 +16,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  WebLayout,
+} from "../assets/styles";
 import { supabase } from "../lib/supabase";
 import {
   alert,
@@ -39,6 +45,7 @@ type ProfileNavigationProp = NativeStackNavigationProp<{
 
 const Profile: React.FC = () => {
   const navigation = useNavigation<ProfileNavigationProp>();
+  const isWeb = Platform.OS === "web";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -81,7 +88,7 @@ const Profile: React.FC = () => {
   const handleEditProfile = () => {
     setEditName(profile.name);
     setEditPhone(
-      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone)
+      profile.phone === "N/A" ? "" : formatPhoneNumber(profile.phone),
     );
     setIsEditModalVisible(true);
   };
@@ -201,7 +208,7 @@ const Profile: React.FC = () => {
         "avatars",
         localUri,
         fileName,
-        contentType
+        contentType,
       );
 
       // Get public URL
@@ -242,10 +249,13 @@ const Profile: React.FC = () => {
       <StatusBar barStyle="dark-content" />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWeb && styles.webScrollContent,
+        ]}
       >
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
+        <View style={[styles.profileHeader, isWeb && styles.webProfileHeader]}>
           <TouchableOpacity
             style={styles.avatarWrapper}
             onPress={() => setIsAvatarModalVisible(true)}
@@ -290,11 +300,11 @@ const Profile: React.FC = () => {
         </View>
 
         {/* Menu Items */}
-        <View style={styles.menuContainer}>
+        <View style={[styles.menuContainer, isWeb && styles.webMenuContainer]}>
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.menuItem}
+              style={[styles.menuItem, isWeb && styles.webButton]}
               onPress={() => {
                 if (item.route) {
                   navigation.navigate(item.route as any);
@@ -315,7 +325,10 @@ const Profile: React.FC = () => {
         </View>
 
         {/* Sign Out Button */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <TouchableOpacity
+          style={[styles.signOutButton, isWeb && styles.webButton]}
+          onPress={handleSignOut}
+        >
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -328,7 +341,7 @@ const Profile: React.FC = () => {
         onRequestClose={() => setIsEditModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, isWeb && styles.webModalContent]}>
             <Text style={styles.modalTitle}>Edit Profile</Text>
 
             <Text style={styles.inputLabel}>Full Name</Text>
@@ -440,10 +453,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
+  webScrollContent: {
+    alignItems: "center",
+  },
   profileHeader: {
     alignItems: "center",
     paddingTop: 100,
     paddingHorizontal: Spacing.lg,
+    width: "100%",
+  },
+  webProfileHeader: {
+    maxWidth: WebLayout.maxFormWidth,
   },
   avatarWrapper: {
     position: "relative",
@@ -519,6 +539,10 @@ const styles = StyleSheet.create({
   menuContainer: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
+    width: "100%",
+  },
+  webMenuContainer: {
+    maxWidth: WebLayout.maxFormWidth,
   },
   menuItem: {
     backgroundColor: Colors.lightGray,
@@ -529,6 +553,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.sm,
   },
+  webButton: {
+    cursor: "pointer",
+  } as any,
   menuItemText: {
     fontSize: 18,
     fontFamily: Typography.bodyLarge.fontFamily,
@@ -559,9 +586,13 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "85%",
+    maxWidth: WebLayout.maxFormWidth,
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.medium,
     padding: Spacing.lg,
+  },
+  webModalContent: {
+    width: WebLayout.maxFormWidth,
   },
   modalTitle: {
     fontSize: 22,

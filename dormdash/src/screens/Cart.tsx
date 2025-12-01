@@ -13,13 +13,20 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
-import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  WebLayout,
+} from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 
 type CartNavigationProp = NativeStackNavigationProp<{
@@ -37,6 +44,7 @@ interface CartItem {
 
 const Cart: React.FC = () => {
   const navigation = useNavigation<CartNavigationProp>();
+  const isWeb = Platform.OS === "web";
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -73,7 +81,7 @@ const Cart: React.FC = () => {
           price_cents,
           listing_images ( url )
         )
-      `
+      `,
       )
       .eq("user_id", userId);
 
@@ -125,8 +133,8 @@ const Cart: React.FC = () => {
 
     setCartItems(
       cartItems.map((i) =>
-        i.id === cartItemId ? { ...i, quantity: newQty } : i
-      )
+        i.id === cartItemId ? { ...i, quantity: newQty } : i,
+      ),
     );
   };
 
@@ -160,7 +168,7 @@ const Cart: React.FC = () => {
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id)
+      selectedItems.includes(item.id),
     );
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });
@@ -192,8 +200,12 @@ const Cart: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Shopping Cart</Text>
+        <View style={[styles.header, isWeb && styles.webHeader]}>
+          <View
+            style={[styles.headerContent, isWeb && styles.webHeaderContent]}
+          >
+            <Text style={styles.headerTitle}>Shopping Cart</Text>
+          </View>
         </View>
         <View style={styles.emptyContainer}>
           <Icon
@@ -216,17 +228,22 @@ const Cart: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Shopping Cart</Text>
-        <Text style={styles.itemCount}>
-          {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
-        </Text>
+      <View style={[styles.header, isWeb && styles.webHeader]}>
+        <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
+          <Text style={styles.headerTitle}>Shopping Cart</Text>
+          <Text style={styles.itemCount}>
+            {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
+          </Text>
+        </View>
       </View>
 
       {/* Cart Items */}
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWeb && styles.webScrollContent,
+        ]}
       >
         {cartItems.map((item) => (
           <View key={item.id} style={styles.cartItemCard}>
@@ -321,33 +338,40 @@ const Cart: React.FC = () => {
       </ScrollView>
 
       {/* Checkout Summary */}
-      <View style={styles.checkoutContainer}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>
-            Subtotal ({selectedItems.length} item
-            {selectedItems.length !== 1 ? "s" : ""})
-          </Text>
-          <Text style={styles.summaryValue}>
-            {formatPrice(calculateSubtotal())}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.checkoutButton,
-            selectedItems.length === 0 && styles.checkoutButtonDisabled,
-          ]}
-          onPress={handleCheckout}
-          disabled={selectedItems.length === 0}
+      <View
+        style={[styles.checkoutContainer, isWeb && styles.webCheckoutContainer]}
+      >
+        <View
+          style={[styles.checkoutContent, isWeb && styles.webCheckoutContent]}
         >
-          <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-          <Icon
-            name="arrow-right"
-            type="material-community"
-            color={Colors.white}
-            size={20}
-          />
-        </TouchableOpacity>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>
+              Subtotal ({selectedItems.length} item
+              {selectedItems.length !== 1 ? "s" : ""})
+            </Text>
+            <Text style={styles.summaryValue}>
+              {formatPrice(calculateSubtotal())}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.checkoutButton,
+              selectedItems.length === 0 && styles.checkoutButtonDisabled,
+              isWeb && styles.webButton,
+            ]}
+            onPress={handleCheckout}
+            disabled={selectedItems.length === 0}
+          >
+            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+            <Icon
+              name="arrow-right"
+              type="material-community"
+              color={Colors.white}
+              size={20}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -365,11 +389,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.base_bg,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
     backgroundColor: Colors.base_bg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray,
+  },
+  webHeader: {
+    alignItems: "center",
+  },
+  headerContent: {
+    paddingHorizontal: Spacing.lg,
+    width: "100%",
+  },
+  webHeaderContent: {
+    maxWidth: WebLayout.maxContentWidth,
   },
   headerTitle: {
     fontSize: 28,
@@ -391,6 +424,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: 200,
   },
+  webScrollContent: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
+  },
   cartItemCard: {
     flexDirection: "row",
     backgroundColor: Colors.lightGray,
@@ -399,6 +437,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     alignItems: "center",
   },
+  webButton: {
+    cursor: "pointer",
+  } as any,
   checkbox: {
     marginRight: Spacing.xs,
   },
@@ -469,7 +510,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Colors.white,
-    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
     borderTopWidth: 1,
     borderTopColor: Colors.lightGray,
@@ -478,6 +518,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: -4 },
+  },
+  webCheckoutContainer: {
+    alignItems: "center",
+  },
+  checkoutContent: {
+    paddingHorizontal: Spacing.lg,
+    width: "100%",
+  },
+  webCheckoutContent: {
+    maxWidth: WebLayout.maxContentWidth,
   },
   summaryRow: {
     flexDirection: "row",

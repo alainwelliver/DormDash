@@ -8,6 +8,8 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -17,7 +19,13 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
 
 import ListingCard from "../components/ListingCard";
-import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  WebLayout,
+} from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -29,6 +37,18 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 
 const Feed: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
+  const { width: windowWidth } = useWindowDimensions();
+  const isWeb = Platform.OS === "web";
+
+  // Calculate number of columns based on screen width
+  const getNumColumns = () => {
+    if (windowWidth >= 1200) return 5;
+    if (windowWidth >= 900) return 4;
+    if (windowWidth >= 600) return 3;
+    return 2;
+  };
+
+  const numColumns = getNumColumns();
 
   const [listings, setListings] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -123,11 +143,23 @@ const Feed: React.FC = () => {
     return (
       <FlatList
         data={listings}
-        renderItem={({ item }) => <ListingCard listing={item} />}
+        renderItem={({ item }) => (
+          <ListingCard listing={item} numColumns={numColumns} />
+        )}
         keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContent}
+        numColumns={numColumns}
+        key={numColumns} // Force re-render when columns change
+        columnWrapperStyle={[
+          styles.row,
+          isWeb && {
+            maxWidth: WebLayout.maxContentWidth,
+            alignSelf: "center" as const,
+          },
+        ]}
+        contentContainerStyle={[
+          styles.listContent,
+          isWeb && styles.webListContent,
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -141,35 +173,39 @@ const Feed: React.FC = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>DormDash</Text>
+        <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
+          <Text style={styles.headerTitle}>DormDash</Text>
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate("CreateListing")}
-          style={styles.newListingButton}
-        >
-          <Icon
-            name="plus"
-            type="material-community"
-            size={20}
-            color={Colors.white}
-          />
-          <Text style={styles.newListingText}>new listing</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("CreateListing")}
+            style={[styles.newListingButton, isWeb && styles.webButton]}
+          >
+            <Icon
+              name="plus"
+              type="material-community"
+              size={20}
+              color={Colors.white}
+            />
+            <Text style={styles.newListingText}>new listing</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filter Button */}
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => setShowFilters(true)}
-      >
-        <Icon
-          name="filter-variant"
-          type="material-community"
-          size={22}
-          color={Colors.darkTeal}
-        />
-        <Text style={styles.filterButtonText}>Filters</Text>
-      </TouchableOpacity>
+      <View style={[styles.filterWrapper, isWeb && styles.webFilterWrapper]}>
+        <TouchableOpacity
+          style={[styles.filterButton, isWeb && styles.webButton]}
+          onPress={() => setShowFilters(true)}
+        >
+          <Icon
+            name="filter-variant"
+            type="material-community"
+            size={22}
+            color={Colors.darkTeal}
+          />
+          <Text style={styles.filterButtonText}>Filters</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
@@ -205,11 +241,20 @@ const styles = StyleSheet.create({
 
   header: {
     backgroundColor: Colors.primary_green,
-    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
+  },
+
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+  },
+
+  webHeaderContent: {
+    maxWidth: WebLayout.maxContentWidth,
+    width: "100%",
+    alignSelf: "center",
   },
 
   headerTitle: {
@@ -230,6 +275,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
+  // Web button styles
+  webButton: {
+    cursor: "pointer",
+  } as any,
+
+  // Filter wrapper for centering
+  filterWrapper: {
+    backgroundColor: Colors.lightMint,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray,
+  },
+
+  webFilterWrapper: {
+    alignItems: "center",
+  },
+
   // Clean professional filter button
   filterButton: {
     flexDirection: "row",
@@ -237,9 +298,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.lightMint,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
   },
   filterButtonText: {
     ...Typography.bodyMedium,
@@ -260,14 +320,20 @@ const styles = StyleSheet.create({
   },
 
   row: {
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     marginBottom: Spacing.md,
     paddingHorizontal: Spacing.lg,
+    gap: Spacing.lg,
+    width: "100%",
   },
 
   listContent: {
     paddingBottom: 80,
     paddingTop: Spacing.md,
+  },
+
+  webListContent: {
+    alignItems: "center",
   },
 });
 

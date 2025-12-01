@@ -33,7 +33,7 @@ export default function AuthForgotPassword() {
       alert(
         "Check your email",
         "If an account exists for this email, you will receive a password reset link.",
-        [{ text: "OK", onPress: () => navigation.goBack() }]
+        [{ text: "OK", onPress: () => navigation.goBack() }],
       );
     }
   }
