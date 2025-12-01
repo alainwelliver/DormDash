@@ -40,12 +40,18 @@ importers:
       expo-file-system:
         specifier: ~19.0.19
         version: 19.0.19(expo@54.0.25)(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))
+      expo-image-manipulator:
+        specifier: ^14.0.7
+        version: 14.0.7(expo@54.0.25)
       expo-image-picker:
         specifier: ^17.0.8
         version: 17.0.8(expo@54.0.25)
       expo-status-bar:
         specifier: ~3.0.8
         version: 3.0.8(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      heic2any:
+        specifier: ^0.0.4
+        version: 0.0.4
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2706,6 +2712,14 @@ packages:
     peerDependencies:
       expo: "*"
 
+  expo-image-manipulator@14.0.7:
+    resolution:
+      {
+        integrity: sha512-NMHssudagLTAT6ZQ2upnJYT+gVLAt5vC+iD+TBIdV3ZS44yhrq+p2gCrYahDvtVywfmTI5WsbH+Sh1BXbmJUQw==,
+      }
+    peerDependencies:
+      expo: "*"
+
   expo-image-picker@17.0.8:
     resolution:
       {
@@ -3014,6 +3028,12 @@ packages:
         integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==,
       }
     engines: { node: ">= 0.4" }
+
+  heic2any@0.0.4:
+    resolution:
+      {
+        integrity: sha512-3lLnZiDELfabVH87htnRolZ2iehX9zwpRyGNz22GKXIu0fznlblf0/ftppXKNqS26dqFSeqfIBhAmAj/uSp0cA==,
+      }
 
   hermes-estree@0.29.1:
     resolution:
@@ -7506,6 +7526,11 @@ snapshots:
     dependencies:
       expo: 54.0.25(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
+  expo-image-manipulator@14.0.7(expo@54.0.25):
+    dependencies:
+      expo: 54.0.25(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-image-loader: 6.0.0(expo@54.0.25)
+
   expo-image-picker@17.0.8(expo@54.0.25):
     dependencies:
       expo: 54.0.25(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -7705,6 +7730,8 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  heic2any@0.0.4: {}
 
   hermes-estree@0.29.1: {}
 
