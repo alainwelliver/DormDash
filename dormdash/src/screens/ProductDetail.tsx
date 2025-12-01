@@ -145,17 +145,33 @@ export default function ProductDetail({
       }
 
       if (listingData?.user_id) {
-        // Create a seller object with basic info
-        // In a real app, you'd have a profiles table with user metadata
-        setSeller({
-          id: listingData.user_id,
-          username: "Seller",
-          avatar_url: undefined,
-          rating: 0,
-          review_count: 0,
-        });
+        // Fetch seller profile with aggregate ratings across all their listings
+        const { data: sellerData, error: sellerError } = await supabase
+          .from("seller_profiles")
+          .select("*")
+          .eq("id", listingData.user_id)
+          .single();
 
-        // Fetch reviews for this listing
+        if (!sellerError && sellerData) {
+          setSeller({
+            id: sellerData.id,
+            username: sellerData.display_name || "Seller",
+            avatar_url: sellerData.avatar_url || undefined,
+            rating: parseFloat(sellerData.avg_rating) || 0,
+            review_count: sellerData.total_reviews || 0,
+          });
+        } else {
+          // Fallback if seller profile not found
+          setSeller({
+            id: listingData.user_id,
+            username: "Seller",
+            avatar_url: undefined,
+            rating: 0,
+            review_count: 0,
+          });
+        }
+
+        // Fetch reviews for this listing (for display in review section)
         const { data: reviewsData, error: reviewsError } = await supabase
           .from("reviews")
           .select("*")
@@ -164,22 +180,6 @@ export default function ProductDetail({
 
         if (!reviewsError && reviewsData) {
           setReviews(reviewsData);
-
-          // Calculate seller rating from reviews
-          if (reviewsData.length > 0) {
-            const avgRating =
-              reviewsData.reduce((sum, review) => sum + review.rating, 0) /
-              reviewsData.length;
-            setSeller((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    rating: avgRating,
-                    review_count: reviewsData.length,
-                  }
-                : null,
-            );
-          }
         }
       }
     } catch (error) {
@@ -610,14 +610,17 @@ export default function ProductDetail({
               )}
               <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{seller.username}</Text>
-                {seller.rating !== undefined && (
+                {seller.rating !== undefined && seller.review_count > 0 ? (
                   <View>
                     {renderStars(Math.round(seller.rating))}
                     <Text style={styles.ratingText}>
-                      {seller.rating.toFixed(1)} ({seller.review_count || 0}{" "}
-                      reviews)
+                      {seller.rating.toFixed(1)} ({seller.review_count}{" "}
+                      {seller.review_count === 1 ? "review" : "reviews"}{" "}
+                      overall)
                     </Text>
                   </View>
+                ) : (
+                  <Text style={styles.ratingText}>No reviews yet</Text>
                 )}
               </View>
             </View>
