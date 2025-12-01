@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, Platform, ScrollView } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Platform,
+  ScrollView,
+  KeyboardAvoidingView,
+} from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
@@ -96,131 +103,137 @@ export default function AuthRegister() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.scrollContent,
-        isWeb && styles.webScrollContent,
-      ]}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
-        {/* Back Button */}
-        <View style={styles.headerContainer}>
-          <Button
-            type="clear"
-            icon={{ name: "chevron-left", type: "feather", size: 28 }}
-            onPress={() => navigation.goBack()}
-            containerStyle={styles.backButtonContainer}
-          />
-        </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWeb && styles.webScrollContent,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
+          {/* Back Button */}
+          <View style={styles.headerContainer}>
+            <Button
+              type="clear"
+              icon={{ name: "chevron-left", type: "feather", size: 28 }}
+              onPress={() => navigation.goBack()}
+              containerStyle={styles.backButtonContainer}
+            />
+          </View>
 
-        {/* Title */}
-        <Text style={styles.title}>Create New Account</Text>
+          {/* Title */}
+          <Text style={styles.title}>Create New Account</Text>
 
-        {/* Full Name Input */}
-        <View style={[styles.verticallySpaced, styles.mt20]}>
-          <Input
-            label="Full Name"
-            leftIcon={{ type: "font-awesome", name: "user" }}
-            onChangeText={(text: string) => setFullName(text)}
-            value={fullName}
-            placeholder="Enter your full name"
-            autoCapitalize="words"
-            editable={!loading}
-          />
-        </View>
+          {/* Full Name Input */}
+          <View style={[styles.verticallySpaced, styles.mt20]}>
+            <Input
+              label="Full Name"
+              leftIcon={{ type: "font-awesome", name: "user" }}
+              onChangeText={(text: string) => setFullName(text)}
+              value={fullName}
+              placeholder="Enter your full name"
+              autoCapitalize="words"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Username Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Username"
-            leftIcon={{ type: "font-awesome", name: "at" }}
-            onChangeText={(text: string) => setUsername(text)}
-            value={username}
-            placeholder="Choose a username"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-        </View>
+          {/* Username Input */}
+          <View style={styles.verticallySpaced}>
+            <Input
+              label="Username"
+              leftIcon={{ type: "font-awesome", name: "at" }}
+              onChangeText={(text: string) => setUsername(text)}
+              value={username}
+              placeholder="Choose a username"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Email Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Penn Email"
-            leftIcon={{ type: "font-awesome", name: "envelope" }}
-            onChangeText={(text: string) => setEmail(text)}
-            value={email}
-            placeholder="Enter your Penn email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
-        </View>
+          {/* Email Input */}
+          <View style={styles.verticallySpaced}>
+            <Input
+              label="Penn Email"
+              leftIcon={{ type: "font-awesome", name: "envelope" }}
+              onChangeText={(text: string) => setEmail(text)}
+              value={email}
+              placeholder="Enter your Penn email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Phone Number Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Phone Number"
-            leftIcon={{ type: "font-awesome", name: "phone" }}
-            onChangeText={(text: string) => setPhone(text)}
-            value={phone}
-            placeholder="Enter your phone number"
-            keyboardType="phone-pad"
-            editable={!loading}
-          />
-        </View>
+          {/* Phone Number Input */}
+          <View style={styles.verticallySpaced}>
+            <Input
+              label="Phone Number"
+              leftIcon={{ type: "font-awesome", name: "phone" }}
+              onChangeText={(text: string) => setPhone(text)}
+              value={phone}
+              placeholder="Enter your phone number"
+              keyboardType="phone-pad"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Password Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Password"
-            leftIcon={{ type: "font-awesome", name: "lock" }}
-            rightIcon={{
-              type: "font-awesome",
-              name: showPassword ? "eye-slash" : "eye",
-              onPress: () => setShowPassword(!showPassword),
-            }}
-            onChangeText={(text: string) => setPassword(text)}
-            value={password}
-            secureTextEntry={!showPassword}
-            placeholder="Create a password"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-        </View>
+          {/* Password Input */}
+          <View style={styles.verticallySpaced}>
+            <Input
+              label="Password"
+              leftIcon={{ type: "font-awesome", name: "lock" }}
+              rightIcon={{
+                type: "font-awesome",
+                name: showPassword ? "eye-slash" : "eye",
+                onPress: () => setShowPassword(!showPassword),
+              }}
+              onChangeText={(text: string) => setPassword(text)}
+              value={password}
+              secureTextEntry={!showPassword}
+              placeholder="Create a password"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Confirm Password Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Confirm Password"
-            leftIcon={{ type: "font-awesome", name: "lock" }}
-            rightIcon={{
-              type: "font-awesome",
-              name: showConfirmPassword ? "eye-slash" : "eye",
-              onPress: () => setShowConfirmPassword(!showConfirmPassword),
-            }}
-            onChangeText={(text: string) => setConfirmPassword(text)}
-            value={confirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            placeholder="Confirm your password"
-            autoCapitalize="none"
-            editable={!loading}
-          />
-        </View>
+          {/* Confirm Password Input */}
+          <View style={styles.verticallySpaced}>
+            <Input
+              label="Confirm Password"
+              leftIcon={{ type: "font-awesome", name: "lock" }}
+              rightIcon={{
+                type: "font-awesome",
+                name: showConfirmPassword ? "eye-slash" : "eye",
+                onPress: () => setShowConfirmPassword(!showConfirmPassword),
+              }}
+              onChangeText={(text: string) => setConfirmPassword(text)}
+              value={confirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              placeholder="Confirm your password"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-        {/* Register Button */}
-        <View style={[styles.verticallySpaced, styles.mt20]}>
-          <Button
-            title="Register"
-            disabled={loading}
-            loading={loading}
-            buttonStyle={styles.registerButton}
-            titleStyle={styles.buttonTitle}
-            onPress={() => signUpWithEmail()}
-          />
+          {/* Register Button */}
+          <View style={[styles.verticallySpaced, styles.mt20]}>
+            <Button
+              title="Register"
+              disabled={loading}
+              loading={loading}
+              buttonStyle={styles.registerButton}
+              titleStyle={styles.buttonTitle}
+              onPress={() => signUpWithEmail()}
+            />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
