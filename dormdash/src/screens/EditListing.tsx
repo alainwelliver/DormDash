@@ -285,7 +285,7 @@ export default function EditListing({ route, navigation }: EditListingProps) {
       }
 
       alert("Success", "Your listing has been updated!");
-      navigation.navigate("ProductDetail", { listingId });
+      navigation.replace("ProductDetail", { listingId });
     } catch (e: any) {
       alert("Error", e.message ?? String(e));
     } finally {
