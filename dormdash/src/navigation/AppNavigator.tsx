@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform, View, Image, Text, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer } from "@react-navigation/native";
@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "@rneui/themed";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, WebLayout } from "../assets/styles";
+import { Colors, WebLayout, Typography, Spacing } from "../assets/styles";
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -108,14 +108,28 @@ function MainTabs() {
               cursor: "pointer" as any,
             }
           : undefined,
-        headerShown: false,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: Colors.white,
+        },
+        headerTitleAlign: "left",
       }}
     >
       <MainTab.Screen
         name="FeedTab"
         component={Feed}
         options={{
-          tabBarLabel: "Home",
+          tabBarLabel: "Feed",
+          headerTitle: () => (
+            <View style={headerStyles.container}>
+              <Image
+                source={require("../../assets/dormdash-logo.png")}
+                style={headerStyles.logo}
+                resizeMode="contain"
+              />
+              <Text style={headerStyles.title}>Feed</Text>
+            </View>
+          ),
           tabBarIcon: ({ color, size }) => (
             <Icon
               name="home"
@@ -131,6 +145,16 @@ function MainTabs() {
         component={Explore}
         options={{
           tabBarLabel: "Explore",
+          headerTitle: () => (
+            <View style={headerStyles.container}>
+              <Image
+                source={require("../../assets/dormdash-logo.png")}
+                style={headerStyles.logo}
+                resizeMode="contain"
+              />
+              <Text style={headerStyles.title}>Explore</Text>
+            </View>
+          ),
           tabBarIcon: ({ color, size }) => (
             <Icon
               name="magnify"
@@ -146,6 +170,16 @@ function MainTabs() {
         component={Cart}
         options={{
           tabBarLabel: "Cart",
+          headerTitle: () => (
+            <View style={headerStyles.container}>
+              <Image
+                source={require("../../assets/dormdash-logo.png")}
+                style={headerStyles.logo}
+                resizeMode="contain"
+              />
+              <Text style={headerStyles.title}>Cart</Text>
+            </View>
+          ),
           tabBarIcon: ({ color, size }) => (
             <Icon
               name="cart"
@@ -161,6 +195,16 @@ function MainTabs() {
         component={Profile}
         options={{
           tabBarLabel: "Profile",
+          headerTitle: () => (
+            <View style={headerStyles.container}>
+              <Image
+                source={require("../../assets/dormdash-logo.png")}
+                style={headerStyles.logo}
+                resizeMode="contain"
+              />
+              <Text style={headerStyles.title}>Profile</Text>
+            </View>
+          ),
           tabBarIcon: ({ color, size }) => (
             <Icon
               name="account"
@@ -256,3 +300,20 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const headerStyles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logo: {
+    width: 32,
+    height: 32,
+    marginRight: Spacing.sm,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+});
