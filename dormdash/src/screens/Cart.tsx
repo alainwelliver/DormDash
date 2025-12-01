@@ -11,7 +11,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Alert,
   ActivityIndicator,
   StatusBar,
 } from "react-native";
@@ -21,6 +20,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
@@ -73,7 +73,7 @@ const Cart: React.FC = () => {
           price_cents,
           listing_images ( url )
         )
-      `,
+      `
       )
       .eq("user_id", userId);
 
@@ -125,14 +125,14 @@ const Cart: React.FC = () => {
 
     setCartItems(
       cartItems.map((i) =>
-        i.id === cartItemId ? { ...i, quantity: newQty } : i,
-      ),
+        i.id === cartItemId ? { ...i, quantity: newQty } : i
+      )
     );
   };
 
   // Remove item from Supabase
   const removeItem = (cartItemId: number) => {
-    Alert.alert("Remove Item", "Are you sure you want to remove this item?", [
+    alert("Remove Item", "Are you sure you want to remove this item?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
@@ -155,12 +155,12 @@ const Cart: React.FC = () => {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
-      Alert.alert("No Items Selected", "Please select at least one item.");
+      alert("No Items Selected", "Please select at least one item.");
       return;
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id),
+      selectedItems.includes(item.id)
     );
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });

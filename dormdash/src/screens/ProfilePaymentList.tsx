@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-  Alert,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +14,7 @@ import { Icon } from "@rneui/themed";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type PaymentListNavigationProp = NativeStackNavigationProp<{
   AddPayment: undefined;
@@ -53,7 +53,7 @@ const PaymentList: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchPaymentMethods();
-    }, []),
+    }, [])
   );
 
   const onRefresh = () => {
@@ -62,11 +62,11 @@ const PaymentList: React.FC = () => {
   };
 
   const handleCardPress = (card: Card) => {
-    Alert.alert("Card Details", `Card ending in ${card.last4}`);
+    alert("Card Details", `Card ending in ${card.last4}`);
   };
 
   const handlePayPalPress = (account: PayPalAccount) => {
-    Alert.alert("PayPal Account", account.email);
+    alert("PayPal Account", account.email);
   };
 
   const renderMastercardLogo = () => (

@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Alert,
   StatusBar,
   Modal,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -18,7 +18,11 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
-import * as ImagePicker from "expo-image-picker";
+import {
+  alert,
+  pickSingleImage,
+  uploadImageToSupabase,
+} from "../lib/utils/platform";
 
 interface UserProfile {
   name: string;
@@ -84,7 +88,7 @@ const Profile: React.FC = () => {
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      Alert.alert("Error", "Name cannot be empty");
+      alert("Error", "Name cannot be empty");
       return;
     }
 
@@ -98,7 +102,7 @@ const Profile: React.FC = () => {
       });
 
       if (error) {
-        Alert.alert("Error", error.message);
+        alert("Error", error.message);
         return;
       }
 
@@ -108,10 +112,10 @@ const Profile: React.FC = () => {
         phone: editPhone.trim() || "N/A",
       });
       setIsEditModalVisible(false);
-      Alert.alert("Success", "Profile updated successfully!");
+      alert("Success", "Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);
-      Alert.alert("Error", "Failed to update profile");
+      alert("Error", "Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -142,7 +146,7 @@ const Profile: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+    alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Sign Out",
@@ -164,26 +168,25 @@ const Profile: React.FC = () => {
 
   const handleUploadAvatar = async () => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+      // Use cross-platform image picker
+      const localUri = await pickSingleImage({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      if (result.canceled || !result.assets?.length) {
+      if (!localUri) {
         return;
       }
 
       setUploadingAvatar(true);
-      const localUri = result.assets[0].uri;
 
       // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert("Error", "User not found");
+        alert("Error", "User not found");
         return;
       }
 
@@ -192,18 +195,14 @@ const Profile: React.FC = () => {
       const fileName = `${user.id}/${Date.now()}.${ext}`;
       const contentType = ext === "png" ? "image/png" : "image/jpeg";
 
-      // Read file as base64 for React Native compatibility
-      const base64Response = await fetch(localUri);
-      const arrayBuffer = await base64Response.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, uint8Array, { upsert: true, contentType });
-
-      if (uploadError) {
-        throw uploadError;
-      }
+      // Use cross-platform upload
+      await uploadImageToSupabase(
+        supabase,
+        "avatars",
+        localUri,
+        fileName,
+        contentType
+      );
 
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -223,10 +222,10 @@ const Profile: React.FC = () => {
 
       setAvatarUrl(publicUrl);
       setIsAvatarModalVisible(false);
-      Alert.alert("Success", "Profile picture updated!");
+      alert("Success", "Profile picture updated!");
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      Alert.alert("Error", "Failed to upload profile picture");
+      alert("Error", "Failed to upload profile picture");
     } finally {
       setUploadingAvatar(false);
     }
@@ -300,10 +299,7 @@ const Profile: React.FC = () => {
                 if (item.route) {
                   navigation.navigate(item.route as any);
                 } else {
-                  Alert.alert(
-                    "Coming Soon",
-                    `${item.title} feature coming soon!`
-                  );
+                  alert("Coming Soon", `${item.title} feature coming soon!`);
                 }
               }}
             >

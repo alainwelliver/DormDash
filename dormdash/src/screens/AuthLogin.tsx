@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
 import { Colors, CommonStyles, Typography, Spacing } from "../assets/styles";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { alert } from "../lib/utils/platform";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -37,12 +38,12 @@ export default function AuthLogin() {
 
   async function signInWithEmail() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Please fill in all fields");
+      alert("Please fill in all fields");
       return;
     }
 
     if (!isAllowedEmail(email)) {
-      Alert.alert("Please use your University of Pennsylvania email address.");
+      alert("Please use your University of Pennsylvania email address.");
       return;
     }
 
@@ -53,7 +54,7 @@ export default function AuthLogin() {
     });
 
     if (error) {
-      Alert.alert("Login Error", error.message);
+      alert("Login Error", error.message);
     }
     setLoading(false);
   }

@@ -10,7 +10,6 @@ import {
   ScrollView,
   ActivityIndicator,
   TextInput,
-  Alert,
 } from "react-native";
 import { Icon } from "@rneui/themed";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -20,6 +19,7 @@ import type {
 } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type MainStackParamList = {
   ProductDetail: { listingId: number };
@@ -136,7 +136,7 @@ export default function ProductDetail({
                     rating: avgRating,
                     review_count: reviewsData.length,
                   }
-                : null,
+                : null
             );
           }
         }
@@ -154,7 +154,7 @@ export default function ProductDetail({
       const userId = sessionData.session?.user?.id;
 
       if (!userId) {
-        Alert.alert("Login Required", "You must be logged in to add to cart.");
+        alert("Login Required", "You must be logged in to add to cart.");
         return;
       }
 
@@ -194,7 +194,7 @@ export default function ProductDetail({
         if (insertError) throw insertError;
       }
 
-      Alert.alert("Added to Cart", `${listing.title} was added to your cart.`, [
+      alert("Added to Cart", `${listing.title} was added to your cart.`, [
         { text: "Continue", style: "cancel" },
         {
           text: "View Cart",
@@ -204,14 +204,14 @@ export default function ProductDetail({
       ]);
     } catch (error) {
       console.error("Add to cart error:", error);
-      Alert.alert("Error", "Could not add item to cart.");
+      alert("Error", "Could not add item to cart.");
     }
   };
 
   const handleSubmitReview = async () => {
     try {
       if (!reviewComment.trim() && reviewRating === 0) {
-        Alert.alert("Error", "Please provide a rating or comment");
+        alert("Error", "Please provide a rating or comment");
         return;
       }
 
@@ -221,7 +221,7 @@ export default function ProductDetail({
       const userId = userData.session?.user?.id;
 
       if (!userId) {
-        Alert.alert("Error", "You must be logged in to leave a review");
+        alert("Error", "You must be logged in to leave a review");
         return;
       }
 
@@ -243,17 +243,17 @@ export default function ProductDetail({
       // Refresh reviews
       fetchListingDetails();
 
-      Alert.alert("Success", "Your review has been posted!");
+      alert("Success", "Your review has been posted!");
     } catch (error) {
       console.error("Error submitting review:", error);
-      Alert.alert("Error", "Failed to submit review. Please try again.");
+      alert("Error", "Failed to submit review. Please try again.");
     } finally {
       setSubmittingReview(false);
     }
   };
 
   const handleDeleteListing = () => {
-    Alert.alert(
+    alert(
       "Delete Listing",
       "Are you sure you want to delete this listing? This action cannot be undone.",
       [
@@ -294,21 +294,18 @@ export default function ProductDetail({
 
               if (error) throw error;
 
-              Alert.alert("Success", "Listing has been deleted.", [
+              alert("Success", "Listing has been deleted.", [
                 { text: "OK", onPress: () => navigation.goBack() },
               ]);
             } catch (error) {
               console.error("Error deleting listing:", error);
-              Alert.alert(
-                "Error",
-                "Failed to delete listing. Please try again.",
-              );
+              alert("Error", "Failed to delete listing. Please try again.");
             } finally {
               setDeleting(false);
             }
           },
         },
-      ],
+      ]
     );
   };
 

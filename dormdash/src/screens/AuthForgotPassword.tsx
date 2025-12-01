@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert, Text } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { Button, Input } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { useNavigation } from "@react-navigation/native";
 import { Colors, CommonStyles } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 export default function AuthForgotPassword() {
   const navigation = useNavigation();
@@ -12,7 +13,7 @@ export default function AuthForgotPassword() {
 
   async function handleReset() {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      alert("Error", "Please enter your email address");
       return;
     }
 
@@ -27,12 +28,12 @@ export default function AuthForgotPassword() {
     setLoading(false);
 
     if (error) {
-      Alert.alert("Error", error.message);
+      alert("Error", error.message);
     } else {
-      Alert.alert(
+      alert(
         "Check your email",
         "If an account exists for this email, you will receive a password reset link.",
-        [{ text: "OK", onPress: () => navigation.goBack() }],
+        [{ text: "OK", onPress: () => navigation.goBack() }]
       );
     }
   }

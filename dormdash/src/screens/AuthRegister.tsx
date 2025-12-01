@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { alert } from "../lib/utils/platform";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -46,22 +47,22 @@ export default function AuthRegister() {
       !email.trim() ||
       !password.trim()
     ) {
-      Alert.alert("Please fill in all fields");
+      alert("Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Passwords do not match");
+      alert("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Password must be at least 6 characters");
+      alert("Password must be at least 6 characters");
       return;
     }
 
     if (!isAllowedEmail(email)) {
-      Alert.alert("Please use your University of Pennsylvania email address.");
+      alert("Please use your University of Pennsylvania email address.");
       return;
     }
 
@@ -82,9 +83,9 @@ export default function AuthRegister() {
     });
 
     if (error) {
-      Alert.alert("Registration Error", error.message);
+      alert("Registration Error", error.message);
     } else if (!session) {
-      Alert.alert(
+      alert(
         "Verification Required",
         "Please check your inbox for email verification!"
       );

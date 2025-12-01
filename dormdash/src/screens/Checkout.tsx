@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +12,7 @@ import { Icon } from "@rneui/themed";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type CheckoutNavigationProp = NativeStackNavigationProp<{
   PaymentPortal: { priceCents: number; listingTitle: string };
@@ -37,13 +37,13 @@ const Checkout: React.FC = () => {
   };
 
   const [selectedAddress, setSelectedAddress] = useState(
-    "Gutmann College House",
+    "Gutmann College House"
   );
 
   const calculateSubtotal = () => {
     return selectedItems.reduce(
       (sum, item) => sum + item.price_cents * item.quantity,
-      0,
+      0
     );
   };
 
@@ -63,7 +63,7 @@ const Checkout: React.FC = () => {
   };
 
   const handlePlaceOrder = () => {
-    Alert.alert(
+    alert(
       "Place Order",
       `Total: ${formatPrice(calculateTotal())}\n\nProceed with payment?`,
       [
@@ -78,7 +78,7 @@ const Checkout: React.FC = () => {
             });
           },
         },
-      ],
+      ]
     );
   };
 

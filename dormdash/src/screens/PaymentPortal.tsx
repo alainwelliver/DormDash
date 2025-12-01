@@ -4,13 +4,18 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  Alert,
   Platform,
 } from "react-native";
-import { WebView, type WebViewNavigation } from "react-native-webview";
 import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Colors } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
+
+// Only import WebView on native platforms
+let WebView: any = null;
+if (Platform.OS !== "web") {
+  WebView = require("react-native-webview").WebView;
+}
 
 type MainStackParamList = {
   PaymentPortal: {
@@ -48,7 +53,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     const fetchCheckoutSession = async () => {
       try {
         console.log(
-          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`,
+          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`
         );
 
         const response = await fetch(
@@ -60,7 +65,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
               name: listingTitle,
               price: priceCents, // This requires a server to process safely
             }),
-          },
+          }
         );
 
         const text = await response.text();
@@ -74,15 +79,20 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
         const data = JSON.parse(text);
 
         if (data.url) {
-          setCheckoutUrl(data.url);
+          // On web, redirect directly to the checkout URL
+          if (Platform.OS === "web") {
+            window.location.href = data.url;
+          } else {
+            setCheckoutUrl(data.url);
+          }
         } else {
-          Alert.alert("Error", "Server failed to generate a Stripe URL");
+          alert("Error", "Server failed to generate a Stripe URL");
         }
       } catch (error) {
         console.error("Payment Error:", error);
-        Alert.alert(
+        alert(
           "Connection Error",
-          "Ensure your Node server is running on port 4242.",
+          "Ensure your Node server is running on port 4242."
         );
       } finally {
         setLoading(false);
@@ -92,7 +102,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     fetchCheckoutSession();
   }, [listingTitle, priceCents]);
 
-  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+  const handleNavigationStateChange = (navState: any) => {
     const { url } = navState;
     // Handle redirects from Stripe
     if (url.includes("/success")) {
@@ -122,6 +132,17 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     );
   }
 
+  // On web, we redirect directly, so show loading
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary_blue} />
+        <Text style={{ marginTop: 10 }}>Redirecting to payment...</Text>
+      </View>
+    );
+  }
+
+  // Native platforms use WebView
   return (
     <WebView
       source={{ uri: checkoutUrl }}

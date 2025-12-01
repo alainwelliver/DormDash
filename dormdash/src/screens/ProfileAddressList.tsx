@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-  Alert,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +15,7 @@ import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type AddressListNavigationProp = NativeStackNavigationProp<{
   AddAddress: undefined;
@@ -51,7 +51,7 @@ const AddressList: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchAddresses();
-    }, []),
+    }, [])
   );
 
   const onRefresh = () => {
@@ -60,7 +60,7 @@ const AddressList: React.FC = () => {
   };
 
   const handleEdit = (address: Address) => {
-    Alert.alert("Edit Address", "Edit functionality coming soon!");
+    alert("Edit Address", "Edit functionality coming soon!");
   };
 
   const renderAddressItem = ({ item }: { item: Address }) => {

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
+import { alert } from "../lib/utils/platform";
 
 type AddAddressNavigationProp = NativeStackNavigationProp<any>;
 
@@ -38,7 +38,7 @@ const AddAddress: React.FC = () => {
       !state &&
       !zipCode
     ) {
-      Alert.alert("Error", "Please fill in at least one field");
+      alert("Error", "Please fill in at least one field");
       return;
     }
 
@@ -47,7 +47,7 @@ const AddAddress: React.FC = () => {
     // Simulate saving - will connect to database later
     setTimeout(() => {
       setSaving(false);
-      Alert.alert("Success", "Address saved!");
+      alert("Success", "Address saved!");
       navigation.goBack();
     }, 500);
   };

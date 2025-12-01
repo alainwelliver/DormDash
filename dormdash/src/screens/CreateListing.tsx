@@ -2,18 +2,15 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
-  Alert,
   Text,
   ScrollView,
   TouchableOpacity,
   Image,
   StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Input } from "@rneui/themed";
-import * as ImagePicker from "expo-image-picker";
-import { File } from "expo-file-system/next";
-import { decode } from "base64-arraybuffer";
 import { supabase } from "../lib/supabase";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -24,6 +21,7 @@ import {
   Spacing,
   BorderRadius,
 } from "../assets/styles";
+import { alert, pickImage, uploadImageToSupabase } from "../lib/utils/platform";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   { MainTabs: undefined; CreateListing: undefined },
@@ -36,7 +34,7 @@ type Props = { onCancel?: () => void; onCreated?: (listingId: number) => void };
 
 const BUCKET = "listings";
 
-// ---------- RN-safe image upload helpers ----------
+// ---------- Helper functions ----------
 function guessExt(uri: string) {
   const m = uri.match(/\.(\w+)(?:\?|$)/);
   return m ? m[1].toLowerCase() : "jpg";
@@ -46,27 +44,6 @@ function guessMime(ext: string) {
   if (ext === "heic" || ext === "heif") return "image/heic";
   if (ext === "webp") return "image/webp";
   return "image/jpeg";
-}
-async function uploadImageRN(
-  supabaseClient: typeof supabase,
-  bucket: string,
-  uri: string,
-  path: string,
-) {
-  const ext = guessExt(uri);
-  const contentType = guessMime(ext);
-
-  // Read file using the new expo-file-system/next API
-  const file = new File(uri);
-  const base64 = await file.base64();
-  const arrayBuffer = decode(base64);
-
-  const { data, error } = await supabaseClient.storage
-    .from(bucket)
-    .upload(path, arrayBuffer, { contentType, upsert: false });
-
-  if (error) throw error;
-  return data;
 }
 // --------------------------------------------------
 
@@ -131,16 +108,13 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     setCustomTags((prev) => prev.filter((t) => t !== name));
 
   const pickImages = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+    const uris = await pickImage({
       allowsMultipleSelection: true,
       quality: 0.85,
       selectionLimit: 5,
     });
-    if (!res.canceled && res.assets?.length) {
-      setLocalImages((prev) =>
-        [...prev, ...res.assets.map((a) => a.uri)].slice(0, 5),
-      );
+    if (uris && uris.length > 0) {
+      setLocalImages((prev) => [...prev, ...uris].slice(0, 5));
     }
   };
 
@@ -152,10 +126,9 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     });
 
   async function handleSubmit() {
-    if (!title.trim())
-      return Alert.alert("Missing title", "Please enter a title.");
+    if (!title.trim()) return alert("Missing title", "Please enter a title.");
     if (!categoryId)
-      return Alert.alert("Missing category", "Please choose a category.");
+      return alert("Missing category", "Please choose a category.");
 
     setSubmitting(true);
     const {
@@ -163,7 +136,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     } = await supabase.auth.getUser();
     if (!user?.id) {
       setSubmitting(false);
-      return Alert.alert("Not signed in");
+      return alert("Not signed in");
     }
 
     // 1) Create listing
@@ -182,7 +155,7 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
 
     if (insertErr || !listing) {
       setSubmitting(false);
-      return Alert.alert("Error", insertErr?.message);
+      return alert("Error", insertErr?.message);
     }
 
     const listingId = listing.id as number;
@@ -192,9 +165,10 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
       for (let i = 0; i < localImages.length; i++) {
         const uri = localImages[i];
         const ext = guessExt(uri);
+        const contentType = guessMime(ext);
         const path = `${listingId}/${Date.now()}_${i}.${ext}`;
 
-        await uploadImageRN(supabase, BUCKET, uri, path);
+        await uploadImageToSupabase(supabase, BUCKET, uri, path, contentType);
 
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
         const url = pub?.publicUrl ?? null;
@@ -229,11 +203,11 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         if (error) throw error;
       }
 
-      Alert.alert("Success", "Your listing has been posted!");
+      alert("Success", "Your listing has been posted!");
       onCreated?.(listingId);
       navigation.navigate("MainTabs");
     } catch (e: any) {
-      Alert.alert("Upload error", e.message ?? String(e));
+      alert("Upload error", e.message ?? String(e));
     } finally {
       setSubmitting(false);
     }

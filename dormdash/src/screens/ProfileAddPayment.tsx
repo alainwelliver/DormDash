@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,6 +13,7 @@ import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
 
 type AddPaymentNavigationProp = NativeStackNavigationProp<any>;
 
@@ -64,24 +64,24 @@ const AddPayment: React.FC = () => {
   const handleSave = async () => {
     // Validate fields
     if (!cardNumber || !ccv || !exp || !cardholderName) {
-      Alert.alert("Error", "Please fill in all fields");
+      alert("Error", "Please fill in all fields");
       return;
     }
 
     // Basic validation
     const cardNumberDigits = cardNumber.replace(/\s/g, "");
     if (cardNumberDigits.length < 13 || cardNumberDigits.length > 16) {
-      Alert.alert("Error", "Please enter a valid card number");
+      alert("Error", "Please enter a valid card number");
       return;
     }
 
     if (ccv.length < 3) {
-      Alert.alert("Error", "Please enter a valid CCV");
+      alert("Error", "Please enter a valid CCV");
       return;
     }
 
     if (exp.length !== 5) {
-      Alert.alert("Error", "Please enter a valid expiration date (MM/YY)");
+      alert("Error", "Please enter a valid expiration date (MM/YY)");
       return;
     }
 
@@ -90,7 +90,7 @@ const AddPayment: React.FC = () => {
     // Simulate saving - will connect to payment processor later
     setTimeout(() => {
       setSaving(false);
-      Alert.alert("Success", "Card added successfully!");
+      alert("Success", "Card added successfully!");
       navigation.goBack();
     }, 500);
   };
