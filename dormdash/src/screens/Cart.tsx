@@ -83,7 +83,7 @@ const Cart: React.FC = () => {
           price_cents,
           listing_images ( url )
         )
-      `,
+      `
       )
       .eq("user_id", userId);
 
@@ -135,8 +135,8 @@ const Cart: React.FC = () => {
 
     setCartItems(
       cartItems.map((i) =>
-        i.id === cartItemId ? { ...i, quantity: newQty } : i,
-      ),
+        i.id === cartItemId ? { ...i, quantity: newQty } : i
+      )
     );
   };
 
@@ -163,6 +163,17 @@ const Cart: React.FC = () => {
       .reduce((sum, item) => sum + item.price_cents * item.quantity, 0);
   };
 
+  // Philadelphia sales tax rate: 8%
+  const PHILLY_TAX_RATE = 0.08;
+
+  const calculateTax = () => {
+    return Math.round(calculateSubtotal() * PHILLY_TAX_RATE);
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax();
+  };
+
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
       alert("No Items Selected", "Please select at least one item.");
@@ -170,7 +181,7 @@ const Cart: React.FC = () => {
     }
 
     const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id),
+      selectedItems.includes(item.id)
     );
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });
@@ -353,6 +364,22 @@ const Cart: React.FC = () => {
             </Text>
             <Text style={styles.summaryValue}>
               {formatPrice(calculateSubtotal())}
+            </Text>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Philadelphia Tax (8%)</Text>
+            <Text style={styles.summaryValue}>
+              {formatPrice(calculateTax())}
+            </Text>
+          </View>
+
+          <View style={styles.summaryDivider} />
+
+          <View style={styles.summaryRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>
+              {formatPrice(calculateTotal())}
             </Text>
           </View>
 
@@ -544,7 +571,24 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   summaryValue: {
-    fontSize: 20,
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: Colors.lightGray,
+    marginVertical: Spacing.sm,
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontFamily: Typography.heading4.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  totalValue: {
+    fontSize: 22,
     fontFamily: Typography.heading4.fontFamily,
     fontWeight: "700",
     color: Colors.primary_blue,
