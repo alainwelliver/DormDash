@@ -15,7 +15,7 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -197,7 +197,7 @@ const Cart: React.FC = () => {
   // Loading State
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={[styles.header, isWeb && styles.webHeader]}>
           <View
@@ -211,14 +211,14 @@ const Cart: React.FC = () => {
           <CartItemSkeleton />
           <CartItemSkeleton />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Empty Cart
   if (cartItems.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={[styles.header, isWeb && styles.webHeader]}>
           <View
@@ -232,13 +232,13 @@ const Cart: React.FC = () => {
           title="Your cart is empty"
           subtitle="Add items to your cart to get started shopping!"
         />
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Main Cart UI
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={[styles.header, isWeb && styles.webHeader]}>
@@ -402,7 +402,7 @@ const Cart: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: 200,
+    paddingBottom: 220,
   },
   webScrollContent: {
     alignSelf: "center",
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   },
   checkoutContainer: {
     position: "absolute",
-    bottom: 60,
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: Colors.white,

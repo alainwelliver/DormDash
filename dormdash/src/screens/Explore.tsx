@@ -10,7 +10,7 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Icon } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -228,7 +228,7 @@ const Explore: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
       <View style={styles.header}>
@@ -316,7 +316,7 @@ const Explore: React.FC = () => {
           setPriceRange(null);
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
