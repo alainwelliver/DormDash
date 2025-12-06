@@ -15,6 +15,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  Platform,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from "react-native";
@@ -29,6 +30,8 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const isWeb = Platform.OS === "web";
+const IMAGE_MAX_WIDTH = 600; // Max width for images on web
 
 type MainStackParamList = {
   ProductDetail: { listingId: number };
@@ -104,15 +107,19 @@ export default function ProductDetail({
   };
 
   const scrollToImage = (index: number) => {
-    if (imageScrollRef.current && listing?.listing_images) {
+    if (listing?.listing_images) {
       const clampedIndex = Math.max(
         0,
         Math.min(index, listing.listing_images.length - 1),
       );
-      imageScrollRef.current.scrollTo({
-        x: clampedIndex * SCREEN_WIDTH,
-        animated: true,
-      });
+      // On web, just update the index (no scrolling needed)
+      // On mobile, scroll the ScrollView
+      if (!isWeb && imageScrollRef.current) {
+        imageScrollRef.current.scrollTo({
+          x: clampedIndex * SCREEN_WIDTH,
+          animated: true,
+        });
+      }
       setImageIndex(clampedIndex);
     }
   };
@@ -500,23 +507,39 @@ export default function ProductDetail({
         {/* Image Carousel */}
         {listing.listing_images && listing.listing_images.length > 0 ? (
           <View style={styles.imageCarouselContainer}>
-            <ScrollView
-              ref={imageScrollRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={handleImageScroll}
-              scrollEventThrottle={16}
-            >
-              {listing.listing_images.map((img, index) => (
+            {isWeb ? (
+              // Web: Show single image, switch with arrows/indicators
+              <View style={styles.imageWrapper}>
                 <Image
-                  key={index}
-                  source={{ uri: img.url }}
-                  style={[styles.productImage, { width: SCREEN_WIDTH }]}
-                  resizeMode="cover"
+                  source={{ uri: listing.listing_images[imageIndex]?.url }}
+                  style={styles.productImage}
+                  resizeMode="contain"
                 />
-              ))}
-            </ScrollView>
+              </View>
+            ) : (
+              // Mobile: Scrollable carousel
+              <ScrollView
+                ref={imageScrollRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={handleImageScroll}
+                scrollEventThrottle={16}
+              >
+                {listing.listing_images.map((img, index) => (
+                  <View
+                    key={index}
+                    style={[styles.imageWrapper, { width: SCREEN_WIDTH }]}
+                  >
+                    <Image
+                      source={{ uri: img.url }}
+                      style={styles.productImage}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            )}
 
             {/* Arrow buttons */}
             {listing.listing_images.length > 1 && (
@@ -567,11 +590,13 @@ export default function ProductDetail({
             )}
           </View>
         ) : (
-          <Image
-            source={require("../../assets/icon.png")}
-            style={styles.productImage}
-            resizeMode="cover"
-          />
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("../../assets/icon.png")}
+              style={styles.productImage}
+              resizeMode={isWeb ? "contain" : "cover"}
+            />
+          </View>
         )}
 
         {/* Product Info */}
@@ -789,11 +814,21 @@ const styles = StyleSheet.create({
   },
   imageCarouselContainer: {
     position: "relative",
+    alignItems: "center",
+    backgroundColor: Colors.lightMint,
+  },
+  imageWrapper: {
+    width: "100%",
+    maxWidth: isWeb ? IMAGE_MAX_WIDTH : undefined,
+    height: 420,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.lightMint,
+    alignSelf: "center",
   },
   productImage: {
     width: "100%",
-    height: 420,
-    backgroundColor: Colors.lightMint,
+    height: "100%",
   },
   arrowButton: {
     position: "absolute",
@@ -819,7 +854,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: Spacing.lg,
     gap: Spacing.sm,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.lightMint,
   },
   indicator: {
     width: 8,

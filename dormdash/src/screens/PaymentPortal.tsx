@@ -42,22 +42,17 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   // ---------------------------------------------------------
   // NETWORK CONFIGURATION
   // ---------------------------------------------------------
-  // You MUST run a separate node server for this to work.
-  // 10.0.2.2 is the Android Emulator's way of reaching your computer's localhost.
-  const LOCAL_SERVER_URL =
-    Platform.OS === "android"
-      ? "http://10.0.2.2:4242"
-      : "http://localhost:4242";
+  const CONVEX_SITE_URL = "https://notable-bass-729.convex.site";
 
   useEffect(() => {
     const fetchCheckoutSession = async () => {
       try {
         console.log(
-          `Requesting session from: ${LOCAL_SERVER_URL}/create-checkout-session`,
+          `Requesting session from: ${CONVEX_SITE_URL}/create-checkout-session`,
         );
 
         const response = await fetch(
-          `${LOCAL_SERVER_URL}/create-checkout-session`,
+          `${CONVEX_SITE_URL}/create-checkout-session`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -90,10 +85,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
         }
       } catch (error) {
         console.error("Payment Error:", error);
-        alert(
-          "Connection Error",
-          "Ensure your Node server is running on port 4242.",
-        );
+        alert("Connection Error", "Ensure your Convex server is running.");
       } finally {
         setLoading(false);
       }
