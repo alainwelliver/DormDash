@@ -43,7 +43,6 @@ const AddAddress: React.FC = () => {
   const [isDefault, setIsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   useEffect(() => {
     if (isEditMode) {
@@ -81,7 +80,13 @@ const AddAddress: React.FC = () => {
     }
   };
 
-  const handleLocationSelect = (location: LocationData) => {
+  const handleLocationSelect = (location: LocationData | null) => {
+    if (!location) {
+      // Clear location data
+      setLat(null);
+      setLng(null);
+      return;
+    }
     if (location.buildingName) {
       setBuildingName(location.buildingName);
     } else {
@@ -90,6 +95,17 @@ const AddAddress: React.FC = () => {
     setLat(location.lat);
     setLng(location.lng);
   };
+
+  // Build current location value for LocationPicker
+  const currentLocationValue: LocationData | null =
+    lat && lng
+      ? {
+          address: streetAddress || buildingName || "",
+          lat,
+          lng,
+          buildingName: buildingName || undefined,
+        }
+      : null;
 
   const handleSave = async () => {
     // Validate that at least building or street address is filled
@@ -221,19 +237,14 @@ const AddAddress: React.FC = () => {
           onChangeText={setLabel}
         />
 
-        {/* Pick from Map Button */}
-        <TouchableOpacity
-          style={styles.pickLocationButton}
-          onPress={() => setShowLocationPicker(true)}
-        >
-          <Icon
-            name="map-marker"
-            type="material-community"
-            color={Colors.primary_blue}
-            size={20}
-          />
-          <Text style={styles.pickLocationText}>Pick from Campus Locations</Text>
-        </TouchableOpacity>
+        {/* Pick from Campus Locations */}
+        <LocationPicker
+          value={currentLocationValue}
+          onChange={handleLocationSelect}
+          label="Pick from Campus Locations"
+          placeholder="Select a Penn building"
+          helperText="Choose a campus location to auto-fill the address"
+        />
 
         <Text style={styles.sectionLabel}>Penn Campus Address</Text>
         <TextInput
@@ -318,13 +329,6 @@ const AddAddress: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Location Picker Modal */}
-      <LocationPicker
-        visible={showLocationPicker}
-        onClose={() => setShowLocationPicker(false)}
-        onSelectLocation={handleLocationSelect}
-        initialAddress={buildingName || streetAddress}
-      />
     </SafeAreaView>
   );
 };
@@ -406,24 +410,6 @@ const styles = StyleSheet.create({
     color: Colors.darkTeal,
     marginBottom: Spacing.sm,
     marginTop: Spacing.sm,
-  },
-  pickLocationButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  pickLocationText: {
-    fontSize: 16,
-    fontFamily: Typography.bodyMedium.fontFamily,
-    fontWeight: "600",
-    color: Colors.primary_blue,
-    marginLeft: Spacing.sm,
   },
   defaultRow: {
     flexDirection: "row",
