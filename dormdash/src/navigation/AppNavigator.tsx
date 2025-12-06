@@ -223,9 +223,23 @@ export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          // Handle invalid refresh token by signing out locally
+          console.error("Session error:", error.message);
+          supabase.auth.signOut({ scope: "local" });
+          setSession(null);
+        } else {
+          setSession(session);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to get session:", error);
+        supabase.auth.signOut({ scope: "local" });
+        setSession(null);
+      });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
