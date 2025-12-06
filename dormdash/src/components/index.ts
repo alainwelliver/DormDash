@@ -26,3 +26,5 @@ export { default as CategorySelect } from "./CategorySelect";
 export { default as ImagePickerGrid } from "./ImagePickerGrid";
 export { default as Loading } from "./Loading";
 export { default as ErrorState } from "./ErrorState";
+export { default as LocationPicker } from "./LocationPicker";
+export type { LocationData } from "./LocationPicker";

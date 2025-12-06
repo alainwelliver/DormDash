@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,50 +7,182 @@ import {
   ScrollView,
   TextInput,
   StatusBar,
+  ActivityIndicator,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
 import { alert } from "../lib/utils/platform";
+import { LocationPicker, LocationData } from "../components";
 
+type AddAddressRouteProp = RouteProp<
+  { AddAddress: { addressId?: number } },
+  "AddAddress"
+>;
 type AddAddressNavigationProp = NativeStackNavigationProp<any>;
 
 const AddAddress: React.FC = () => {
   const navigation = useNavigation<AddAddressNavigationProp>();
+  const route = useRoute<AddAddressRouteProp>();
+  const addressId = route.params?.addressId;
+  const isEditMode = !!addressId;
+
+  const [label, setLabel] = useState("");
   const [buildingName, setBuildingName] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [city, setCity] = useState("Philadelphia");
+  const [state, setState] = useState("PA");
   const [zipCode, setZipCode] = useState("");
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [isDefault, setIsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode) {
+      loadAddress();
+    }
+  }, [addressId]);
+
+  const loadAddress = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .eq("id", addressId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setLabel(data.label || "");
+        setBuildingName(data.building_name || "");
+        setRoomNumber(data.room_number || "");
+        setStreetAddress(data.street_address || "");
+        setCity(data.city || "Philadelphia");
+        setState(data.state || "PA");
+        setZipCode(data.zip_code || "");
+        setLat(data.lat);
+        setLng(data.lng);
+        setIsDefault(data.is_default || false);
+      }
+    } catch (error: any) {
+      console.error("Error loading address:", error);
+      alert("Error", "Failed to load address");
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLocationSelect = (location: LocationData) => {
+    if (location.buildingName) {
+      setBuildingName(location.buildingName);
+    } else {
+      setStreetAddress(location.address);
+    }
+    setLat(location.lat);
+    setLng(location.lng);
+  };
 
   const handleSave = async () => {
-    // Validate that at least one field is filled
-    if (
-      !buildingName &&
-      !roomNumber &&
-      !streetAddress &&
-      !city &&
-      !state &&
-      !zipCode
-    ) {
-      alert("Error", "Please fill in at least one field");
+    // Validate that at least building or street address is filled
+    if (!buildingName && !streetAddress) {
+      alert("Error", "Please enter a building name or street address");
       return;
     }
 
     setSaving(true);
 
-    // Simulate saving - will connect to database later
-    setTimeout(() => {
-      setSaving(false);
-      alert("Success", "Address saved!");
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        alert("Error", "Please log in to save address");
+        setSaving(false);
+        return;
+      }
+
+      const addressData = {
+        user_id: user.id,
+        label: label || null,
+        building_name: buildingName || null,
+        room_number: roomNumber || null,
+        street_address: streetAddress || null,
+        city: city || "Philadelphia",
+        state: state || "PA",
+        zip_code: zipCode || null,
+        lat,
+        lng,
+        is_default: isDefault,
+      };
+
+      // If setting as default, first unset all other defaults
+      if (isDefault) {
+        await supabase
+          .from("addresses")
+          .update({ is_default: false })
+          .eq("user_id", user.id);
+      }
+
+      let error;
+      if (isEditMode) {
+        const result = await supabase
+          .from("addresses")
+          .update(addressData)
+          .eq("id", addressId);
+        error = result.error;
+      } else {
+        const result = await supabase.from("addresses").insert(addressData);
+        error = result.error;
+      }
+
+      if (error) throw error;
+
+      alert("Success", isEditMode ? "Address updated!" : "Address saved!");
       navigation.goBack();
-    }, 500);
+    } catch (error: any) {
+      console.error("Error saving address:", error);
+      alert("Error", error.message || "Failed to save address");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon
+              name="chevron-left"
+              type="material-community"
+              color={Colors.darkTeal}
+              size={32}
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? "Edit Address" : "Add Address"}
+          </Text>
+          <View style={styles.placeholder} />
+        </View>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={Colors.primary_blue} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,7 +200,9 @@ const AddAddress: React.FC = () => {
             size={32}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Address</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "Edit Address" : "Add Address"}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -77,6 +211,31 @@ const AddAddress: React.FC = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Label */}
+        <Text style={styles.sectionLabel}>Address Label (optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., Home, Dorm, Work"
+          placeholderTextColor={Colors.mutedGray}
+          value={label}
+          onChangeText={setLabel}
+        />
+
+        {/* Pick from Map Button */}
+        <TouchableOpacity
+          style={styles.pickLocationButton}
+          onPress={() => setShowLocationPicker(true)}
+        >
+          <Icon
+            name="map-marker"
+            type="material-community"
+            color={Colors.primary_blue}
+            size={20}
+          />
+          <Text style={styles.pickLocationText}>Pick from Campus Locations</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionLabel}>Penn Campus Address</Text>
         <TextInput
           style={styles.input}
           placeholder="Penn Building Name"
@@ -87,7 +246,7 @@ const AddAddress: React.FC = () => {
 
         <TextInput
           style={styles.input}
-          placeholder="Room Number"
+          placeholder="Room Number (optional)"
           placeholderTextColor={Colors.mutedGray}
           value={roomNumber}
           onChangeText={setRoomNumber}
@@ -99,6 +258,7 @@ const AddAddress: React.FC = () => {
           <View style={styles.dividerLine} />
         </View>
 
+        <Text style={styles.sectionLabel}>Off-Campus Address</Text>
         <TextInput
           style={styles.input}
           placeholder="Street Address"
@@ -132,6 +292,17 @@ const AddAddress: React.FC = () => {
             keyboardType="numeric"
           />
         </View>
+
+        {/* Set as Default */}
+        <View style={styles.defaultRow}>
+          <Text style={styles.defaultLabel}>Set as default address</Text>
+          <Switch
+            value={isDefault}
+            onValueChange={setIsDefault}
+            trackColor={{ false: Colors.lightGray, true: Colors.primary_green }}
+            thumbColor={Colors.white}
+          />
+        </View>
       </ScrollView>
 
       {/* Save Button */}
@@ -142,10 +313,18 @@ const AddAddress: React.FC = () => {
           disabled={saving}
         >
           <Text style={styles.saveButtonText}>
-            {saving ? "Saving..." : "Save"}
+            {saving ? "Saving..." : isEditMode ? "Update" : "Save"}
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Location Picker Modal */}
+      <LocationPicker
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onSelectLocation={handleLocationSelect}
+        initialAddress={buildingName || streetAddress}
+      />
     </SafeAreaView>
   );
 };
@@ -219,6 +398,45 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  pickLocationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  pickLocationText: {
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.primary_blue,
+    marginLeft: Spacing.sm,
+  },
+  defaultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+    paddingVertical: Spacing.sm,
+  },
+  defaultLabel: {
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    color: Colors.darkTeal,
   },
   buttonContainer: {
     paddingHorizontal: Spacing.lg,

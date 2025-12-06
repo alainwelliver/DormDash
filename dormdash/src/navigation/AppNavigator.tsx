@@ -63,7 +63,7 @@ type MainStackParamList = {
   MyListings: undefined;
   PastOrders: undefined;
   AddressList: undefined;
-  AddAddress: undefined;
+  AddAddress: { addressId?: number } | undefined;
   PaymentList: undefined;
   AddPayment: undefined;
   CreateListing: undefined;

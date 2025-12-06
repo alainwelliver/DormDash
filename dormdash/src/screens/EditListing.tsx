@@ -26,6 +26,7 @@ import {
   BorderRadius,
 } from "../assets/styles";
 import { alert, pickImage, uploadImageToSupabase } from "../lib/utils/platform";
+import { LocationPicker, LocationData } from "../components";
 
 type MainStackParamList = {
   MainTabs: undefined;
@@ -81,6 +82,11 @@ export default function EditListing({ route, navigation }: EditListingProps) {
   const [cats, setCats] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Location state for dasher system
+  const [pickupLocation, setPickupLocation] = useState<LocationData | null>(
+    null,
+  );
+
   // Load categories, tags, and existing listing data
   useEffect(() => {
     const loadData = async () => {
@@ -118,6 +124,15 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           );
           setType(listing.type || "item");
           setCategoryId(listing.category_id);
+
+          // Load pickup location if exists
+          if (listing.pickup_address || listing.pickup_lat) {
+            setPickupLocation({
+              address: listing.pickup_address || "",
+              lat: listing.pickup_lat || 0,
+              lng: listing.pickup_lng || 0,
+            });
+          }
 
           // Sort and set existing images
           const sortedImages = [...(listing.listing_images || [])].sort(
@@ -224,6 +239,10 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           price_cents,
           type,
           category_id: categoryId,
+          // Update pickup location for dasher system
+          pickup_address: pickupLocation?.address || null,
+          pickup_lat: pickupLocation?.lat || null,
+          pickup_lng: pickupLocation?.lng || null,
         })
         .eq("id", listingId);
 
@@ -572,6 +591,15 @@ export default function EditListing({ route, navigation }: EditListingProps) {
             </ScrollView>
           </>
         )}
+
+        <Text style={styles.sectionTitle}>Pickup Location</Text>
+        <LocationPicker
+          value={pickupLocation}
+          onChange={setPickupLocation}
+          placeholder="Select where item can be picked up"
+          label=""
+          helperText="This location is hidden from buyers browsing the feed. Only dashers will see it for deliveries."
+        />
 
         <View style={styles.buttonRow}>
           <Button

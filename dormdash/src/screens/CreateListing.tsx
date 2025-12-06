@@ -22,6 +22,7 @@ import {
   BorderRadius,
 } from "../assets/styles";
 import { alert, pickImage, uploadImageToSupabase } from "../lib/utils/platform";
+import { LocationPicker, LocationData } from "../components";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   { MainTabs: undefined; CreateListing: undefined },
@@ -63,6 +64,11 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
   const [localImages, setLocalImages] = useState<string[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Location state for dasher system
+  const [pickupLocation, setPickupLocation] = useState<LocationData | null>(
+    null,
+  );
 
   // Load categories and tags
   useEffect(() => {
@@ -149,6 +155,10 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         price_cents,
         type,
         category_id: categoryId,
+        // Pickup location for dasher system (hidden from feed)
+        pickup_address: pickupLocation?.address || null,
+        pickup_lat: pickupLocation?.lat || null,
+        pickup_lng: pickupLocation?.lng || null,
       })
       .select("id")
       .single();
@@ -400,6 +410,15 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
             ))}
           </View>
         </ScrollView>
+
+        <Text style={styles.sectionTitle}>Pickup Location</Text>
+        <LocationPicker
+          value={pickupLocation}
+          onChange={setPickupLocation}
+          placeholder="Select where item can be picked up"
+          label=""
+          helperText="This location is hidden from buyers browsing the feed. Only dashers will see it for deliveries."
+        />
 
         <View style={styles.buttonRow}>
           <Button

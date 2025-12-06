@@ -8,6 +8,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@rneui/themed";
@@ -18,17 +19,21 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 
 type AddressListNavigationProp = NativeStackNavigationProp<{
-  AddAddress: undefined;
+  AddAddress: { addressId?: number } | undefined;
 }>;
 
 interface Address {
   id: number;
+  label?: string;
   building_name?: string;
   room_number?: string;
   street_address?: string;
   city?: string;
   state?: string;
   zip_code?: string;
+  lat?: number;
+  lng?: number;
+  is_default?: boolean;
 }
 
 const AddressList: React.FC = () => {
@@ -38,13 +43,32 @@ const AddressList: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchAddresses = async () => {
-    // Using mock data for now - will connect to database later
-    setAddresses([
-      { id: 1, building_name: "Gutmann College House", room_number: "" },
-      { id: 2, building_name: "", room_number: "Levine 605" },
-    ]);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAddresses(data || []);
+    } catch (error: any) {
+      console.error("Error fetching addresses:", error);
+      alert("Error", "Failed to load addresses");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -60,27 +84,153 @@ const AddressList: React.FC = () => {
   };
 
   const handleEdit = (address: Address) => {
-    alert("Edit Address", "Edit functionality coming soon!");
+    navigation.navigate("AddAddress", { addressId: address.id });
+  };
+
+  const handleSetDefault = async (addressId: number) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // First, unset all defaults for this user
+      await supabase
+        .from("addresses")
+        .update({ is_default: false })
+        .eq("user_id", user.id);
+
+      // Then set this one as default
+      const { error } = await supabase
+        .from("addresses")
+        .update({ is_default: true })
+        .eq("id", addressId);
+
+      if (error) throw error;
+      fetchAddresses();
+    } catch (error: any) {
+      console.error("Error setting default:", error);
+      alert("Error", "Failed to set default address");
+    }
+  };
+
+  const handleDelete = (address: Address) => {
+    Alert.alert(
+      "Delete Address",
+      "Are you sure you want to delete this address?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from("addresses")
+                .delete()
+                .eq("id", address.id);
+
+              if (error) throw error;
+              fetchAddresses();
+            } catch (error: any) {
+              console.error("Error deleting address:", error);
+              alert("Error", "Failed to delete address");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const getDisplayText = (
+    item: Address,
+  ): { primary: string; secondary: string } => {
+    let primary = item.label || "";
+    let secondary = "";
+
+    if (item.building_name) {
+      if (!primary) primary = item.building_name;
+      else secondary = item.building_name;
+
+      if (item.room_number) {
+        secondary = secondary
+          ? `${secondary}, ${item.room_number}`
+          : item.room_number;
+      }
+    } else if (item.street_address) {
+      if (!primary) primary = item.street_address;
+      else secondary = item.street_address;
+
+      const cityState = [item.city, item.state, item.zip_code]
+        .filter(Boolean)
+        .join(", ");
+      if (cityState) {
+        secondary = secondary ? `${secondary}, ${cityState}` : cityState;
+      }
+    }
+
+    if (!primary) primary = "Address";
+
+    return { primary, secondary };
   };
 
   const renderAddressItem = ({ item }: { item: Address }) => {
-    const displayText =
-      item.building_name && item.room_number
-        ? `${item.building_name} - ${item.room_number}`
-        : item.building_name ||
-          item.room_number ||
-          item.street_address ||
-          "Address";
+    const { primary, secondary } = getDisplayText(item);
 
     return (
       <View style={styles.addressCard}>
-        <Text style={styles.addressText}>{displayText}</Text>
         <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => handleEdit(item)}
+          style={styles.addressContent}
+          onPress={() => handleSetDefault(item.id)}
         >
-          <Text style={styles.editButtonText}>Edit</Text>
+          <View style={styles.addressIcon}>
+            <Icon
+              name={item.is_default ? "map-marker-check" : "map-marker-outline"}
+              type="material-community"
+              color={item.is_default ? Colors.primary_green : Colors.mutedGray}
+              size={24}
+            />
+          </View>
+          <View style={styles.addressTextContainer}>
+            <View style={styles.addressLabelRow}>
+              <Text style={styles.addressPrimary}>{primary}</Text>
+              {item.is_default && (
+                <View style={styles.defaultBadge}>
+                  <Text style={styles.defaultBadgeText}>Default</Text>
+                </View>
+              )}
+            </View>
+            {secondary ? (
+              <Text style={styles.addressSecondary} numberOfLines={2}>
+                {secondary}
+              </Text>
+            ) : null}
+          </View>
         </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleEdit(item)}
+          >
+            <Icon
+              name="pencil"
+              type="material-community"
+              color={Colors.primary_blue}
+              size={20}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDelete(item)}
+          >
+            <Icon
+              name="delete-outline"
+              type="material-community"
+              color={Colors.error}
+              size={20}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -139,7 +289,7 @@ const AddressList: React.FC = () => {
             size={32}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Address</Text>
+        <Text style={styles.headerTitle}>My Addresses</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -150,9 +300,16 @@ const AddressList: React.FC = () => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate("AddAddress")}
+          onPress={() => navigation.navigate("AddAddress", undefined)}
         >
-          <Text style={styles.addButtonText}>Add Address</Text>
+          <Icon
+            name="plus"
+            type="material-community"
+            color={Colors.white}
+            size={20}
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.addButtonText}>Add New Address</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -199,29 +356,61 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium, // 8px
-    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.md,
     marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.lightGray,
   },
-  addressText: {
+  addressContent: {
     flex: 1,
-    fontSize: 18,
-    fontFamily: Typography.bodyLarge.fontFamily,
-    fontWeight: "500",
-    color: Colors.darkTeal,
+    flexDirection: "row",
+    alignItems: "center",
   },
-  editButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+  addressIcon: {
+    marginRight: Spacing.md,
   },
-  editButtonText: {
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  addressPrimary: {
     fontSize: 16,
     fontFamily: Typography.bodyLarge.fontFamily,
     fontWeight: "600",
-    color: Colors.primary_blue,
+    color: Colors.darkTeal,
+    marginRight: Spacing.sm,
+  },
+  addressSecondary: {
+    fontSize: 14,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginTop: 2,
+  },
+  defaultBadge: {
+    backgroundColor: Colors.lightMint,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  defaultBadgeText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.secondary,
+    fontWeight: "600",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  actionButton: {
+    padding: Spacing.sm,
   },
   buttonContainer: {
     paddingHorizontal: Spacing.lg,
@@ -230,12 +419,14 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium, // 8px
+    borderRadius: BorderRadius.medium,
     paddingVertical: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
   },
   addButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: Typography.buttonText.fontFamily,
     fontWeight: "600",
     color: Colors.white,
