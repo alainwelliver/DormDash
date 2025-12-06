@@ -193,7 +193,9 @@ const AddAddress: React.FC = () => {
           </Text>
           <View style={styles.placeholder} />
         </View>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={Colors.primary_blue} />
         </View>
       </SafeAreaView>
@@ -328,7 +330,6 @@ const AddAddress: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
-
     </SafeAreaView>
   );
 };

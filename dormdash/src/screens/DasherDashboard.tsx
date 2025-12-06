@@ -512,7 +512,11 @@ const DasherDashboard: React.FC = () => {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: getStatusColor(dasherInfo?.status || "offline") },
+                  {
+                    backgroundColor: getStatusColor(
+                      dasherInfo?.status || "offline",
+                    ),
+                  },
                 ]}
               />
               <Text

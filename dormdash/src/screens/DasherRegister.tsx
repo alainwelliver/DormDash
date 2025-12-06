@@ -394,9 +394,7 @@ const DasherRegister: React.FC = () => {
                 color={Colors.white}
                 size={20}
               />
-              <Text style={styles.registerButtonText}>
-                Register as Dasher
-              </Text>
+              <Text style={styles.registerButtonText}>Register as Dasher</Text>
             </>
           )}
         </TouchableOpacity>
