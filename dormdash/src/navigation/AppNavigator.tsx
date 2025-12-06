@@ -33,6 +33,8 @@ import AddPayment from "../screens/ProfileAddPayment";
 import PaymentSuccess from "../screens/PaymentSuccess";
 import PaymentFailed from "../screens/PaymentFailed";
 import EditListing from "../screens/EditListing";
+import DasherDashboard from "../screens/DasherDashboard";
+import DasherRegister from "../screens/DasherRegister";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -45,6 +47,7 @@ type MainTabParamList = {
   FeedTab: undefined;
   ExploreTab: undefined;
   CartTab: undefined;
+  DashTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -70,6 +73,7 @@ type MainStackParamList = {
   EditListing: { listingId: number };
   PaymentSuccess: undefined;
   PaymentFailed: undefined;
+  DasherRegister: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -183,6 +187,31 @@ function MainTabs() {
           tabBarIcon: ({ color, size }) => (
             <Icon
               name="cart"
+              type="material-community"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <MainTab.Screen
+        name="DashTab"
+        component={DasherDashboard}
+        options={{
+          tabBarLabel: "Dash",
+          headerTitle: () => (
+            <View style={headerStyles.container}>
+              <Image
+                source={require("../../assets/dormdash-logo.png")}
+                style={headerStyles.logo}
+                resizeMode="contain"
+              />
+              <Text style={headerStyles.title}>Dash</Text>
+            </View>
+          ),
+          tabBarIcon: ({ color, size }) => (
+            <Icon
+              name="bike-fast"
               type="material-community"
               color={color}
               size={size}
@@ -307,6 +336,11 @@ export default function AppNavigator() {
           <MainStack.Screen
             name="PaymentFailed"
             component={PaymentFailed}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="DasherRegister"
+            component={DasherRegister}
             options={{ headerShown: false }}
           />
         </MainStack.Navigator>
