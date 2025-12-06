@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { Icon } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -292,7 +292,7 @@ const Profile: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <ScrollView
         style={styles.scrollView}
@@ -505,7 +505,7 @@ const Profile: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: "center",
-    paddingTop: 100,
+    paddingTop: Spacing.lg,
     paddingHorizontal: Spacing.lg,
     width: "100%",
   },
