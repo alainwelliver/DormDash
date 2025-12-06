@@ -9,3 +9,5 @@ To run project:
 3. start frontend with "pnpm run start"
 
 Formatting: Run "pnpm format"
+
+Unit Testing: Run "pnpm test"
