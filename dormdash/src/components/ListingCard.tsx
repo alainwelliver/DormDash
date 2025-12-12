@@ -167,10 +167,7 @@ export default function ListingCard({
               onPress={handleMenuPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <MoreVertical
-                size={16}
-                color={Colors.white}
-              />
+              <MoreVertical size={16} color={Colors.white} />
             </TouchableOpacity>
           )}
         </View>
@@ -203,10 +200,7 @@ export default function ListingCard({
         >
           <View style={styles.menuContainer}>
             <TouchableOpacity style={styles.menuItem} onPress={handleEditPress}>
-              <Pencil
-                size={20}
-                color={Colors.darkTeal}
-              />
+              <Pencil size={20} color={Colors.darkTeal} />
               <Text style={styles.menuItemText}>Edit Listing</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
@@ -214,10 +208,7 @@ export default function ListingCard({
               style={styles.menuItem}
               onPress={handleDeletePress}
             >
-              <Trash2
-                size={20}
-                color={Colors.error || "#E74C3C"}
-              />
+              <Trash2 size={20} color={Colors.error || "#E74C3C"} />
               <Text style={[styles.menuItemText, styles.deleteText]}>
                 Delete Listing
               </Text>

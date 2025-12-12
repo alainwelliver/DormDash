@@ -162,10 +162,7 @@ const MyListings: React.FC = () => {
     if (listings.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Package
-            color={Colors.lightGray}
-            size={80}
-          />
+          <Package color={Colors.lightGray} size={80} />
           <Text style={styles.emptyText}>No listings yet</Text>
           <Text style={styles.emptySubtext}>
             Start selling by creating your first listing
@@ -205,10 +202,7 @@ const MyListings: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Listings ({listings.length})</Text>
         <View style={styles.placeholder} />

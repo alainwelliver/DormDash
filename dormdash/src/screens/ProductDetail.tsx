@@ -483,10 +483,7 @@ export default function ProductDetail({
               style={styles.menuItem}
               onPress={handleEditListing}
             >
-              <Pencil
-                size={20}
-                color={Colors.darkTeal}
-              />
+              <Pencil size={20} color={Colors.darkTeal} />
               <Text style={styles.menuItemText}>Edit Listing</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
@@ -494,10 +491,7 @@ export default function ProductDetail({
               style={styles.menuItem}
               onPress={handleDeleteListing}
             >
-              <Trash2
-                size={20}
-                color={Colors.error || "#E74C3C"}
-              />
+              <Trash2 size={20} color={Colors.error || "#E74C3C"} />
               <Text style={[styles.menuItemText, styles.deleteText]}>
                 Delete Listing
               </Text>
@@ -552,10 +546,7 @@ export default function ProductDetail({
                     style={[styles.arrowButton, styles.arrowLeft]}
                     onPress={() => scrollToImage(imageIndex - 1)}
                   >
-                    <ChevronLeft
-                      size={28}
-                      color={Colors.white}
-                    />
+                    <ChevronLeft size={28} color={Colors.white} />
                   </TouchableOpacity>
                 )}
                 {imageIndex < listing.listing_images.length - 1 && (
@@ -563,10 +554,7 @@ export default function ProductDetail({
                     style={[styles.arrowButton, styles.arrowRight]}
                     onPress={() => scrollToImage(imageIndex + 1)}
                   >
-                    <ChevronRight
-                      size={28}
-                      color={Colors.white}
-                    />
+                    <ChevronRight size={28} color={Colors.white} />
                   </TouchableOpacity>
                 )}
               </>
@@ -624,10 +612,7 @@ export default function ProductDetail({
                 />
               ) : (
                 <View style={styles.sellerAvatarPlaceholder}>
-                  <User
-                    size={32}
-                    color={Colors.primary_blue}
-                  />
+                  <User size={32} color={Colors.primary_blue} />
                 </View>
               )}
               <View style={styles.sellerInfo}>

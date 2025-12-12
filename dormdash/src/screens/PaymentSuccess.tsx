@@ -34,10 +34,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Success Icon */}
         <View style={styles.iconContainer}>
-          <CheckCircle
-            size={120}
-            color={Colors.primary_green}
-          />
+          <CheckCircle size={120} color={Colors.primary_green} />
         </View>
 
         {/* Success Message */}
@@ -49,10 +46,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
 
         {/* Order Info */}
         <View style={styles.infoBox}>
-          <Mail
-            size={24}
-            color={Colors.primary_blue}
-          />
+          <Mail size={24} color={Colors.primary_blue} />
           <Text style={styles.infoText}>
             A confirmation email will be sent to your registered email address.
           </Text>

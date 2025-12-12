@@ -211,10 +211,7 @@ const Checkout: React.FC = () => {
         )}
       </View>
       {selectedAddress?.id === item.id && (
-        <CheckCircle
-          color={Colors.primary_green}
-          size={24}
-        />
+        <CheckCircle color={Colors.primary_green} size={24} />
       )}
     </TouchableOpacity>
   );
@@ -228,10 +225,7 @@ const Checkout: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ArrowLeft
-            color={Colors.darkTeal}
-            size={24}
-          />
+          <ArrowLeft color={Colors.darkTeal} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Checkout</Text>
         <View style={styles.placeholder} />
@@ -244,10 +238,7 @@ const Checkout: React.FC = () => {
         {/* Delivery Method Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Truck
-              color={Colors.primary_blue}
-              size={24}
-            />
+            <Truck color={Colors.primary_blue} size={24} />
             <Text style={styles.sectionTitle}>Delivery Method</Text>
           </View>
           <View style={styles.deliveryMethodContainer}>
@@ -322,10 +313,7 @@ const Checkout: React.FC = () => {
         {deliveryMethod === "delivery" && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MapPin
-                color={Colors.primary_blue}
-                size={24}
-              />
+              <MapPin color={Colors.primary_blue} size={24} />
               <Text style={styles.sectionTitle}>Delivery Address</Text>
             </View>
             {loadingAddresses ? (
@@ -339,10 +327,7 @@ const Checkout: React.FC = () => {
                 style={styles.addAddressCard}
                 onPress={() => navigation.navigate("AddAddress", undefined)}
               >
-                <PlusCircle
-                  color={Colors.primary_blue}
-                  size={24}
-                />
+                <PlusCircle color={Colors.primary_blue} size={24} />
                 <Text style={styles.addAddressText}>Add delivery address</Text>
               </TouchableOpacity>
             ) : (
@@ -362,10 +347,7 @@ const Checkout: React.FC = () => {
                       : "Tap to change"}
                   </Text>
                 </View>
-                <ChevronRight
-                  color={Colors.mutedGray}
-                  size={24}
-                />
+                <ChevronRight color={Colors.mutedGray} size={24} />
               </TouchableOpacity>
             )}
           </View>
@@ -374,10 +356,7 @@ const Checkout: React.FC = () => {
         {/* Order Summary Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Receipt
-              color={Colors.primary_blue}
-              size={24}
-            />
+            <Receipt color={Colors.primary_blue} size={24} />
             <Text style={styles.sectionTitle}>Order Summary</Text>
           </View>
           <View style={styles.summaryCard}>
@@ -402,10 +381,7 @@ const Checkout: React.FC = () => {
         {/* Price Breakdown Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Calculator
-              color={Colors.primary_blue}
-              size={24}
-            />
+            <Calculator color={Colors.primary_blue} size={24} />
             <Text style={styles.sectionTitle}>Price Details</Text>
           </View>
           <View style={styles.priceCard}>
@@ -455,10 +431,7 @@ const Checkout: React.FC = () => {
           onPress={handlePlaceOrder}
         >
           <Text style={styles.placeOrderButtonText}>Place Order</Text>
-          <ArrowRight
-            color={Colors.white}
-            size={20}
-          />
+          <ArrowRight color={Colors.white} size={20} />
         </TouchableOpacity>
       </View>
 
@@ -474,10 +447,7 @@ const Checkout: React.FC = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Address</Text>
               <TouchableOpacity onPress={() => setShowAddressModal(false)}>
-                <X
-                  color={Colors.darkTeal}
-                  size={24}
-                />
+                <X color={Colors.darkTeal} size={24} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -496,10 +466,7 @@ const Checkout: React.FC = () => {
                 navigation.navigate("AddAddress", undefined);
               }}
             >
-              <Plus
-                color={Colors.primary_blue}
-                size={20}
-              />
+              <Plus color={Colors.primary_blue} size={20} />
               <Text style={styles.addNewAddressText}>Add New Address</Text>
             </TouchableOpacity>
           </View>

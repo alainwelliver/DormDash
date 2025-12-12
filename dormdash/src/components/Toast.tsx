@@ -7,7 +7,13 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from "lucide-react-native";
+import {
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  X,
+} from "lucide-react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -79,7 +85,11 @@ const Toast: React.FC<ToastProps> = ({
   const getTypeConfig = () => {
     const configs: Record<
       ToastType,
-      { bg: string; IconComponent: React.FC<{ color: string; size: number }>; color: string }
+      {
+        bg: string;
+        IconComponent: React.FC<{ color: string; size: number }>;
+        color: string;
+      }
     > = {
       success: {
         bg: Colors.success,
@@ -118,10 +128,7 @@ const Toast: React.FC<ToastProps> = ({
         { transform: [{ translateY }], opacity },
       ]}
     >
-      <IconComponent
-        size={24}
-        color={config.color}
-      />
+      <IconComponent size={24} color={config.color} />
       <Text style={[styles.message, { color: config.color }]} numberOfLines={2}>
         {message}
       </Text>
@@ -133,10 +140,7 @@ const Toast: React.FC<ToastProps> = ({
         </TouchableOpacity>
       )}
       <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-        <X
-          size={20}
-          color={config.color}
-        />
+        <X size={20} color={config.color} />
       </TouchableOpacity>
     </Animated.View>
   );

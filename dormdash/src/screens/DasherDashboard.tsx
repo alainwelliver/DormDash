@@ -287,10 +287,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <Package
-            color={Colors.primary_blue}
-            size={20}
-          />
+          <Package color={Colors.primary_blue} size={20} />
           <Text style={styles.routeLabel}>Pickup</Text>
         </View>
         <Text style={styles.routeAddress} numberOfLines={2}>
@@ -300,19 +297,13 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.routeDivider}>
         <View style={styles.routeLine} />
-        <ArrowDown
-          color={Colors.mutedGray}
-          size={16}
-        />
+        <ArrowDown color={Colors.mutedGray} size={16} />
         <View style={styles.routeLine} />
       </View>
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <MapPin
-            color={Colors.primary_green}
-            size={20}
-          />
+          <MapPin color={Colors.primary_green} size={20} />
           <Text style={styles.routeLabel}>Deliver</Text>
         </View>
         <Text style={styles.routeAddress} numberOfLines={2}>
@@ -371,10 +362,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.routeDivider}>
         <View style={styles.routeLine} />
-        <ArrowDown
-          color={Colors.mutedGray}
-          size={16}
-        />
+        <ArrowDown color={Colors.mutedGray} size={16} />
         <View style={styles.routeLine} />
       </View>
 
@@ -400,10 +388,7 @@ const DasherDashboard: React.FC = () => {
           style={[styles.actionButton, styles.pickedUpButton]}
           onPress={() => updateDeliveryStatus(item, "picked_up")}
         >
-          <PackageCheck
-            color={Colors.white}
-            size={20}
-          />
+          <PackageCheck color={Colors.white} size={20} />
           <Text style={styles.actionButtonText}>Confirm Pickup</Text>
         </TouchableOpacity>
       ) : (
@@ -411,10 +396,7 @@ const DasherDashboard: React.FC = () => {
           style={[styles.actionButton, styles.deliveredButton]}
           onPress={() => updateDeliveryStatus(item, "delivered")}
         >
-          <CheckCircle
-            color={Colors.white}
-            size={20}
-          />
+          <CheckCircle color={Colors.white} size={20} />
           <Text style={styles.actionButtonText}>Mark as Delivered</Text>
         </TouchableOpacity>
       )}
@@ -428,10 +410,7 @@ const DasherDashboard: React.FC = () => {
         <StatusBar barStyle="dark-content" />
         <View style={styles.notDasherContainer}>
           <View style={styles.notDasherIcon}>
-            <Bike
-              color={Colors.primary_green}
-              size={80}
-            />
+            <Bike color={Colors.primary_green} size={80} />
           </View>
           <Text style={styles.notDasherTitle}>Become a Dasher</Text>
           <Text style={styles.notDasherSubtitle}>
@@ -443,10 +422,7 @@ const DasherDashboard: React.FC = () => {
             onPress={() => navigation.navigate("DasherRegister")}
           >
             <Text style={styles.registerButtonText}>Get Started</Text>
-            <ArrowRight
-              color={Colors.white}
-              size={20}
-            />
+            <ArrowRight color={Colors.white} size={20} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -557,20 +533,14 @@ const DasherDashboard: React.FC = () => {
               </Text>
               {dasherInfo?.status !== "online" ? (
                 <View style={styles.offlineMessage}>
-                  <Info
-                    color={Colors.mutedGray}
-                    size={24}
-                  />
+                  <Info color={Colors.mutedGray} size={24} />
                   <Text style={styles.offlineMessageText}>
                     Go online to see and accept deliveries
                   </Text>
                 </View>
               ) : availableDeliveries.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Package
-                    color={Colors.lightGray}
-                    size={60}
-                  />
+                  <Package color={Colors.lightGray} size={60} />
                   <Text style={styles.emptyStateText}>
                     No deliveries available right now
                   </Text>

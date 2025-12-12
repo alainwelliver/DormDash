@@ -13,7 +13,14 @@ import {
   Platform,
 } from "react-native";
 
-import { Plus, List, Clock, MapPin, ChevronRight, X } from "lucide-react-native";
+import {
+  Plus,
+  List,
+  Clock,
+  MapPin,
+  ChevronRight,
+  X,
+} from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
@@ -318,10 +325,7 @@ const Profile: React.FC = () => {
               />
             </View>
             <View style={styles.avatarPlusButton}>
-              <Plus
-                color={Colors.white}
-                size={18}
-              />
+              <Plus color={Colors.white} size={18} />
             </View>
           </TouchableOpacity>
 
@@ -379,10 +383,7 @@ const Profile: React.FC = () => {
               }}
             >
               <Text style={styles.menuItemText}>{item.title}</Text>
-              <ChevronRight
-                color={Colors.mutedGray}
-                size={24}
-              />
+              <ChevronRight color={Colors.mutedGray} size={24} />
             </TouchableOpacity>
           ))}
         </View>
@@ -466,10 +467,7 @@ const Profile: React.FC = () => {
               style={styles.avatarModalClose}
               onPress={() => setIsAvatarModalVisible(false)}
             >
-              <X
-                color={Colors.darkTeal}
-                size={24}
-              />
+              <X color={Colors.darkTeal} size={24} />
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Profile Picture</Text>

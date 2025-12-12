@@ -69,19 +69,13 @@ const PastOrders: React.FC = () => {
   const renderOrderItem = ({ item }: { item: Order }) => (
     <TouchableOpacity style={styles.orderCard}>
       <View style={styles.iconContainer}>
-        <Heart
-          color={Colors.darkTeal}
-          size={32}
-        />
+        <Heart color={Colors.darkTeal} size={32} />
       </View>
       <View style={styles.orderInfo}>
         <Text style={styles.orderTitle}>{item.listing_title}</Text>
         <Text style={styles.orderNumber}>Order #{item.order_number}</Text>
       </View>
-      <ChevronRight
-        color={Colors.mutedGray}
-        size={24}
-      />
+      <ChevronRight color={Colors.mutedGray} size={24} />
     </TouchableOpacity>
   );
 
@@ -99,10 +93,7 @@ const PastOrders: React.FC = () => {
     if (orders.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Receipt
-            color={Colors.lightGray}
-            size={80}
-          />
+          <Receipt color={Colors.lightGray} size={80} />
           <Text style={styles.emptyText}>No past orders</Text>
           <Text style={styles.emptySubtext}>
             Your order history will appear here
@@ -133,10 +124,7 @@ const PastOrders: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Past Orders</Text>
         <View style={styles.placeholder} />

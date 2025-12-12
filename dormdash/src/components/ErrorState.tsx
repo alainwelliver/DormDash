@@ -22,10 +22,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconContainer}>
-        <AlertCircle
-          size={64}
-          color={Colors.error}
-        />
+        <AlertCircle size={64} color={Colors.error} />
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
@@ -35,12 +32,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
           onPress={onRetry}
           variant="primary"
           size="md"
-          icon={
-            <RefreshCw
-              size={18}
-              color={Colors.white}
-            />
-          }
+          icon={<RefreshCw size={18} color={Colors.white} />}
           style={styles.retryButton}
         />
       )}
