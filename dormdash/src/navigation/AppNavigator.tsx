@@ -283,6 +283,7 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth
@@ -301,6 +302,9 @@ export default function AppNavigator() {
         console.error("Failed to get session:", error);
         supabase.auth.signOut({ scope: "local" });
         setSession(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
@@ -318,6 +322,11 @@ export default function AppNavigator() {
       }
     };
   }, []);
+
+  // Show nothing while loading to prevent incorrect route resolution
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <NavigationContainer
