@@ -2,12 +2,55 @@ import React, { useEffect, useState } from "react";
 import { Platform, View, Image, Text, StyleSheet } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, LinkingOptions } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Home, Search, ShoppingCart, Bike, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, WebLayout, Typography, Spacing } from "../assets/styles";
+
+// Linking configuration for web URL routing
+const linking: LinkingOptions<any> = {
+  prefixes: [
+    // Add your production URL here
+    "https://dormdash.pages.dev",
+    "http://localhost:8081",
+    "http://www.dormdash.xyz",
+  ],
+  config: {
+    screens: {
+      // Auth screens
+      Welcome: "welcome",
+      Login: "login",
+      Register: "register",
+      ForgotPassword: "forgot-password",
+      // Main stack screens
+      MainTabs: {
+        screens: {
+          FeedTab: "feed",
+          ExploreTab: "explore",
+          CartTab: "cart",
+          DashTab: "dash",
+          ProfileTab: "profile",
+        },
+      },
+      ProductDetail: "product/:listingId",
+      Checkout: "checkout",
+      CreateListing: "create-listing",
+      EditListing: "edit-listing/:listingId",
+      MyListings: "my-listings",
+      PastOrders: "past-orders",
+      AddressList: "addresses",
+      AddAddress: "add-address",
+      PaymentList: "payments",
+      AddPayment: "add-payment",
+      PaymentPortal: "payment",
+      PaymentSuccess: "payment-success",
+      PaymentFailed: "payment-failed",
+      DasherRegister: "dasher-register",
+    },
+  },
+};
 
 // Auth screens
 import AuthWelcome from "../screens/AuthWelcome";
@@ -277,7 +320,13 @@ export default function AppNavigator() {
   }, []);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      linking={linking}
+      documentTitle={{
+        formatter: (options, route) =>
+          `DormDash${options?.title ? ` - ${options.title}` : route?.name ? ` - ${route.name.replace("Tab", "")}` : ""}`,
+      }}
+    >
       {!session ? (
         <AuthStack.Navigator screenOptions={{ headerShown: false }}>
           <AuthStack.Screen name="Welcome" component={AuthWelcome} />
