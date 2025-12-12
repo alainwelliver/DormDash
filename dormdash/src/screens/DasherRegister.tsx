@@ -9,7 +9,20 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import {
+  ChevronLeft,
+  CheckCircle,
+  Bike,
+  DollarSign,
+  Clock,
+  MapPin,
+  Footprints,
+  Zap,
+  Car,
+  Check,
+  Rocket,
+  type LucideIcon,
+} from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
@@ -22,7 +35,7 @@ type VehicleType = "walk" | "bike" | "scooter" | "car";
 
 interface VehicleOption {
   type: VehicleType;
-  icon: string;
+  IconComponent: LucideIcon;
   label: string;
   description: string;
 }
@@ -30,25 +43,25 @@ interface VehicleOption {
 const VEHICLE_OPTIONS: VehicleOption[] = [
   {
     type: "walk",
-    icon: "walk",
+    IconComponent: Footprints,
     label: "Walking",
     description: "Perfect for short campus deliveries",
   },
   {
     type: "bike",
-    icon: "bike",
+    IconComponent: Bike,
     label: "Bicycle",
     description: "Great for covering more ground quickly",
   },
   {
     type: "scooter",
-    icon: "scooter-electric",
+    IconComponent: Zap,
     label: "Scooter",
     description: "Electric or kick scooter",
   },
   {
     type: "car",
-    icon: "car",
+    IconComponent: Car,
     label: "Car",
     description: "For longer distance deliveries",
   },
@@ -168,9 +181,7 @@ const DasherRegister: React.FC = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Icon
-              name="chevron-left"
-              type="material-community"
+            <ChevronLeft
               color={Colors.darkTeal}
               size={32}
             />
@@ -181,9 +192,7 @@ const DasherRegister: React.FC = () => {
 
         <View style={styles.alreadyDasherContainer}>
           <View style={styles.successIcon}>
-            <Icon
-              name="check-circle"
-              type="material-community"
+            <CheckCircle
               color={Colors.primary_green}
               size={80}
             />
@@ -197,9 +206,7 @@ const DasherRegister: React.FC = () => {
             style={styles.dashButton}
             onPress={() => navigation.goBack()}
           >
-            <Icon
-              name="bike-fast"
-              type="material-community"
+            <Bike
               color={Colors.white}
               size={20}
             />
@@ -219,9 +226,7 @@ const DasherRegister: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="chevron-left"
-            type="material-community"
+          <ChevronLeft
             color={Colors.darkTeal}
             size={32}
           />
@@ -237,9 +242,7 @@ const DasherRegister: React.FC = () => {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.heroIcon}>
-            <Icon
-              name="bike-fast"
-              type="material-community"
+            <Bike
               color={Colors.primary_green}
               size={60}
             />
@@ -255,9 +258,7 @@ const DasherRegister: React.FC = () => {
         <View style={styles.benefitsSection}>
           <Text style={styles.sectionTitle}>Why Dash?</Text>
           <View style={styles.benefitItem}>
-            <Icon
-              name="cash"
-              type="material-community"
+            <DollarSign
               color={Colors.primary_green}
               size={24}
             />
@@ -269,9 +270,7 @@ const DasherRegister: React.FC = () => {
             </View>
           </View>
           <View style={styles.benefitItem}>
-            <Icon
-              name="clock-outline"
-              type="material-community"
+            <Clock
               color={Colors.primary_green}
               size={24}
             />
@@ -283,9 +282,7 @@ const DasherRegister: React.FC = () => {
             </View>
           </View>
           <View style={styles.benefitItem}>
-            <Icon
-              name="map-marker-radius"
-              type="material-community"
+            <MapPin
               color={Colors.primary_green}
               size={24}
             />
@@ -312,9 +309,7 @@ const DasherRegister: React.FC = () => {
                 ]}
                 onPress={() => setSelectedVehicle(option.type)}
               >
-                <Icon
-                  name={option.icon}
-                  type="material-community"
+                <option.IconComponent
                   color={
                     selectedVehicle === option.type
                       ? Colors.primary_green
@@ -336,9 +331,7 @@ const DasherRegister: React.FC = () => {
                 </Text>
                 {selectedVehicle === option.type && (
                   <View style={styles.vehicleCheck}>
-                    <Icon
-                      name="check-circle"
-                      type="material-community"
+                    <CheckCircle
                       color={Colors.primary_green}
                       size={20}
                     />
@@ -358,9 +351,7 @@ const DasherRegister: React.FC = () => {
             style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}
           >
             {agreedToTerms && (
-              <Icon
-                name="check"
-                type="material-community"
+              <Check
                 color={Colors.white}
                 size={16}
               />
@@ -388,9 +379,7 @@ const DasherRegister: React.FC = () => {
             <ActivityIndicator color={Colors.white} />
           ) : (
             <>
-              <Icon
-                name="rocket-launch"
-                type="material-community"
+              <Rocket
                 color={Colors.white}
                 size={20}
               />

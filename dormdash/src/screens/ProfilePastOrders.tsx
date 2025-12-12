@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import { Heart, ChevronRight, Receipt, ChevronLeft } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -69,9 +69,7 @@ const PastOrders: React.FC = () => {
   const renderOrderItem = ({ item }: { item: Order }) => (
     <TouchableOpacity style={styles.orderCard}>
       <View style={styles.iconContainer}>
-        <Icon
-          name="heart-outline"
-          type="material-community"
+        <Heart
           color={Colors.darkTeal}
           size={32}
         />
@@ -80,9 +78,7 @@ const PastOrders: React.FC = () => {
         <Text style={styles.orderTitle}>{item.listing_title}</Text>
         <Text style={styles.orderNumber}>Order #{item.order_number}</Text>
       </View>
-      <Icon
-        name="chevron-right"
-        type="material-community"
+      <ChevronRight
         color={Colors.mutedGray}
         size={24}
       />
@@ -103,9 +99,7 @@ const PastOrders: React.FC = () => {
     if (orders.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Icon
-            name="receipt"
-            type="material-community"
+          <Receipt
             color={Colors.lightGray}
             size={80}
           />
@@ -139,9 +133,7 @@ const PastOrders: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="chevron-left"
-            type="material-community"
+          <ChevronLeft
             color={Colors.darkTeal}
             size={32}
           />

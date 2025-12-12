@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import { Package, ChevronLeft } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -162,9 +162,7 @@ const MyListings: React.FC = () => {
     if (listings.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Icon
-            name="package-variant"
-            type="material-community"
+          <Package
             color={Colors.lightGray}
             size={80}
           />
@@ -207,9 +205,7 @@ const MyListings: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="chevron-left"
-            type="material-community"
+          <ChevronLeft
             color={Colors.darkTeal}
             size={32}
           />

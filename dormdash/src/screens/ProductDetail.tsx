@@ -19,7 +19,17 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import {
+  Star,
+  ArrowLeft,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  ShoppingCart,
+} from "lucide-react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type {
   NativeStackNavigationProp,
@@ -391,12 +401,11 @@ export default function ProductDetail({
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <Icon
+          <Star
             key={star}
-            name={star <= rating ? "star" : "star-outline"}
-            type="material"
             size={16}
             color={star <= rating ? "#FFB800" : Colors.lightGray}
+            fill={star <= rating ? "#FFB800" : "transparent"}
           />
         ))}
       </View>
@@ -420,7 +429,7 @@ export default function ProductDetail({
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" type="material-community" size={24} />
+            <ArrowLeft size={24} color={Colors.darkTeal} />
           </TouchableOpacity>
         </View>
         <Text style={styles.errorText}>Product not found</Text>
@@ -440,7 +449,7 @@ export default function ProductDetail({
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" type="material-community" size={24} />
+          <ArrowLeft size={24} color={Colors.darkTeal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
         {isOwner ? (
@@ -448,9 +457,7 @@ export default function ProductDetail({
             onPress={() => setMenuVisible(true)}
             disabled={deleting}
           >
-            <Icon
-              name="dots-three-vertical"
-              type="entypo"
+            <MoreVertical
               size={20}
               color={deleting ? Colors.lightGray : Colors.darkTeal}
             />
@@ -476,9 +483,7 @@ export default function ProductDetail({
               style={styles.menuItem}
               onPress={handleEditListing}
             >
-              <Icon
-                name="pencil"
-                type="material-community"
+              <Pencil
                 size={20}
                 color={Colors.darkTeal}
               />
@@ -489,9 +494,7 @@ export default function ProductDetail({
               style={styles.menuItem}
               onPress={handleDeleteListing}
             >
-              <Icon
-                name="delete"
-                type="material-community"
+              <Trash2
                 size={20}
                 color={Colors.error || "#E74C3C"}
               />
@@ -549,9 +552,7 @@ export default function ProductDetail({
                     style={[styles.arrowButton, styles.arrowLeft]}
                     onPress={() => scrollToImage(imageIndex - 1)}
                   >
-                    <Icon
-                      name="chevron-left"
-                      type="material-community"
+                    <ChevronLeft
                       size={28}
                       color={Colors.white}
                     />
@@ -562,9 +563,7 @@ export default function ProductDetail({
                     style={[styles.arrowButton, styles.arrowRight]}
                     onPress={() => scrollToImage(imageIndex + 1)}
                   >
-                    <Icon
-                      name="chevron-right"
-                      type="material-community"
+                    <ChevronRight
                       size={28}
                       color={Colors.white}
                     />
@@ -625,9 +624,7 @@ export default function ProductDetail({
                 />
               ) : (
                 <View style={styles.sellerAvatarPlaceholder}>
-                  <Icon
-                    name="account"
-                    type="material-community"
+                  <User
                     size={32}
                     color={Colors.primary_blue}
                   />
@@ -666,11 +663,10 @@ export default function ProductDetail({
                   onPress={() => setReviewRating(star)}
                   style={styles.starButton}
                 >
-                  <Icon
-                    name={star <= reviewRating ? "star" : "star-outline"}
-                    type="material"
+                  <Star
                     size={32}
                     color={star <= reviewRating ? "#FFB800" : Colors.lightGray}
+                    fill={star <= reviewRating ? "#FFB800" : "transparent"}
                   />
                 </TouchableOpacity>
               ))}
@@ -769,14 +765,15 @@ export default function ProductDetail({
               <ActivityIndicator color={Colors.white} size="small" />
             ) : (
               <>
-                <Icon
-                  name="cart-plus"
-                  type="material-community"
+                ) : (
+              <>
+                <ShoppingCart
                   color={Colors.white}
                   size={24}
                   style={{ marginRight: Spacing.sm }}
                 />
                 <Text style={styles.buyButtonText}>Add to Cart</Text>
+              </>
               </>
             )}
           </TouchableOpacity>

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from "lucide-react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type ToastType = "success" | "error" | "warning" | "info";
@@ -79,26 +79,26 @@ const Toast: React.FC<ToastProps> = ({
   const getTypeConfig = () => {
     const configs: Record<
       ToastType,
-      { bg: string; icon: string; color: string }
+      { bg: string; IconComponent: React.FC<{ color: string; size: number }>; color: string }
     > = {
       success: {
         bg: Colors.success,
-        icon: "check-circle",
+        IconComponent: CheckCircle,
         color: Colors.white,
       },
       error: {
         bg: Colors.error,
-        icon: "alert-circle",
+        IconComponent: AlertCircle,
         color: Colors.white,
       },
       warning: {
         bg: Colors.warning,
-        icon: "alert",
+        IconComponent: AlertTriangle,
         color: Colors.white,
       },
       info: {
         bg: Colors.primary_blue,
-        icon: "information",
+        IconComponent: Info,
         color: Colors.white,
       },
     };
@@ -106,6 +106,7 @@ const Toast: React.FC<ToastProps> = ({
   };
 
   const config = getTypeConfig();
+  const IconComponent = config.IconComponent;
 
   if (!visible) return null;
 
@@ -117,9 +118,7 @@ const Toast: React.FC<ToastProps> = ({
         { transform: [{ translateY }], opacity },
       ]}
     >
-      <Icon
-        name={config.icon}
-        type="material-community"
+      <IconComponent
         size={24}
         color={config.color}
       />
@@ -134,9 +133,7 @@ const Toast: React.FC<ToastProps> = ({
         </TouchableOpacity>
       )}
       <TouchableOpacity onPress={hideToast} style={styles.closeButton}>
-        <Icon
-          name="close"
-          type="material-community"
+        <X
           size={20}
           color={config.color}
         />

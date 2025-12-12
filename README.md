@@ -2,6 +2,8 @@
 
 **This project uses pnpm. Replace all commands from npm to pnpm equivalent**
 
+deployed on: www.dormdash.xyz
+
 To run project:
 
 1. "cd" into dormdash folder
@@ -11,3 +13,5 @@ To run project:
 Formatting: Run "pnpm format"
 
 Unit Testing: Run "pnpm test"
+
+Deploy and Build script: Run "pnpm deploy"

@@ -13,7 +13,7 @@ import {
   Platform,
 } from "react-native";
 
-import { Icon } from "@rneui/themed";
+import { Plus, List, Clock, MapPin, ChevronRight, X } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
@@ -286,9 +286,9 @@ const Profile: React.FC = () => {
   };
 
   const menuItems = [
-    { title: "My Listings", icon: "format-list-bulleted", route: "MyListings" },
-    { title: "Past Orders", icon: "history", route: "PastOrders" },
-    { title: "Address", icon: "map-marker", route: "AddressList" },
+    { title: "My Listings", IconComponent: List, route: "MyListings" },
+    { title: "Past Orders", IconComponent: Clock, route: "PastOrders" },
+    { title: "Address", IconComponent: MapPin, route: "AddressList" },
   ];
 
   return (
@@ -318,9 +318,7 @@ const Profile: React.FC = () => {
               />
             </View>
             <View style={styles.avatarPlusButton}>
-              <Icon
-                name="plus"
-                type="material-community"
+              <Plus
                 color={Colors.white}
                 size={18}
               />
@@ -381,9 +379,7 @@ const Profile: React.FC = () => {
               }}
             >
               <Text style={styles.menuItemText}>{item.title}</Text>
-              <Icon
-                name="chevron-right"
-                type="material-community"
+              <ChevronRight
                 color={Colors.mutedGray}
                 size={24}
               />
@@ -470,9 +466,7 @@ const Profile: React.FC = () => {
               style={styles.avatarModalClose}
               onPress={() => setIsAvatarModalVisible(false)}
             >
-              <Icon
-                name="close"
-                type="material-community"
+              <X
                 color={Colors.darkTeal}
                 size={24}
               />

@@ -11,7 +11,7 @@ import {
   Modal,
   Pressable,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react-native";
 import {
   Colors,
   Typography,
@@ -167,9 +167,7 @@ export default function ListingCard({
               onPress={handleMenuPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Icon
-                name="dots-three-vertical"
-                type="entypo"
+              <MoreVertical
                 size={16}
                 color={Colors.white}
               />
@@ -205,9 +203,7 @@ export default function ListingCard({
         >
           <View style={styles.menuContainer}>
             <TouchableOpacity style={styles.menuItem} onPress={handleEditPress}>
-              <Icon
-                name="pencil"
-                type="material-community"
+              <Pencil
                 size={20}
                 color={Colors.darkTeal}
               />
@@ -218,9 +214,7 @@ export default function ListingCard({
               style={styles.menuItem}
               onPress={handleDeletePress}
             >
-              <Icon
-                name="delete"
-                type="material-community"
+              <Trash2
                 size={20}
                 color={Colors.error || "#E74C3C"}
               />
