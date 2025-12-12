@@ -11,7 +11,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "deploy": "expo export --platform web && wrangler pages deploy dist --project-name dormdash"
+    "build:web": "expo export --platform web && npx shx cp -r public/* dist/",
+    "deploy": "pnpm run build:web && wrangler pages deploy dist --project-name dormdash"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -57,6 +58,7 @@
     "jest": "29.0.0",
     "jest-expo": "^54.0.14",
     "prettier": "^3.6.2",
+    "shx": "^0.4.0",
     "typescript": "~5.9.2"
   },
   "private": true

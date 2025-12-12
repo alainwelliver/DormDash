@@ -31,8 +31,8 @@ export const createCheckoutSession = action({
       ],
       mode: "payment",
       success_url:
-        process.env.SUCCESS_URL || "https://your-website.com/success",
-      cancel_url: process.env.CANCEL_URL || "https://your-website.com/cancel",
+        process.env.SUCCESS_URL || "https://www.dormdash.xyz/payment-success",
+      cancel_url: process.env.CANCEL_URL || "https://www.dormdash.xyz/payment-failed",
     });
 
     return { url: session.url };
