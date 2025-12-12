@@ -16,7 +16,15 @@ import {
   Platform,
 } from "react-native";
 
-import { CheckSquare, Square, Minus, Plus, Trash2, ImageIcon, ArrowRight } from "lucide-react-native";
+import {
+  CheckSquare,
+  Square,
+  Minus,
+  Plus,
+  Trash2,
+  ImageIcon,
+  ArrowRight,
+} from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
@@ -266,15 +274,9 @@ const Cart: React.FC = () => {
               onPress={() => toggleItemSelection(item.id)}
             >
               {selectedItems.includes(item.id) ? (
-                <CheckSquare
-                  color={Colors.primary_blue}
-                  size={20}
-                />
+                <CheckSquare color={Colors.primary_blue} size={20} />
               ) : (
-                <Square
-                  color={Colors.mutedGray}
-                  size={20}
-                />
+                <Square color={Colors.mutedGray} size={20} />
               )}
             </TouchableOpacity>
 
@@ -283,10 +285,7 @@ const Cart: React.FC = () => {
               {item.image_url ? (
                 <Image source={{ uri: item.image_url }} style={styles.image} />
               ) : (
-                <ImageIcon
-                  size={40}
-                  color={Colors.mutedGray}
-                />
+                <ImageIcon size={40} color={Colors.mutedGray} />
               )}
             </View>
 
@@ -305,10 +304,7 @@ const Cart: React.FC = () => {
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, -1)}
                 >
-                  <Minus
-                    color={Colors.darkTeal}
-                    size={18}
-                  />
+                  <Minus color={Colors.darkTeal} size={18} />
                 </TouchableOpacity>
 
                 <Text style={styles.quantityText}>{item.quantity}</Text>
@@ -317,10 +313,7 @@ const Cart: React.FC = () => {
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, 1)}
                 >
-                  <Plus
-                    color={Colors.darkTeal}
-                    size={18}
-                  />
+                  <Plus color={Colors.darkTeal} size={18} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -330,10 +323,7 @@ const Cart: React.FC = () => {
               style={styles.removeButton}
               onPress={() => removeItem(item.id)}
             >
-              <Trash2
-                color={Colors.error}
-                size={24}
-              />
+              <Trash2 color={Colors.error} size={24} />
             </TouchableOpacity>
           </View>
         ))}
@@ -382,10 +372,7 @@ const Cart: React.FC = () => {
             disabled={selectedItems.length === 0}
           >
             <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-            <ArrowRight
-              color={Colors.white}
-              size={20}
-            />
+            <ArrowRight color={Colors.white} size={20} />
           </TouchableOpacity>
         </View>
       </View>

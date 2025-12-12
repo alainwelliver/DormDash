@@ -206,10 +206,7 @@ const Feed: React.FC = () => {
             style={[styles.newListingButton, isWeb && styles.webButton]}
           >
             <View style={styles.newListingButtonInner}>
-              <Plus
-                size={20}
-                color={Colors.primary_green}
-              />
+              <Plus size={20} color={Colors.primary_green} />
               <Text style={styles.newListingText}>Sell</Text>
             </View>
           </TouchableOpacity>
@@ -222,10 +219,7 @@ const Feed: React.FC = () => {
           style={[styles.filterButton, isWeb && styles.webButton]}
           onPress={() => setShowFilters(true)}
         >
-          <SlidersHorizontal
-            size={22}
-            color={Colors.darkTeal}
-          />
+          <SlidersHorizontal size={22} color={Colors.darkTeal} />
           <Text style={styles.filterButtonText}>Filters</Text>
         </TouchableOpacity>
       </View>

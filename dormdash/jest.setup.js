@@ -112,13 +112,16 @@ jest.mock("lucide-react-native", () => {
     MockIcon.displayName = name;
     return MockIcon;
   };
-  
-  return new Proxy({}, {
-    get: (target, prop) => {
-      if (prop === "__esModule") return true;
-      return createMockIcon(prop);
+
+  return new Proxy(
+    {},
+    {
+      get: (target, prop) => {
+        if (prop === "__esModule") return true;
+        return createMockIcon(prop);
+      },
     },
-  });
+  );
 });
 
 // Silence console warnings in tests

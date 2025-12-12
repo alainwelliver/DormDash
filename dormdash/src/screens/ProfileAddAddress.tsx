@@ -181,10 +181,7 @@ const AddAddress: React.FC = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <ChevronLeft
-              color={Colors.darkTeal}
-              size={32}
-            />
+            <ChevronLeft color={Colors.darkTeal} size={32} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {isEditMode ? "Edit Address" : "Add Address"}
@@ -209,10 +206,7 @@ const AddAddress: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {isEditMode ? "Edit Address" : "Add Address"}

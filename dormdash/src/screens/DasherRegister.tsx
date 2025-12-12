@@ -181,10 +181,7 @@ const DasherRegister: React.FC = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <ChevronLeft
-              color={Colors.darkTeal}
-              size={32}
-            />
+            <ChevronLeft color={Colors.darkTeal} size={32} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Dasher Status</Text>
           <View style={styles.placeholder} />
@@ -192,10 +189,7 @@ const DasherRegister: React.FC = () => {
 
         <View style={styles.alreadyDasherContainer}>
           <View style={styles.successIcon}>
-            <CheckCircle
-              color={Colors.primary_green}
-              size={80}
-            />
+            <CheckCircle color={Colors.primary_green} size={80} />
           </View>
           <Text style={styles.alreadyDasherTitle}>You're a Dasher!</Text>
           <Text style={styles.alreadyDasherSubtitle}>
@@ -206,10 +200,7 @@ const DasherRegister: React.FC = () => {
             style={styles.dashButton}
             onPress={() => navigation.goBack()}
           >
-            <Bike
-              color={Colors.white}
-              size={20}
-            />
+            <Bike color={Colors.white} size={20} />
             <Text style={styles.dashButtonText}>Start Dashing</Text>
           </TouchableOpacity>
         </View>
@@ -226,10 +217,7 @@ const DasherRegister: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Become a Dasher</Text>
         <View style={styles.placeholder} />
@@ -242,10 +230,7 @@ const DasherRegister: React.FC = () => {
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.heroIcon}>
-            <Bike
-              color={Colors.primary_green}
-              size={60}
-            />
+            <Bike color={Colors.primary_green} size={60} />
           </View>
           <Text style={styles.heroTitle}>Earn money delivering on campus</Text>
           <Text style={styles.heroSubtitle}>
@@ -258,10 +243,7 @@ const DasherRegister: React.FC = () => {
         <View style={styles.benefitsSection}>
           <Text style={styles.sectionTitle}>Why Dash?</Text>
           <View style={styles.benefitItem}>
-            <DollarSign
-              color={Colors.primary_green}
-              size={24}
-            />
+            <DollarSign color={Colors.primary_green} size={24} />
             <View style={styles.benefitText}>
               <Text style={styles.benefitTitle}>$4 per delivery</Text>
               <Text style={styles.benefitSubtitle}>
@@ -270,10 +252,7 @@ const DasherRegister: React.FC = () => {
             </View>
           </View>
           <View style={styles.benefitItem}>
-            <Clock
-              color={Colors.primary_green}
-              size={24}
-            />
+            <Clock color={Colors.primary_green} size={24} />
             <View style={styles.benefitText}>
               <Text style={styles.benefitTitle}>Flexible schedule</Text>
               <Text style={styles.benefitSubtitle}>
@@ -282,10 +261,7 @@ const DasherRegister: React.FC = () => {
             </View>
           </View>
           <View style={styles.benefitItem}>
-            <MapPin
-              color={Colors.primary_green}
-              size={24}
-            />
+            <MapPin color={Colors.primary_green} size={24} />
             <View style={styles.benefitText}>
               <Text style={styles.benefitTitle}>Stay on campus</Text>
               <Text style={styles.benefitSubtitle}>
@@ -331,10 +307,7 @@ const DasherRegister: React.FC = () => {
                 </Text>
                 {selectedVehicle === option.type && (
                   <View style={styles.vehicleCheck}>
-                    <CheckCircle
-                      color={Colors.primary_green}
-                      size={20}
-                    />
+                    <CheckCircle color={Colors.primary_green} size={20} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -350,12 +323,7 @@ const DasherRegister: React.FC = () => {
           <View
             style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}
           >
-            {agreedToTerms && (
-              <Check
-                color={Colors.white}
-                size={16}
-              />
-            )}
+            {agreedToTerms && <Check color={Colors.white} size={16} />}
           </View>
           <Text style={styles.termsText}>
             I agree to the DormDash Dasher Terms of Service and understand that
@@ -379,10 +347,7 @@ const DasherRegister: React.FC = () => {
             <ActivityIndicator color={Colors.white} />
           ) : (
             <>
-              <Rocket
-                color={Colors.white}
-                size={20}
-              />
+              <Rocket color={Colors.white} size={20} />
               <Text style={styles.registerButtonText}>Register as Dasher</Text>
             </>
           )}

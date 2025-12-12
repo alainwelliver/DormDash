@@ -239,10 +239,7 @@ const Explore: React.FC = () => {
             onPress={() => navigation.navigate("CreateListing")}
             style={[styles.newListingButton, isWeb && styles.webButton]}
           >
-            <Plus
-              size={20}
-              color={Colors.white}
-            />
+            <Plus size={20} color={Colors.white} />
             <Text style={styles.newListingText}>new listing</Text>
           </TouchableOpacity>
         </View>
@@ -261,19 +258,13 @@ const Explore: React.FC = () => {
             style={[styles.filterButton, isWeb && styles.webButton]}
             onPress={() => setShowFilters(true)}
           >
-            <SlidersHorizontal
-              color={Colors.white}
-              size={22}
-            />
+            <SlidersHorizontal color={Colors.white} size={22} />
           </TouchableOpacity>
         </View>
         {/* Active filters indicator */}
         {(selectedCategory || selectedTags.length > 0 || priceRange) && (
           <View style={styles.activeFiltersRow}>
-            <FilterX
-              color={Colors.primary_green}
-              size={16}
-            />
+            <FilterX color={Colors.primary_green} size={16} />
             <Text style={styles.activeFiltersText}>Filters active</Text>
             <TouchableOpacity
               onPress={() => {

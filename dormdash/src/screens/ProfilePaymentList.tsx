@@ -85,10 +85,7 @@ const PaymentList: React.FC = () => {
         <Text style={styles.cardText}>**** {item.last4}</Text>
         {renderMastercardLogo()}
       </View>
-      <ChevronRight
-        color={Colors.mutedGray}
-        size={24}
-      />
+      <ChevronRight color={Colors.mutedGray} size={24} />
     </TouchableOpacity>
   );
 
@@ -98,10 +95,7 @@ const PaymentList: React.FC = () => {
       onPress={() => handlePayPalPress(item)}
     >
       <Text style={styles.paypalText}>{item.email}</Text>
-      <ChevronRight
-        color={Colors.mutedGray}
-        size={24}
-      />
+      <ChevronRight color={Colors.mutedGray} size={24} />
     </TouchableOpacity>
   );
 
@@ -148,10 +142,7 @@ const PaymentList: React.FC = () => {
 
         {cards.length === 0 && paypalAccounts.length === 0 && (
           <View style={styles.emptyContainer}>
-            <CreditCard
-              color={Colors.lightGray}
-              size={80}
-            />
+            <CreditCard color={Colors.lightGray} size={80} />
             <Text style={styles.emptyText}>No payment methods</Text>
             <Text style={styles.emptySubtext}>
               Add a payment method for faster checkout
@@ -171,10 +162,7 @@ const PaymentList: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payment</Text>
         <View style={styles.placeholder} />

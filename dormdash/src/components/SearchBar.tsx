@@ -101,10 +101,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           style={styles.clearButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <XCircle
-            size={18}
-            color={Colors.mutedGray}
-          />
+          <XCircle size={18} color={Colors.mutedGray} />
         </TouchableOpacity>
       )}
     </Animated.View>

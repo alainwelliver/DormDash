@@ -6,12 +6,12 @@ import Button from "./Button";
 
 // Map common icon names to Lucide icons
 const iconNameMap: Record<string, keyof typeof LucideIcons> = {
-  "inbox": "Inbox",
+  inbox: "Inbox",
   "package-variant": "Package",
   "cart-outline": "ShoppingCart",
   "filter-off": "FilterX",
   "magnify-close": "SearchX",
-  "receipt": "Receipt",
+  receipt: "Receipt",
   "map-marker-outline": "MapPin",
   "credit-card-outline": "CreditCard",
 };
@@ -36,7 +36,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   style,
 }) => {
   const lucideIconName = iconNameMap[icon] || "Inbox";
-  const IconComponent = (LucideIcons[lucideIconName] as React.FC<{ color: string; size: number }>) || LucideIcons.Inbox;
+  const IconComponent =
+    (LucideIcons[lucideIconName] as React.FC<{
+      color: string;
+      size: number;
+    }>) || LucideIcons.Inbox;
 
   return (
     <View style={[styles.container, style]}>

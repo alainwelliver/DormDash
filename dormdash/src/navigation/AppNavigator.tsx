@@ -177,12 +177,7 @@ function MainTabs() {
               <Text style={headerStyles.title}>Feed</Text>
             </View>
           ),
-          tabBarIcon: ({ color, size }) => (
-            <Home
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
       <MainTab.Screen
@@ -200,12 +195,7 @@ function MainTabs() {
               <Text style={headerStyles.title}>Explore</Text>
             </View>
           ),
-          tabBarIcon: ({ color, size }) => (
-            <Search
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
       <MainTab.Screen
@@ -224,10 +214,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <ShoppingCart
-              color={color}
-              size={size}
-            />
+            <ShoppingCart color={color} size={size} />
           ),
         }}
       />
@@ -246,12 +233,7 @@ function MainTabs() {
               <Text style={headerStyles.title}>Dash</Text>
             </View>
           ),
-          tabBarIcon: ({ color, size }) => (
-            <Bike
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <Bike color={color} size={size} />,
         }}
       />
       <MainTab.Screen
@@ -269,12 +251,7 @@ function MainTabs() {
               <Text style={headerStyles.title}>Profile</Text>
             </View>
           ),
-          tabBarIcon: ({ color, size }) => (
-            <User
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
     </MainTab.Navigator>

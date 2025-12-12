@@ -11,7 +11,14 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MapPin, MapPinCheck, Pencil, Trash2, ChevronLeft, Plus } from "lucide-react-native";
+import {
+  MapPin,
+  MapPinCheck,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  Plus,
+} from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -185,15 +192,9 @@ const AddressList: React.FC = () => {
         >
           <View style={styles.addressIcon}>
             {item.is_default ? (
-              <MapPinCheck
-                color={Colors.primary_green}
-                size={24}
-              />
+              <MapPinCheck color={Colors.primary_green} size={24} />
             ) : (
-              <MapPin
-                color={Colors.mutedGray}
-                size={24}
-              />
+              <MapPin color={Colors.mutedGray} size={24} />
             )}
           </View>
           <View style={styles.addressTextContainer}>
@@ -217,19 +218,13 @@ const AddressList: React.FC = () => {
             style={styles.actionButton}
             onPress={() => handleEdit(item)}
           >
-            <Pencil
-              color={Colors.primary_blue}
-              size={20}
-            />
+            <Pencil color={Colors.primary_blue} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => handleDelete(item)}
           >
-            <Trash2
-              color={Colors.error}
-              size={20}
-            />
+            <Trash2 color={Colors.error} size={20} />
           </TouchableOpacity>
         </View>
       </View>
@@ -258,10 +253,7 @@ const AddressList: React.FC = () => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MapPin
-              color={Colors.lightGray}
-              size={80}
-            />
+            <MapPin color={Colors.lightGray} size={80} />
             <Text style={styles.emptyText}>No saved addresses</Text>
             <Text style={styles.emptySubtext}>
               Add an address for faster checkout
@@ -281,10 +273,7 @@ const AddressList: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <ChevronLeft
-            color={Colors.darkTeal}
-            size={32}
-          />
+          <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Addresses</Text>
         <View style={styles.placeholder} />
@@ -299,11 +288,7 @@ const AddressList: React.FC = () => {
           style={styles.addButton}
           onPress={() => navigation.navigate("AddAddress", undefined)}
         >
-          <Plus
-            color={Colors.white}
-            size={20}
-            style={{ marginRight: 8 }}
-          />
+          <Plus color={Colors.white} size={20} style={{ marginRight: 8 }} />
           <Text style={styles.addButtonText}>Add New Address</Text>
         </TouchableOpacity>
       </View>
