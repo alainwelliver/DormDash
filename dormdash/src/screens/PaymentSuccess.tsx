@@ -18,7 +18,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
   const handleGoHome = () => {
     navigation.reset({
       index: 0,
-      routes: [{ name: "MainTabs" }],
+      routes: [{ name: "MainTabs", params: { screen: "FeedTab" } }],
     });
   };
 
