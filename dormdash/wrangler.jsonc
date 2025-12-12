@@ -1,0 +1,9 @@
+{
+  "name": "my-expo-app",
+  "main": "dist/index.html", // Optional: explicit entry point
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "compatibility_date": "2025-12-12"
+}
