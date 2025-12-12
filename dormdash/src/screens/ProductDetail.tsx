@@ -765,15 +765,12 @@ export default function ProductDetail({
               <ActivityIndicator color={Colors.white} size="small" />
             ) : (
               <>
-                ) : (
-              <>
                 <ShoppingCart
                   color={Colors.white}
                   size={24}
                   style={{ marginRight: Spacing.sm }}
                 />
                 <Text style={styles.buyButtonText}>Add to Cart</Text>
-              </>
               </>
             )}
           </TouchableOpacity>
