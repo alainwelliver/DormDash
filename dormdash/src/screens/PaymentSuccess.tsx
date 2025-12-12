@@ -5,6 +5,8 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  Platform,
+  Linking,
 } from "react-native";
 import { CheckCircle, Mail, Home, Receipt } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -16,10 +18,14 @@ type Props = {
 
 const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
   const handleGoHome = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "MainTabs", params: { screen: "FeedTab" } }],
-    });
+    if (Platform.OS === "web") {
+      window.location.href = "/feed";
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs", params: { screen: "FeedTab" } }],
+      });
+    }
   };
 
   const handleViewOrders = () => {

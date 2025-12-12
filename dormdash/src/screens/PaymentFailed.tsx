@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { XCircle, Info, RefreshCw, Home } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -92,10 +93,14 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleGoHome = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "MainTabs", params: { screen: "FeedTab" } }],
-    });
+    if (Platform.OS === "web") {
+      window.location.href = "/feed";
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "MainTabs", params: { screen: "FeedTab" } }],
+      });
+    }
   };
 
   const handleContactSupport = () => {
