@@ -8,7 +8,7 @@ import {
   Animated,
   ViewStyle,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { Search, XCircle } from "lucide-react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 interface SearchBarProps {
@@ -75,9 +75,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       ]}
     >
       <View style={styles.searchIcon}>
-        <Icon
-          name="magnify"
-          type="material-community"
+        <Search
           size={22}
           color={isFocused ? Colors.primary_blue : Colors.mutedGray}
         />
@@ -103,9 +101,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           style={styles.clearButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Icon
-            name="close-circle"
-            type="material-community"
+          <XCircle
             size={18}
             color={Colors.mutedGray}
           />

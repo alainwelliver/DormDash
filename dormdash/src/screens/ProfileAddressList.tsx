@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import { MapPin, MapPinCheck, Pencil, Trash2, ChevronLeft, Plus } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -184,12 +184,17 @@ const AddressList: React.FC = () => {
           onPress={() => handleSetDefault(item.id)}
         >
           <View style={styles.addressIcon}>
-            <Icon
-              name={item.is_default ? "map-marker-check" : "map-marker-outline"}
-              type="material-community"
-              color={item.is_default ? Colors.primary_green : Colors.mutedGray}
-              size={24}
-            />
+            {item.is_default ? (
+              <MapPinCheck
+                color={Colors.primary_green}
+                size={24}
+              />
+            ) : (
+              <MapPin
+                color={Colors.mutedGray}
+                size={24}
+              />
+            )}
           </View>
           <View style={styles.addressTextContainer}>
             <View style={styles.addressLabelRow}>
@@ -212,9 +217,7 @@ const AddressList: React.FC = () => {
             style={styles.actionButton}
             onPress={() => handleEdit(item)}
           >
-            <Icon
-              name="pencil"
-              type="material-community"
+            <Pencil
               color={Colors.primary_blue}
               size={20}
             />
@@ -223,9 +226,7 @@ const AddressList: React.FC = () => {
             style={styles.actionButton}
             onPress={() => handleDelete(item)}
           >
-            <Icon
-              name="delete-outline"
-              type="material-community"
+            <Trash2
               color={Colors.error}
               size={20}
             />
@@ -257,9 +258,7 @@ const AddressList: React.FC = () => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Icon
-              name="map-marker-outline"
-              type="material-community"
+            <MapPin
               color={Colors.lightGray}
               size={80}
             />
@@ -282,9 +281,7 @@ const AddressList: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="chevron-left"
-            type="material-community"
+          <ChevronLeft
             color={Colors.darkTeal}
             size={32}
           />
@@ -302,9 +299,7 @@ const AddressList: React.FC = () => {
           style={styles.addButton}
           onPress={() => navigation.navigate("AddAddress", undefined)}
         >
-          <Icon
-            name="plus"
-            type="material-community"
+          <Plus
             color={Colors.white}
             size={20}
             style={{ marginRight: 8 }}

@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { XCircle, Info, RefreshCw, Home } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
@@ -39,9 +39,7 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Failed Icon */}
         <View style={styles.iconContainer}>
-          <Icon
-            name="close-circle"
-            type="material-community"
+          <XCircle
             size={120}
             color="#EF4444"
           />
@@ -56,9 +54,7 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
 
         {/* Info Box */}
         <View style={styles.infoBox}>
-          <Icon
-            name="information-outline"
-            type="material-community"
+          <Info
             size={24}
             color="#F59E0B"
           />
@@ -74,9 +70,7 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
             style={styles.primaryButton}
             onPress={handleTryAgain}
           >
-            <Icon
-              name="refresh"
-              type="material-community"
+            <RefreshCw
               size={20}
               color={Colors.white}
               style={{ marginRight: Spacing.sm }}
@@ -88,9 +82,7 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
             style={styles.secondaryButton}
             onPress={handleGoHome}
           >
-            <Icon
-              name="home"
-              type="material-community"
+            <Home
               size={20}
               color={Colors.primary_blue}
               style={{ marginRight: Spacing.sm }}

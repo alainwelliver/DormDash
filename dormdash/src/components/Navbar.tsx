@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Icon } from "@rneui/themed";
+import { Home, Search, ShoppingCart, User } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,18 +13,20 @@ type NavbarNavigationProp = NativeStackNavigationProp<{
   Profile: undefined;
 }>;
 
+const iconMap = {
+  Feed: Home,
+  Explore: Search,
+  Cart: ShoppingCart,
+  Profile: User,
+};
+
 const Navbar: React.FC = () => {
   const navigation = useNavigation<NavbarNavigationProp>();
   const route = useRoute();
   const currentRoute = route.name;
   const insets = useSafeAreaInsets();
 
-  const tabs = [
-    { name: "Feed", icon: "home", type: "material-community" },
-    { name: "Explore", icon: "magnify", type: "material-community" },
-    { name: "Cart", icon: "cart", type: "material-community" },
-    { name: "Profile", icon: "account", type: "material-community" },
-  ];
+  const tabs = ["Feed", "Explore", "Cart", "Profile"] as const;
 
   return (
     <View
@@ -33,22 +35,21 @@ const Navbar: React.FC = () => {
         { paddingBottom: (insets.bottom || 0) + Spacing.md },
       ]}
     >
-      {tabs.map((tab) => {
-        const isActive = currentRoute === tab.name;
+      {tabs.map((tabName) => {
+        const isActive = currentRoute === tabName;
+        const IconComponent = iconMap[tabName];
         return (
           <TouchableOpacity
-            key={tab.name}
+            key={tabName}
             style={styles.tab}
-            onPress={() => navigation.navigate(tab.name as any)}
+            onPress={() => navigation.navigate(tabName as any)}
           >
-            <Icon
-              name={tab.icon}
-              type={tab.type}
+            <IconComponent
               color={isActive ? Colors.primary_blue : Colors.mutedGray}
               size={28}
             />
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-              {tab.name}
+              {tabName}
             </Text>
           </TouchableOpacity>
         );

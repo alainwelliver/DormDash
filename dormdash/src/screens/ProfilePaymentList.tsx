@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import { ChevronRight, CreditCard, ChevronLeft } from "lucide-react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
@@ -85,9 +85,7 @@ const PaymentList: React.FC = () => {
         <Text style={styles.cardText}>**** {item.last4}</Text>
         {renderMastercardLogo()}
       </View>
-      <Icon
-        name="chevron-right"
-        type="material-community"
+      <ChevronRight
         color={Colors.mutedGray}
         size={24}
       />
@@ -100,9 +98,7 @@ const PaymentList: React.FC = () => {
       onPress={() => handlePayPalPress(item)}
     >
       <Text style={styles.paypalText}>{item.email}</Text>
-      <Icon
-        name="chevron-right"
-        type="material-community"
+      <ChevronRight
         color={Colors.mutedGray}
         size={24}
       />
@@ -152,9 +148,7 @@ const PaymentList: React.FC = () => {
 
         {cards.length === 0 && paypalAccounts.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Icon
-              name="credit-card-outline"
-              type="material-community"
+            <CreditCard
               color={Colors.lightGray}
               size={80}
             />
@@ -177,9 +171,7 @@ const PaymentList: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="chevron-left"
-            type="material-community"
+          <ChevronLeft
             color={Colors.darkTeal}
             size={32}
           />

@@ -104,6 +104,23 @@ jest.mock("@rneui/themed", () => ({
   CheckBox: (props) => null,
 }));
 
+// Mock lucide-react-native - return null for all icons
+jest.mock("lucide-react-native", () => {
+  const React = require("react");
+  const createMockIcon = (name) => {
+    const MockIcon = () => null;
+    MockIcon.displayName = name;
+    return MockIcon;
+  };
+  
+  return new Proxy({}, {
+    get: (target, prop) => {
+      if (prop === "__esModule") return true;
+      return createMockIcon(prop);
+    },
+  });
+});
+
 // Silence console warnings in tests
 const originalWarn = console.warn;
 console.warn = (...args) => {

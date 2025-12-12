@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { Icon } from "@rneui/themed";
+import { AlertCircle, RefreshCw } from "lucide-react-native";
 import { Colors, Typography, Spacing } from "../assets/styles";
 import Button from "./Button";
 
@@ -22,9 +22,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconContainer}>
-        <Icon
-          name="alert-circle-outline"
-          type="material-community"
+        <AlertCircle
           size={64}
           color={Colors.error}
         />
@@ -38,9 +36,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
           variant="primary"
           size="md"
           icon={
-            <Icon
-              name="refresh"
-              type="material-community"
+            <RefreshCw
               size={18}
               color={Colors.white}
             />

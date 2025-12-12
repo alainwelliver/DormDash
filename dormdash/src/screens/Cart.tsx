@@ -16,7 +16,7 @@ import {
   Platform,
 } from "react-native";
 
-import { Icon } from "@rneui/themed";
+import { CheckSquare, Square, Minus, Plus, Trash2, ImageIcon, ArrowRight } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
@@ -265,20 +265,17 @@ const Cart: React.FC = () => {
               style={styles.checkbox}
               onPress={() => toggleItemSelection(item.id)}
             >
-              <Icon
-                name={
-                  selectedItems.includes(item.id)
-                    ? "checkbox-marked"
-                    : "checkbox-blank-outline"
-                }
-                type="material-community"
-                color={
-                  selectedItems.includes(item.id)
-                    ? Colors.primary_blue
-                    : Colors.mutedGray
-                }
-                size={20}
-              />
+              {selectedItems.includes(item.id) ? (
+                <CheckSquare
+                  color={Colors.primary_blue}
+                  size={20}
+                />
+              ) : (
+                <Square
+                  color={Colors.mutedGray}
+                  size={20}
+                />
+              )}
             </TouchableOpacity>
 
             {/* Image */}
@@ -286,9 +283,7 @@ const Cart: React.FC = () => {
               {item.image_url ? (
                 <Image source={{ uri: item.image_url }} style={styles.image} />
               ) : (
-                <Icon
-                  name="image-outline"
-                  type="material-community"
+                <ImageIcon
                   size={40}
                   color={Colors.mutedGray}
                 />
@@ -310,9 +305,7 @@ const Cart: React.FC = () => {
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, -1)}
                 >
-                  <Icon
-                    name="minus"
-                    type="material-community"
+                  <Minus
                     color={Colors.darkTeal}
                     size={18}
                   />
@@ -324,9 +317,7 @@ const Cart: React.FC = () => {
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, 1)}
                 >
-                  <Icon
-                    name="plus"
-                    type="material-community"
+                  <Plus
                     color={Colors.darkTeal}
                     size={18}
                   />
@@ -339,9 +330,7 @@ const Cart: React.FC = () => {
               style={styles.removeButton}
               onPress={() => removeItem(item.id)}
             >
-              <Icon
-                name="trash-can-outline"
-                type="material-community"
+              <Trash2
                 color={Colors.error}
                 size={24}
               />
@@ -393,9 +382,7 @@ const Cart: React.FC = () => {
             disabled={selectedItems.length === 0}
           >
             <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-            <Icon
-              name="arrow-right"
-              type="material-community"
+            <ArrowRight
               color={Colors.white}
               size={20}
             />

@@ -11,7 +11,17 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import {
+  Package,
+  ArrowDown,
+  MapPin,
+  PackageCheck,
+  CheckCircle,
+  Bike,
+  ArrowRight,
+  Power,
+  Info,
+} from "lucide-react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
@@ -277,9 +287,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <Icon
-            name="package-variant"
-            type="material-community"
+          <Package
             color={Colors.primary_blue}
             size={20}
           />
@@ -292,9 +300,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.routeDivider}>
         <View style={styles.routeLine} />
-        <Icon
-          name="arrow-down"
-          type="material-community"
+        <ArrowDown
           color={Colors.mutedGray}
           size={16}
         />
@@ -303,9 +309,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <Icon
-            name="map-marker"
-            type="material-community"
+          <MapPin
             color={Colors.primary_green}
             size={20}
           />
@@ -350,9 +354,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <Icon
-            name="package-variant"
-            type="material-community"
+          <Package
             color={
               item.status === "accepted"
                 ? Colors.primary_blue
@@ -369,9 +371,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.routeDivider}>
         <View style={styles.routeLine} />
-        <Icon
-          name="arrow-down"
-          type="material-community"
+        <ArrowDown
           color={Colors.mutedGray}
           size={16}
         />
@@ -380,9 +380,7 @@ const DasherDashboard: React.FC = () => {
 
       <View style={styles.deliveryRoute}>
         <View style={styles.routePoint}>
-          <Icon
-            name="map-marker"
-            type="material-community"
+          <MapPin
             color={
               item.status === "picked_up"
                 ? Colors.primary_green
@@ -402,9 +400,7 @@ const DasherDashboard: React.FC = () => {
           style={[styles.actionButton, styles.pickedUpButton]}
           onPress={() => updateDeliveryStatus(item, "picked_up")}
         >
-          <Icon
-            name="package-variant-closed-check"
-            type="material-community"
+          <PackageCheck
             color={Colors.white}
             size={20}
           />
@@ -415,9 +411,7 @@ const DasherDashboard: React.FC = () => {
           style={[styles.actionButton, styles.deliveredButton]}
           onPress={() => updateDeliveryStatus(item, "delivered")}
         >
-          <Icon
-            name="check-circle"
-            type="material-community"
+          <CheckCircle
             color={Colors.white}
             size={20}
           />
@@ -434,9 +428,7 @@ const DasherDashboard: React.FC = () => {
         <StatusBar barStyle="dark-content" />
         <View style={styles.notDasherContainer}>
           <View style={styles.notDasherIcon}>
-            <Icon
-              name="bike-fast"
-              type="material-community"
+            <Bike
               color={Colors.primary_green}
               size={80}
             />
@@ -451,9 +443,7 @@ const DasherDashboard: React.FC = () => {
             onPress={() => navigation.navigate("DasherRegister")}
           >
             <Text style={styles.registerButtonText}>Get Started</Text>
-            <Icon
-              name="arrow-right"
-              type="material-community"
+            <ArrowRight
               color={Colors.white}
               size={20}
             />
@@ -528,9 +518,7 @@ const DasherDashboard: React.FC = () => {
               >
                 {dasherInfo?.status === "online" ? "Online" : "Offline"}
               </Text>
-              <Icon
-                name="power"
-                type="material-community"
+              <Power
                 color={
                   dasherInfo?.status === "online"
                     ? Colors.white
@@ -569,9 +557,7 @@ const DasherDashboard: React.FC = () => {
               </Text>
               {dasherInfo?.status !== "online" ? (
                 <View style={styles.offlineMessage}>
-                  <Icon
-                    name="information-outline"
-                    type="material-community"
+                  <Info
                     color={Colors.mutedGray}
                     size={24}
                   />
@@ -581,9 +567,7 @@ const DasherDashboard: React.FC = () => {
                 </View>
               ) : availableDeliveries.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Icon
-                    name="package-variant"
-                    type="material-community"
+                  <Package
                     color={Colors.lightGray}
                     size={60}
                   />

@@ -8,7 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { X } from "lucide-react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 interface Category {
@@ -100,7 +100,7 @@ const FilterModal: React.FC<Props> = ({
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Filters</Text>
             <TouchableOpacity onPress={onClose}>
-              <Icon name="close" type="material-community" size={26} />
+              <X size={26} color={Colors.darkTeal} />
             </TouchableOpacity>
           </View>
 

@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 
-import { Icon } from "@rneui/themed";
+import { Plus, SlidersHorizontal, FilterX } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -239,9 +239,7 @@ const Explore: React.FC = () => {
             onPress={() => navigation.navigate("CreateListing")}
             style={[styles.newListingButton, isWeb && styles.webButton]}
           >
-            <Icon
-              name="plus"
-              type="material-community"
+            <Plus
               size={20}
               color={Colors.white}
             />
@@ -263,9 +261,7 @@ const Explore: React.FC = () => {
             style={[styles.filterButton, isWeb && styles.webButton]}
             onPress={() => setShowFilters(true)}
           >
-            <Icon
-              name="filter-variant"
-              type="material-community"
+            <SlidersHorizontal
               color={Colors.white}
               size={22}
             />
@@ -274,9 +270,7 @@ const Explore: React.FC = () => {
         {/* Active filters indicator */}
         {(selectedCategory || selectedTags.length > 0 || priceRange) && (
           <View style={styles.activeFiltersRow}>
-            <Icon
-              name="filter-check"
-              type="material-community"
+            <FilterX
               color={Colors.primary_green}
               size={16}
             />

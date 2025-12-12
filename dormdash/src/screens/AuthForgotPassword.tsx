@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Button, Input } from "@rneui/themed";
+import { ChevronLeft, Mail } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useNavigation } from "@react-navigation/native";
 import { Colors, CommonStyles } from "../assets/styles";
@@ -41,17 +42,12 @@ export default function AuthForgotPassword() {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Button
-          type="clear"
-          icon={{
-            name: "chevron-left",
-            type: "feather",
-            size: 28,
-            color: Colors.darkTeal,
-          }}
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
-          containerStyle={styles.backButtonContainer}
-        />
+          style={styles.backButtonContainer}
+        >
+          <ChevronLeft size={28} color={Colors.darkTeal} />
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.title}>Reset Password</Text>
@@ -63,11 +59,7 @@ export default function AuthForgotPassword() {
       <View style={styles.verticallySpaced}>
         <Input
           label="Email"
-          leftIcon={{
-            type: "font-awesome",
-            name: "envelope",
-            color: Colors.mutedGray,
-          }}
+          leftIcon={<Mail size={20} color={Colors.mutedGray} />}
           onChangeText={(text) => setEmail(text)}
           value={email}
           placeholder="email@upenn.edu"

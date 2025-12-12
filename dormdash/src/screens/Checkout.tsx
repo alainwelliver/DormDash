@@ -11,7 +11,21 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@rneui/themed";
+import {
+  ArrowLeft,
+  Truck,
+  Footprints,
+  Bike,
+  CheckCircle,
+  MapPin,
+  PlusCircle,
+  ChevronRight,
+  Receipt,
+  Calculator,
+  ArrowRight,
+  X,
+  Plus,
+} from "lucide-react-native";
 import {
   useNavigation,
   useRoute,
@@ -197,9 +211,7 @@ const Checkout: React.FC = () => {
         )}
       </View>
       {selectedAddress?.id === item.id && (
-        <Icon
-          name="check-circle"
-          type="material-community"
+        <CheckCircle
           color={Colors.primary_green}
           size={24}
         />
@@ -216,9 +228,7 @@ const Checkout: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Icon
-            name="arrow-left"
-            type="material-community"
+          <ArrowLeft
             color={Colors.darkTeal}
             size={24}
           />
@@ -234,9 +244,7 @@ const Checkout: React.FC = () => {
         {/* Delivery Method Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Icon
-              name="truck-delivery"
-              type="material-community"
+            <Truck
               color={Colors.primary_blue}
               size={24}
             />
@@ -250,9 +258,7 @@ const Checkout: React.FC = () => {
               ]}
               onPress={() => setDeliveryMethod("pickup")}
             >
-              <Icon
-                name="walk"
-                type="material-community"
+              <Footprints
                 color={
                   deliveryMethod === "pickup"
                     ? Colors.primary_green
@@ -283,9 +289,7 @@ const Checkout: React.FC = () => {
               ]}
               onPress={() => setDeliveryMethod("delivery")}
             >
-              <Icon
-                name="bike-fast"
-                type="material-community"
+              <Bike
                 color={
                   deliveryMethod === "delivery"
                     ? Colors.primary_green
@@ -318,9 +322,7 @@ const Checkout: React.FC = () => {
         {deliveryMethod === "delivery" && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Icon
-                name="map-marker"
-                type="material-community"
+              <MapPin
                 color={Colors.primary_blue}
                 size={24}
               />
@@ -337,9 +339,7 @@ const Checkout: React.FC = () => {
                 style={styles.addAddressCard}
                 onPress={() => navigation.navigate("AddAddress", undefined)}
               >
-                <Icon
-                  name="plus-circle-outline"
-                  type="material-community"
+                <PlusCircle
                   color={Colors.primary_blue}
                   size={24}
                 />
@@ -362,9 +362,7 @@ const Checkout: React.FC = () => {
                       : "Tap to change"}
                   </Text>
                 </View>
-                <Icon
-                  name="chevron-right"
-                  type="material-community"
+                <ChevronRight
                   color={Colors.mutedGray}
                   size={24}
                 />
@@ -376,9 +374,7 @@ const Checkout: React.FC = () => {
         {/* Order Summary Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Icon
-              name="receipt"
-              type="material-community"
+            <Receipt
               color={Colors.primary_blue}
               size={24}
             />
@@ -406,9 +402,7 @@ const Checkout: React.FC = () => {
         {/* Price Breakdown Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Icon
-              name="calculator"
-              type="material-community"
+            <Calculator
               color={Colors.primary_blue}
               size={24}
             />
@@ -461,9 +455,7 @@ const Checkout: React.FC = () => {
           onPress={handlePlaceOrder}
         >
           <Text style={styles.placeOrderButtonText}>Place Order</Text>
-          <Icon
-            name="arrow-right"
-            type="material-community"
+          <ArrowRight
             color={Colors.white}
             size={20}
           />
@@ -482,9 +474,7 @@ const Checkout: React.FC = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Address</Text>
               <TouchableOpacity onPress={() => setShowAddressModal(false)}>
-                <Icon
-                  name="close"
-                  type="material-community"
+                <X
                   color={Colors.darkTeal}
                   size={24}
                 />
@@ -506,9 +496,7 @@ const Checkout: React.FC = () => {
                 navigation.navigate("AddAddress", undefined);
               }}
             >
-              <Icon
-                name="plus"
-                type="material-community"
+              <Plus
                 color={Colors.primary_blue}
                 size={20}
               />

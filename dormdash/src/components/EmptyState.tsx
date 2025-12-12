@@ -1,8 +1,20 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { Icon } from "@rneui/themed";
+import * as LucideIcons from "lucide-react-native";
 import { Colors, Typography, Spacing } from "../assets/styles";
 import Button from "./Button";
+
+// Map common icon names to Lucide icons
+const iconNameMap: Record<string, keyof typeof LucideIcons> = {
+  "inbox": "Inbox",
+  "package-variant": "Package",
+  "cart-outline": "ShoppingCart",
+  "filter-off": "FilterX",
+  "magnify-close": "SearchX",
+  "receipt": "Receipt",
+  "map-marker-outline": "MapPin",
+  "credit-card-outline": "CreditCard",
+};
 
 interface EmptyStateProps {
   icon?: string;
@@ -23,10 +35,13 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   onAction,
   style,
 }) => {
+  const lucideIconName = iconNameMap[icon] || "Inbox";
+  const IconComponent = (LucideIcons[lucideIconName] as React.FC<{ color: string; size: number }>) || LucideIcons.Inbox;
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconContainer}>
-        <Icon name={icon} type={iconType} size={64} color={Colors.lightGray} />
+        <IconComponent size={64} color={Colors.lightGray} />
       </View>
       <Text style={styles.title}>{title}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}

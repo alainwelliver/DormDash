@@ -6,7 +6,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from "react-native";
-import { Icon } from "@rneui/themed";
+import { CheckCircle, Mail, Home, Receipt } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
@@ -34,9 +34,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
       <View style={styles.content}>
         {/* Success Icon */}
         <View style={styles.iconContainer}>
-          <Icon
-            name="check-circle"
-            type="material-community"
+          <CheckCircle
             size={120}
             color={Colors.primary_green}
           />
@@ -51,9 +49,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
 
         {/* Order Info */}
         <View style={styles.infoBox}>
-          <Icon
-            name="email-outline"
-            type="material-community"
+          <Mail
             size={24}
             color={Colors.primary_blue}
           />
@@ -65,9 +61,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
         {/* Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.primaryButton} onPress={handleGoHome}>
-            <Icon
-              name="home"
-              type="material-community"
+            <Home
               size={20}
               color={Colors.white}
               style={{ marginRight: Spacing.sm }}
@@ -79,9 +73,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
             style={styles.secondaryButton}
             onPress={handleViewOrders}
           >
-            <Icon
-              name="receipt"
-              type="material-community"
+            <Receipt
               size={20}
               color={Colors.primary_blue}
               style={{ marginRight: Spacing.sm }}

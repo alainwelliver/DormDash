@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 
-import { Icon } from "@rneui/themed";
+import { Plus, SlidersHorizontal } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -206,9 +206,7 @@ const Feed: React.FC = () => {
             style={[styles.newListingButton, isWeb && styles.webButton]}
           >
             <View style={styles.newListingButtonInner}>
-              <Icon
-                name="plus"
-                type="material-community"
+              <Plus
                 size={20}
                 color={Colors.primary_green}
               />
@@ -224,9 +222,7 @@ const Feed: React.FC = () => {
           style={[styles.filterButton, isWeb && styles.webButton]}
           onPress={() => setShowFilters(true)}
         >
-          <Icon
-            name="filter-variant"
-            type="material-community"
+          <SlidersHorizontal
             size={22}
             color={Colors.darkTeal}
           />

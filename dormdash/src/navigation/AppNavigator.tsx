@@ -5,7 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Icon } from "@rneui/themed";
+import { Home, Search, ShoppingCart, Bike, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, WebLayout, Typography, Spacing } from "../assets/styles";
 
@@ -135,9 +135,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              name="home"
-              type="material-community"
+            <Home
               color={color}
               size={size}
             />
@@ -160,9 +158,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              name="magnify"
-              type="material-community"
+            <Search
               color={color}
               size={size}
             />
@@ -185,9 +181,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              name="cart"
-              type="material-community"
+            <ShoppingCart
               color={color}
               size={size}
             />
@@ -210,9 +204,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              name="bike-fast"
-              type="material-community"
+            <Bike
               color={color}
               size={size}
             />
@@ -235,9 +227,7 @@ function MainTabs() {
             </View>
           ),
           tabBarIcon: ({ color, size }) => (
-            <Icon
-              name="account"
-              type="material-community"
+            <User
               color={color}
               size={size}
             />
