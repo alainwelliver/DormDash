@@ -35,6 +35,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
@@ -87,11 +88,8 @@ export default function ProductDetail({
   navigation,
 }: ProductDetailProps) {
   const { listingId } = route.params;
+  const queryClient = useQueryClient();
 
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [seller, setSeller] = useState<UserProfile | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
   const [imageIndex, setImageIndex] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
@@ -103,6 +101,81 @@ export default function ProductDetail({
   const scrollViewRef = useRef<ScrollView>(null);
   const imageScrollRef = useRef<ScrollView>(null);
   const addToCartScale = useRef(new Animated.Value(1)).current;
+
+  // React Query for listing data - instant on return visits
+  const { data: listing, isLoading: listingLoading } = useQuery({
+    queryKey: ["listing", listingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*, listing_images(url), categories(name)")
+        .eq("id", listingId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  // React Query for seller profile
+  const { data: seller } = useQuery({
+    queryKey: ["seller", listing?.user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("seller_profiles")
+        .select("*")
+        .eq("id", listing!.user_id)
+        .single();
+      
+      if (error) {
+        return {
+          id: listing!.user_id,
+          display_name: "Seller",
+          avatar_url: null,
+          avg_rating: 0,
+          total_reviews: 0,
+        };
+      }
+      return data;
+    },
+    enabled: !!listing?.user_id,
+    staleTime: 2 * 60 * 1000,
+    select: (data) => ({
+      id: data.id,
+      username: data.display_name || "Seller",
+      avatar_url: data.avatar_url || undefined,
+      rating: parseFloat(data.avg_rating) || 0,
+      review_count: data.total_reviews || 0,
+    }),
+  });
+
+  // React Query for reviews
+  const { data: reviews = [] } = useQuery({
+    queryKey: ["reviews", listingId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("listing_id", listingId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 60 * 1000, // 1 minute
+  });
+
+  const loading = listingLoading;
+
+  // Check if current user is owner
+  useEffect(() => {
+    const checkOwnership = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && listing?.user_id === user.id) {
+        setIsOwner(true);
+      }
+    };
+    if (listing) checkOwnership();
+  }, [listing]);
 
   const handleImageScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -131,78 +204,6 @@ export default function ProductDetail({
         });
       }
       setImageIndex(clampedIndex);
-    }
-  };
-
-  useEffect(() => {
-    fetchListingDetails();
-  }, [listingId]);
-
-  const fetchListingDetails = async () => {
-    try {
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      // Fetch listing with images
-      const { data: listingData, error: listingError } = await supabase
-        .from("listings")
-        .select("*, listing_images(url), categories(name)")
-        .eq("id", listingId)
-        .single();
-
-      if (listingError) throw listingError;
-
-      setListing(listingData);
-
-      // Check if current user is the owner
-      if (user && listingData?.user_id === user.id) {
-        setIsOwner(true);
-      }
-
-      if (listingData?.user_id) {
-        // Fetch seller profile with aggregate ratings across all their listings
-        const { data: sellerData, error: sellerError } = await supabase
-          .from("seller_profiles")
-          .select("*")
-          .eq("id", listingData.user_id)
-          .single();
-
-        if (!sellerError && sellerData) {
-          setSeller({
-            id: sellerData.id,
-            username: sellerData.display_name || "Seller",
-            avatar_url: sellerData.avatar_url || undefined,
-            rating: parseFloat(sellerData.avg_rating) || 0,
-            review_count: sellerData.total_reviews || 0,
-          });
-        } else {
-          // Fallback if seller profile not found
-          setSeller({
-            id: listingData.user_id,
-            username: "Seller",
-            avatar_url: undefined,
-            rating: 0,
-            review_count: 0,
-          });
-        }
-
-        // Fetch reviews for this listing (for display in review section)
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from("reviews")
-          .select("*")
-          .eq("listing_id", listingId)
-          .order("created_at", { ascending: false });
-
-        if (!reviewsError && reviewsData) {
-          setReviews(reviewsData);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching product details:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -316,8 +317,9 @@ export default function ProductDetail({
       setReviewComment("");
       setReviewRating(5);
 
-      // Refresh reviews
-      fetchListingDetails();
+      // Refresh reviews cache
+      queryClient.invalidateQueries({ queryKey: ["reviews", listingId] });
+      queryClient.invalidateQueries({ queryKey: ["seller", listing?.user_id] });
 
       alert("Success", "Your review has been posted!");
     } catch (error) {
@@ -523,7 +525,7 @@ export default function ProductDetail({
                 onMomentumScrollEnd={handleImageScroll}
                 scrollEventThrottle={16}
               >
-                {listing.listing_images.map((img, index) => (
+                {listing.listing_images.map((img: { url: string }, index: number) => (
                   <View
                     key={index}
                     style={[styles.imageWrapper, { width: SCREEN_WIDTH }]}
@@ -563,7 +565,7 @@ export default function ProductDetail({
             {/* Indicators */}
             {listing.listing_images.length > 1 && (
               <View style={styles.imageIndicators}>
-                {listing.listing_images.map((_, index) => (
+                {listing.listing_images.map((_: unknown, index: number) => (
                   <TouchableOpacity
                     key={index}
                     style={[

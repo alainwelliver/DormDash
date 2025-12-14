@@ -1,0 +1,33 @@
+# Cache static assets aggressively (1 year)
+/_expo/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache JS bundles (they have content hashes)
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache CSS (has content hash)  
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache images
+/assets/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Cache fonts
+/*.ttf
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML should revalidate (for updates)
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Default for other routes (SPA)
+/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

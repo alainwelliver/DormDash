@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,12 @@ import {
 } from "react-native";
 
 import { Plus, SlidersHorizontal } from "lucide-react-native";
-import { supabase } from "../lib/supabase";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
 import EmptyState from "../components/EmptyState";
 import { ListingGridSkeleton } from "../components/SkeletonLoader";
+import { useListings, useCategories, useTags } from "../lib/api/queries";
 
 import ListingCard from "../components/ListingCard";
 import {
@@ -62,75 +62,29 @@ const Feed: React.FC = () => {
 
   const cardWidth = getCardWidth();
 
-  const [listings, setListings] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
-
+  // Filter state
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // ---------- Load categories & tags ----------
-  const loadFilterData = async () => {
-    const { data: cats } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-    const { data: tgs } = await supabase.from("tags").select("*").order("name");
+  // React Query hooks - data is cached and loads instantly on return visits
+  const {
+    data: listings = [],
+    isLoading: loading,
+    isRefetching: refreshing,
+    refetch,
+  } = useListings({
+    category: selectedCategory,
+    tags: selectedTags,
+    priceRange,
+  });
 
-    setCategories(cats || []);
-    setTags(tgs || []);
-  };
-
-  useEffect(() => {
-    loadFilterData();
-  }, []);
-
-  // ---------- Fetch listings with filters ----------
-  const fetchListings = async () => {
-    let query = supabase
-      .from("listings")
-      .select("*, listing_images(url, sort_order), categories(name)")
-      .order("created_at", { ascending: false });
-
-    if (selectedCategory) {
-      query = query.eq("category_id", selectedCategory);
-    }
-
-    if (selectedTags.length > 0) {
-      query = query.contains("listing_tags", selectedTags);
-    }
-
-    if (priceRange) {
-      query = query
-        .gte("price_cents", priceRange[0])
-        .lte("price_cents", priceRange[1]);
-    }
-
-    const { data, error } = await query;
-
-    if (error) console.error("Error fetching listings:", error);
-    else setListings(data || []);
-
-    setLoading(false);
-    setRefreshing(false);
-  };
-
-  // Refresh on screen focus
-  useFocusEffect(
-    useCallback(() => {
-      setLoading(true);
-      fetchListings();
-    }, [selectedCategory, selectedTags, priceRange]),
-  );
+  const { data: categories = [] } = useCategories();
+  const { data: tags = [] } = useTags();
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchListings();
+    refetch();
   };
 
   const renderContent = () => {
@@ -159,19 +113,11 @@ const Feed: React.FC = () => {
     return (
       <FlatList
         data={listings}
-        renderItem={({ item }) => (
-          <ListingCard listing={item} numColumns={numColumns} />
-        )}
-        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         numColumns={numColumns}
         key={numColumns} // Force re-render when columns change
-        columnWrapperStyle={[
-          styles.row,
-          isWeb && {
-            maxWidth: WebLayout.maxContentWidth,
-            alignSelf: "center" as const,
-          },
-        ]}
+        columnWrapperStyle={columnWrapperStyle}
         contentContainerStyle={[
           styles.listContent,
           isWeb && styles.webListContent,
@@ -185,9 +131,38 @@ const Feed: React.FC = () => {
             progressBackgroundColor={Colors.white}
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={Platform.OS !== "web"}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        windowSize={5}
+        initialNumToRender={numColumns * 3}
+        getItemLayout={undefined} // Let FlatList calculate
       />
     );
   };
+
+  // Memoized render item to prevent unnecessary re-renders
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => (
+      <ListingCard listing={item} numColumns={numColumns} />
+    ),
+    [numColumns]
+  );
+
+  const keyExtractor = useCallback((item: any) => item.id.toString(), []);
+
+  // Memoize column wrapper style
+  const columnWrapperStyle = useMemo(
+    () => [
+      styles.row,
+      isWeb && {
+        maxWidth: WebLayout.maxContentWidth,
+        alignSelf: "center" as const,
+      },
+    ],
+    [isWeb]
+  );
 
   return (
     <View style={styles.safe}>
