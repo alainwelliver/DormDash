@@ -18,7 +18,6 @@ export {
 // App Components
 export { default as ListingCard } from "./ListingCard";
 export { default as FilterModal } from "./FilterModal";
-export { default as Navbar } from "./Navbar";
 export { default as RatingStars } from "./RatingStars";
 export { default as TextField } from "./TextField";
 export { default as TagInput } from "./TagInput";
