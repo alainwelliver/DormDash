@@ -15,6 +15,7 @@ import {
   StatusBar,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   CheckSquare,
@@ -56,6 +57,7 @@ interface CartItem {
 const Cart: React.FC = () => {
   const navigation = useNavigation<CartNavigationProp>();
   const isWeb = Platform.OS === "web";
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -213,7 +215,13 @@ const Cart: React.FC = () => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <View style={[styles.header, isWeb && styles.webHeader]}>
+        <View
+          style={[
+            styles.header,
+            { paddingTop: Math.max(insets.top, Spacing.lg) },
+            isWeb && styles.webHeader,
+          ]}
+        >
           <View
             style={[styles.headerContent, isWeb && styles.webHeaderContent]}
           >
@@ -234,7 +242,13 @@ const Cart: React.FC = () => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <View style={[styles.header, isWeb && styles.webHeader]}>
+        <View
+          style={[
+            styles.header,
+            { paddingTop: Math.max(insets.top, Spacing.lg) },
+            isWeb && styles.webHeader,
+          ]}
+        >
           <View
             style={[styles.headerContent, isWeb && styles.webHeaderContent]}
           >
@@ -255,7 +269,13 @@ const Cart: React.FC = () => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={[styles.header, isWeb && styles.webHeader]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: Math.max(insets.top, Spacing.lg) },
+          isWeb && styles.webHeader,
+        ]}
+      >
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
           <Text style={styles.headerTitle}>Shopping Cart</Text>
           <Text style={styles.itemCount}>
@@ -333,15 +353,9 @@ const Cart: React.FC = () => {
             </TouchableOpacity>
           </View>
         ))}
-      </ScrollView>
 
-      {/* Checkout Summary */}
-      <View
-        style={[styles.checkoutContainer, isWeb && styles.webCheckoutContainer]}
-      >
-        <View
-          style={[styles.checkoutContent, isWeb && styles.webCheckoutContent]}
-        >
+        {/* Breakdown moved to ScrollView for better space efficiency */}
+        <View style={styles.breakdownContainer}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>
               Subtotal ({selectedItems.length} item
@@ -358,28 +372,37 @@ const Cart: React.FC = () => {
               {formatPrice(calculateTax())}
             </Text>
           </View>
+        </View>
+      </ScrollView>
 
-          <View style={styles.summaryDivider} />
+      {/* Checkout Summary (Compact Fixed Footer) */}
+      <View
+        style={[styles.checkoutContainer, isWeb && styles.webCheckoutContainer]}
+      >
+        <View
+          style={[styles.checkoutContent, isWeb && styles.webCheckoutContent]}
+        >
+          <View style={styles.summaryRowCompact}>
+            <View>
+              <Text style={styles.totalLabelSmall}>Total</Text>
+              <Text style={styles.totalValue}>
+                {formatPrice(calculateTotal())}
+              </Text>
+            </View>
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>
-              {formatPrice(calculateTotal())}
-            </Text>
+            <TouchableOpacity
+              style={[
+                styles.checkoutButton,
+                selectedItems.length === 0 && styles.checkoutButtonDisabled,
+                isWeb && styles.webButton,
+              ]}
+              onPress={handleCheckout}
+              disabled={selectedItems.length === 0}
+            >
+              <Text style={styles.checkoutButtonText}>Checkout</Text>
+              <ArrowRight color={Colors.white} size={20} />
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity
-            style={[
-              styles.checkoutButton,
-              selectedItems.length === 0 && styles.checkoutButtonDisabled,
-              isWeb && styles.webButton,
-            ]}
-            onPress={handleCheckout}
-            disabled={selectedItems.length === 0}
-          >
-            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-            <ArrowRight color={Colors.white} size={20} />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -411,7 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.base_bg,
   },
   header: {
-    paddingVertical: Spacing.lg,
+    paddingBottom: Spacing.md,
     backgroundColor: Colors.base_bg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray,
@@ -444,7 +467,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: 340, // Increased padding to clear checkout summary + tab bar
+    paddingBottom: 200, // Reduced padding since footer is smaller
   },
   webScrollContent: {
     alignSelf: "center",
@@ -526,13 +549,20 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     marginLeft: Spacing.xs,
   },
+  breakdownContainer: {
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.lightGray,
+  },
   checkoutContainer: {
     position: "absolute",
     bottom: 90, // Raised to sit above floating tab bar
     left: 0,
     right: 0,
     backgroundColor: Colors.white,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md, // Reduced padding
     borderTopWidth: 1,
     borderTopColor: Colors.lightGray,
     elevation: 8,
@@ -557,40 +587,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm, // Reduced margin
+  },
+  summaryRowCompact: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   summaryLabel: {
-    fontSize: 16,
+    fontSize: 14, // Smaller font
     fontFamily: Typography.bodyMedium.fontFamily,
-    color: Colors.darkTeal,
+    color: Colors.mutedGray,
     fontWeight: "500",
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: 14, // Smaller font
     fontFamily: Typography.bodyMedium.fontFamily,
     fontWeight: "600",
     color: Colors.darkTeal,
   },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: Colors.lightGray,
-    marginVertical: Spacing.sm,
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontFamily: Typography.heading4.fontFamily,
-    fontWeight: "700",
-    color: Colors.darkTeal,
+  totalLabelSmall: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginBottom: 2,
   },
   totalValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: Typography.heading4.fontFamily,
     fontWeight: "700",
     color: Colors.primary_blue,
   },
   checkoutButton: {
     backgroundColor: Colors.primary_blue,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm + 2, // Reduced padding
+    paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.medium,
     flexDirection: "row",
     justifyContent: "center",
@@ -602,7 +633,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   checkoutButtonText: {
-    fontSize: 18,
+    fontSize: 16, // Slightly smaller
     fontFamily: Typography.buttonText.fontFamily,
     fontWeight: "700",
     color: Colors.white,
