@@ -10,6 +10,7 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Plus, SlidersHorizontal, FilterX } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
@@ -40,6 +41,7 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 const Explore: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
   const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
 
   // Calculate number of columns based on screen width
@@ -231,7 +233,12 @@ const Explore: React.FC = () => {
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" />
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: Math.max(insets.top, Spacing.lg) + Spacing.sm },
+        ]}
+      >
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
           <Text style={styles.headerTitle}>Explore</Text>
 
@@ -312,7 +319,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary_green,
-    paddingVertical: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   headerContent: {
     flexDirection: "row",
@@ -410,7 +417,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 15,
-    paddingBottom: 80,
+    paddingBottom: 100,
   },
   webListContent: {
     alignItems: "center",
