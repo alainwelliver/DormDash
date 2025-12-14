@@ -28,3 +28,4 @@ export { default as Loading } from "./Loading";
 export { default as ErrorState } from "./ErrorState";
 export { default as LocationPicker } from "./LocationPicker";
 export type { LocationData } from "./LocationPicker";
+export { default as OptimizedImage } from "./OptimizedImage";

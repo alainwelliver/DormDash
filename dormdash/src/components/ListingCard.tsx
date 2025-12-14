@@ -1,8 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, memo, useMemo, useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   Platform,
@@ -22,6 +21,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Badge from "./Badge";
+import OptimizedImage from "./OptimizedImage";
 
 type ListingCardProps = {
   listing: {
@@ -44,7 +44,7 @@ type MainStackParamList = {
 
 type NavProp = NativeStackNavigationProp<MainStackParamList>;
 
-export default function ListingCard({
+function ListingCardComponent({
   listing,
   numColumns = 2,
   showMenu = false,
@@ -147,10 +147,9 @@ export default function ListingCard({
       >
         {/* Image wrapper to apply shadow */}
         <View style={[styles.imageWrapper, { height: cardWidth * 0.72 }]}>
-          <Image
-            source={
-              imageUrl ? { uri: imageUrl } : require("../../assets/icon.png")
-            }
+          <OptimizedImage
+            uri={imageUrl}
+            fallback={require("../../assets/icon.png")}
             style={styles.image}
             resizeMode="cover"
           />
@@ -353,3 +352,16 @@ const styles = StyleSheet.create({
     color: Colors.error || "#E74C3C",
   },
 });
+
+// Memoize to prevent unnecessary re-renders
+const ListingCard = memo(ListingCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.listing.id === nextProps.listing.id &&
+    prevProps.listing.title === nextProps.listing.title &&
+    prevProps.listing.price_cents === nextProps.listing.price_cents &&
+    prevProps.numColumns === nextProps.numColumns &&
+    prevProps.showMenu === nextProps.showMenu
+  );
+});
+
+export default ListingCard;

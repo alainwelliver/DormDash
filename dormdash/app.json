@@ -27,7 +27,8 @@
     "web": {
       "favicon": "./assets/dormdash-logo.png",
       "name": "DormDash",
-      "shortName": "DormDash"
+      "shortName": "DormDash",
+      "bundler": "metro"
     }
   }
 }

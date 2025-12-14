@@ -77,13 +77,10 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
       );
 
       // Navigate to payment portal
-      navigation.navigate(
-        "PaymentPortal" as never,
-        {
-          priceCents: total,
-          listingTitle: `Order (${itemCount} item${itemCount !== 1 ? "s" : ""})`,
-        } as never,
-      );
+      (navigation as any).navigate("PaymentPortal", {
+        priceCents: total,
+        listingTitle: `Order (${itemCount} item${itemCount !== 1 ? "s" : ""})`,
+      });
     } catch (error: any) {
       console.error("Error retrying payment:", error);
       alert("Error", "Failed to process. Please try again.");

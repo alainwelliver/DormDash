@@ -1,6 +1,6 @@
 // =============================
 //      CART.TSX (FINAL)
-//   Supabase-Connected Cart
+//   Supabase-Connected Cart with React Query
 // =============================
 
 import React, { useState, useEffect } from "react";
@@ -27,6 +27,7 @@ import {
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import {
   Colors,
@@ -55,65 +56,67 @@ interface CartItem {
 const Cart: React.FC = () => {
   const navigation = useNavigation<CartNavigationProp>();
   const isWeb = Platform.OS === "web";
+  const queryClient = useQueryClient();
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Fetch cart items from Supabase
+  // Get user ID on mount
   useEffect(() => {
-    fetchCartItems();
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user?.id || null);
+    });
   }, []);
 
-  const fetchCartItems = async () => {
-    setLoading(true);
+  // React Query for cart data - instant on return visits
+  const { data: cartData, isLoading: loading } = useQuery({
+    queryKey: ["cart", userId],
+    queryFn: async () => {
+      if (!userId) return [];
 
-    // Get current user
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user?.id;
-
-    if (!userId) {
-      setCartItems([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("cart_items")
-      .select(
-        `
-        id,
-        listing_id,
-        quantity,
-        listings (
+      const { data, error } = await supabase
+        .from("cart_items")
+        .select(
+          `
           id,
-          title,
-          price_cents,
-          listing_images ( url )
+          listing_id,
+          quantity,
+          listings (
+            id,
+            title,
+            price_cents,
+            listing_images ( url )
+          )
+        `
         )
-      `,
-      )
-      .eq("user_id", userId);
+        .eq("user_id", userId);
 
-    if (error) {
-      console.error("Error loading cart:", error);
-      setLoading(false);
-      return;
+      if (error) {
+        console.error("Error loading cart:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        id: item.id,
+        listing_id: item.listing_id,
+        title: item.listings.title,
+        price_cents: item.listings.price_cents,
+        quantity: item.quantity,
+        image_url: item.listings.listing_images?.[0]?.url ?? null,
+      }));
+    },
+    enabled: !!userId,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
+  // Sync React Query data to local state
+  useEffect(() => {
+    if (cartData) {
+      setCartItems(cartData);
+      setSelectedItems(cartData.map((i) => i.id));
     }
-
-    const formatted = data.map((item: any) => ({
-      id: item.id,
-      listing_id: item.listing_id,
-      title: item.listings.title,
-      price_cents: item.listings.price_cents,
-      quantity: item.quantity,
-      image_url: item.listings.listing_images?.[0]?.url ?? null,
-    }));
-
-    setCartItems(formatted);
-    setSelectedItems(formatted.map((i) => i.id));
-    setLoading(false);
-  };
+  }, [cartData]);
 
   // Toggle select/unselect item
   const toggleItemSelection = (itemId: number) => {
@@ -160,6 +163,9 @@ const Cart: React.FC = () => {
 
           setCartItems(cartItems.filter((i) => i.id !== cartItemId));
           setSelectedItems(selectedItems.filter((id) => id !== cartItemId));
+          
+          // Invalidate cart cache
+          queryClient.invalidateQueries({ queryKey: ["cart", userId] });
         },
       },
     ]);
