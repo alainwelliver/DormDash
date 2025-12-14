@@ -88,7 +88,7 @@ const Cart: React.FC = () => {
             price_cents,
             listing_images ( url )
           )
-        `
+        `,
         )
         .eq("user_id", userId);
 
@@ -163,7 +163,7 @@ const Cart: React.FC = () => {
 
           setCartItems(cartItems.filter((i) => i.id !== cartItemId));
           setSelectedItems(selectedItems.filter((id) => id !== cartItemId));
-          
+
           // Invalidate cart cache
           queryClient.invalidateQueries({ queryKey: ["cart", userId] });
         },

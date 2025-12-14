@@ -147,7 +147,7 @@ const Feed: React.FC = () => {
     ({ item }: { item: any }) => (
       <ListingCard listing={item} numColumns={numColumns} />
     ),
-    [numColumns]
+    [numColumns],
   );
 
   const keyExtractor = useCallback((item: any) => item.id.toString(), []);
@@ -161,7 +161,7 @@ const Feed: React.FC = () => {
         alignSelf: "center" as const,
       },
     ],
-    [isWeb]
+    [isWeb],
   );
 
   return (
