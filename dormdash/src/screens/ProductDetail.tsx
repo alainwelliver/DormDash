@@ -81,6 +81,7 @@ interface Review {
   rating: number;
   comment?: string;
   created_at: string;
+  reviewer_name?: string;
 }
 
 export default function ProductDetail({
@@ -155,11 +156,18 @@ export default function ProductDetail({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reviews")
-        .select("*")
+        .select(`
+          *,
+          seller_profiles!reviews_reviewer_id_fkey(display_name)
+        `)
         .eq("listing_id", listingId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      // Map the nested seller_profiles data to reviewer_name
+      return (data || []).map((review: any) => ({
+        ...review,
+        reviewer_name: review.seller_profiles?.display_name || null,
+      }));
     },
     staleTime: 60 * 1000, // 1 minute
   });
@@ -711,7 +719,7 @@ export default function ProductDetail({
                 <View style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
                     <Text style={styles.reviewerName}>
-                      {`Reviewer ${review.reviewer_id.slice(0, 8)}`}
+                      {review.reviewer_name || "Anonymous"}
                     </Text>
                     {renderStars(review.rating)}
                   </View>
