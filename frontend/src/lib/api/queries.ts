@@ -99,10 +99,7 @@ export const useCategories = () => {
 
 // ============ Tags ============
 export const fetchTags = async () => {
-  const { data, error } = await supabase
-    .from("tags")
-    .select("*")
-    .order("name");
+  const { data, error } = await supabase.from("tags").select("*").order("name");
 
   if (error) throw error;
   return data || [];
@@ -180,7 +177,7 @@ export const fetchCart = async (userId: string) => {
         price_cents,
         listing_images(url, sort_order)
       )
-    `
+    `,
     )
     .eq("user_id", userId);
 

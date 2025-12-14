@@ -127,7 +127,7 @@ export default function ProductDetail({
         .select("*")
         .eq("id", listing!.user_id)
         .single();
-      
+
       if (error) {
         return {
           id: listing!.user_id,
@@ -156,10 +156,12 @@ export default function ProductDetail({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reviews")
-        .select(`
+        .select(
+          `
           *,
           seller_profiles!reviews_reviewer_id_fkey(display_name)
-        `)
+        `,
+        )
         .eq("listing_id", listingId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -177,7 +179,9 @@ export default function ProductDetail({
   // Check if current user is owner
   useEffect(() => {
     const checkOwnership = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user && listing?.user_id === user.id) {
         setIsOwner(true);
       }
@@ -533,18 +537,20 @@ export default function ProductDetail({
                 onMomentumScrollEnd={handleImageScroll}
                 scrollEventThrottle={16}
               >
-                {listing.listing_images.map((img: { url: string }, index: number) => (
-                  <View
-                    key={index}
-                    style={[styles.imageWrapper, { width: SCREEN_WIDTH }]}
-                  >
-                    <Image
-                      source={{ uri: img.url }}
-                      style={styles.productImage}
-                      resizeMode="cover"
-                    />
-                  </View>
-                ))}
+                {listing.listing_images.map(
+                  (img: { url: string }, index: number) => (
+                    <View
+                      key={index}
+                      style={[styles.imageWrapper, { width: SCREEN_WIDTH }]}
+                    >
+                      <Image
+                        source={{ uri: img.url }}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ),
+                )}
               </ScrollView>
             )}
 

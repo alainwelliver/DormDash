@@ -1,9 +1,5 @@
 import React, { memo } from "react";
-import {
-  Image,
-  ImageStyle,
-  Platform,
-} from "react-native";
+import { Image, ImageStyle, Platform } from "react-native";
 
 interface OptimizedImageProps {
   uri: string | undefined;
