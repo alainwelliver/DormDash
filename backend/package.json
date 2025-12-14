@@ -1,0 +1,17 @@
+{
+  "name": "dormdash-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.30.0",
+    "stripe": "^20.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "typescript": "~5.9.2"
+  }
+}
