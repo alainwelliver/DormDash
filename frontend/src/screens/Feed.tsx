@@ -10,6 +10,7 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Plus, SlidersHorizontal, Zap } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -39,6 +40,7 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 const Feed: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
   const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
 
   const getNumColumns = () => {
@@ -170,7 +172,13 @@ const Feed: React.FC = () => {
       </View>
 
       {/* Minimal Header */}
-      <View style={[styles.header, isWeb && styles.webHeader]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: Math.max(insets.top, Spacing.lg) + Spacing.sm },
+          isWeb && styles.webHeader,
+        ]}
+      >
         <View>
           <Text style={styles.headerTitle}>DormDash</Text>
           <Text style={styles.headerSubtitle}>Discover & Trade</Text>
@@ -234,7 +242,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Platform.OS === "android" ? Spacing.xl : Spacing.lg,
     paddingBottom: Spacing.md,
     flexDirection: "row",
     justifyContent: "space-between",
