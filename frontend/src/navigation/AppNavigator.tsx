@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Platform, View, Image, Text, StyleSheet } from "react-native";
+import {
+  Platform,
+  View,
+  Image,
+  Text,
+  StyleSheet,
+  useWindowDimensions,
+} from "react-native";
 import { supabase } from "../lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { NavigationContainer, LinkingOptions } from "@react-navigation/native";
@@ -131,7 +138,10 @@ const MainStack = createNativeStackNavigator<MainStackParamList>();
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
+  // Only use fixed width centered layout on larger web screens
+  const isLargeWeb = isWeb && width > WebLayout.breakpoints.sm;
 
   // Custom icon renderer with animation/style logic
   const renderTabIcon = (Icon: any, focused: boolean, color: string) => (
@@ -169,10 +179,10 @@ function MainTabs() {
         tabBarStyle: {
           position: "absolute",
           bottom: isWeb ? 20 : 25,
-          left: isWeb ? "50%" : 20,
-          right: isWeb ? "auto" : 20,
-          width: isWeb ? WebLayout.tabBarMaxWidth : undefined,
-          transform: isWeb
+          left: isLargeWeb ? "50%" : 20,
+          right: isLargeWeb ? "auto" : 20,
+          width: isLargeWeb ? WebLayout.tabBarMaxWidth : undefined,
+          transform: isLargeWeb
             ? [{ translateX: -WebLayout.tabBarMaxWidth / 2 }]
             : undefined,
           backgroundColor: Colors.glass_bg,
@@ -201,16 +211,7 @@ function MainTabs() {
         name="FeedTab"
         component={Feed}
         options={{
-          headerTitle: () => (
-            <View style={headerStyles.container}>
-              <Image
-                source={require("../../assets/dormdash-logo.png")}
-                style={headerStyles.logo}
-                resizeMode="contain"
-              />
-              <Text style={headerStyles.title}>DormDash</Text>
-            </View>
-          ),
+          headerShown: false,
           tabBarIcon: ({ focused, color }) =>
             renderTabIcon(Home, focused, color),
         }}
@@ -219,7 +220,7 @@ function MainTabs() {
         name="ExploreTab"
         component={Explore}
         options={{
-          headerTitle: () => <Text style={headerStyles.title}>Explore</Text>,
+          headerShown: false,
           tabBarIcon: ({ focused, color }) =>
             renderTabIcon(Search, focused, color),
         }}
@@ -228,7 +229,7 @@ function MainTabs() {
         name="CartTab"
         component={Cart}
         options={{
-          headerTitle: () => <Text style={headerStyles.title}>Cart</Text>,
+          headerShown: false,
           tabBarIcon: ({ focused, color }) =>
             renderTabIcon(ShoppingCart, focused, color),
         }}
