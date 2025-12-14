@@ -7,7 +7,13 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Home, Search, ShoppingCart, Bike, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, WebLayout, Typography, Spacing } from "../assets/styles";
+import {
+  Colors,
+  WebLayout,
+  Typography,
+  Spacing,
+  Shadows,
+} from "../assets/styles";
 
 // Linking configuration for web URL routing
 const linking: LinkingOptions<any> = {
@@ -127,37 +133,66 @@ function MainTabs() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
 
+  // Custom icon renderer with animation/style logic
+  const renderTabIcon = (Icon: any, focused: boolean, color: string) => (
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        top: Platform.OS === "ios" ? 10 : 0,
+      }}
+    >
+      <Icon
+        color={focused ? Colors.primary_accent : Colors.mutedGray}
+        size={24}
+        strokeWidth={focused ? 2.5 : 2}
+        fill={focused ? `${Colors.primary_accent}20` : "none"} // 20% opacity fill
+      />
+      {focused && (
+        <View
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: Colors.primary_accent,
+            marginTop: 4,
+          }}
+        />
+      )}
+    </View>
+  );
+
   return (
     <MainTab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: Colors.primary_green,
-        tabBarInactiveTintColor: Colors.mutedGray,
+        tabBarShowLabel: false, // Hide labels for a cleaner look
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopWidth: 1,
-          borderTopColor: Colors.lightGray,
-          height: isWeb ? 60 : 60 + (insets.bottom || 0),
-          paddingBottom: isWeb ? 8 : (insets.bottom || 0) + 8,
-          paddingTop: 8,
-          // Web-specific: center the tab bar
-          ...(isWeb && {
-            maxWidth: WebLayout.tabBarMaxWidth,
-            alignSelf: "center" as const,
-            width: "100%",
-            borderRadius: 12,
-            marginBottom: 8,
-            borderWidth: 1,
-            borderColor: Colors.lightGray,
-          }),
+          position: "absolute",
+          bottom: isWeb ? 20 : 25,
+          left: isWeb ? "50%" : 20,
+          right: isWeb ? "auto" : 20,
+          width: isWeb ? WebLayout.tabBarMaxWidth : undefined,
+          transform: isWeb
+            ? [{ translateX: -WebLayout.tabBarMaxWidth / 2 }]
+            : undefined,
+          backgroundColor: Colors.glass_bg,
+          borderRadius: 30, // Capsule shape
+          height: 60,
+          borderTopWidth: 0,
+          elevation: 0, // Disable default android shadow
+          ...Shadows.glow, // Apply our custom glow
+          borderWidth: 1,
+          borderColor: Colors.glass_border,
         },
-        tabBarItemStyle: isWeb
-          ? {
-              cursor: "pointer" as any,
-            }
-          : undefined,
+        tabBarItemStyle: {
+          height: 60,
+          paddingTop: 0, // Reset default padding
+        },
         headerShown: true,
         headerStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.base_bg,
+          shadowColor: "transparent", // Remove header shadow
+          elevation: 0,
         },
         headerTitleAlign: "left",
       }}
@@ -166,7 +201,6 @@ function MainTabs() {
         name="FeedTab"
         component={Feed}
         options={{
-          tabBarLabel: "Feed",
           headerTitle: () => (
             <View style={headerStyles.container}>
               <Image
@@ -174,84 +208,47 @@ function MainTabs() {
                 style={headerStyles.logo}
                 resizeMode="contain"
               />
-              <Text style={headerStyles.title}>Feed</Text>
+              <Text style={headerStyles.title}>DormDash</Text>
             </View>
           ),
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ focused, color }) =>
+            renderTabIcon(Home, focused, color),
         }}
       />
       <MainTab.Screen
         name="ExploreTab"
         component={Explore}
         options={{
-          tabBarLabel: "Explore",
-          headerTitle: () => (
-            <View style={headerStyles.container}>
-              <Image
-                source={require("../../assets/dormdash-logo.png")}
-                style={headerStyles.logo}
-                resizeMode="contain"
-              />
-              <Text style={headerStyles.title}>Explore</Text>
-            </View>
-          ),
-          tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+          headerTitle: () => <Text style={headerStyles.title}>Explore</Text>,
+          tabBarIcon: ({ focused, color }) =>
+            renderTabIcon(Search, focused, color),
         }}
       />
       <MainTab.Screen
         name="CartTab"
         component={Cart}
         options={{
-          tabBarLabel: "Cart",
-          headerTitle: () => (
-            <View style={headerStyles.container}>
-              <Image
-                source={require("../../assets/dormdash-logo.png")}
-                style={headerStyles.logo}
-                resizeMode="contain"
-              />
-              <Text style={headerStyles.title}>Cart</Text>
-            </View>
-          ),
-          tabBarIcon: ({ color, size }) => (
-            <ShoppingCart color={color} size={size} />
-          ),
+          headerTitle: () => <Text style={headerStyles.title}>Cart</Text>,
+          tabBarIcon: ({ focused, color }) =>
+            renderTabIcon(ShoppingCart, focused, color),
         }}
       />
       <MainTab.Screen
         name="DashTab"
         component={DasherDashboard}
         options={{
-          tabBarLabel: "Dash",
-          headerTitle: () => (
-            <View style={headerStyles.container}>
-              <Image
-                source={require("../../assets/dormdash-logo.png")}
-                style={headerStyles.logo}
-                resizeMode="contain"
-              />
-              <Text style={headerStyles.title}>Dash</Text>
-            </View>
-          ),
-          tabBarIcon: ({ color, size }) => <Bike color={color} size={size} />,
+          headerTitle: () => <Text style={headerStyles.title}>Dash</Text>,
+          tabBarIcon: ({ focused, color }) =>
+            renderTabIcon(Bike, focused, color),
         }}
       />
       <MainTab.Screen
         name="ProfileTab"
         component={Profile}
         options={{
-          tabBarLabel: "Profile",
-          headerTitle: () => (
-            <View style={headerStyles.container}>
-              <Image
-                source={require("../../assets/dormdash-logo.png")}
-                style={headerStyles.logo}
-                resizeMode="contain"
-              />
-              <Text style={headerStyles.title}>Profile</Text>
-            </View>
-          ),
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          headerTitle: () => <Text style={headerStyles.title}>Profile</Text>,
+          tabBarIcon: ({ focused, color }) =>
+            renderTabIcon(User, focused, color),
         }}
       />
     </MainTab.Navigator>

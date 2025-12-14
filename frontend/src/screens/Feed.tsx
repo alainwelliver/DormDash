@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 
-import { Plus, SlidersHorizontal } from "lucide-react-native";
+import { Plus, SlidersHorizontal, Zap } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import FilterModal from "../components/FilterModal";
@@ -24,8 +24,8 @@ import {
   Colors,
   Typography,
   Spacing,
-  BorderRadius,
   WebLayout,
+  Shadows,
 } from "../assets/styles";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
@@ -41,17 +41,14 @@ const Feed: React.FC = () => {
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
 
-  // Calculate number of columns based on screen width
   const getNumColumns = () => {
-    if (windowWidth >= 1200) return 5;
-    if (windowWidth >= 900) return 4;
-    if (windowWidth >= 600) return 3;
-    return 2;
+    if (windowWidth >= 1200) return 4; // Fewer columns for bigger cards
+    if (windowWidth >= 900) return 3;
+    return 2; // Default to 2 columns for mobile
   };
 
   const numColumns = getNumColumns();
 
-  // Calculate card width for skeleton
   const getCardWidth = () => {
     const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
     const totalGap = (numColumns - 1) * Spacing.lg;
@@ -62,13 +59,11 @@ const Feed: React.FC = () => {
 
   const cardWidth = getCardWidth();
 
-  // Filter state
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // React Query hooks - data is cached and loads instantly on return visits
   const {
     data: listings = [],
     isLoading: loading,
@@ -116,33 +111,30 @@ const Feed: React.FC = () => {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         numColumns={numColumns}
-        key={numColumns} // Force re-render when columns change
-        columnWrapperStyle={columnWrapperStyle}
+        key={numColumns}
+        columnWrapperStyle={numColumns > 1 ? columnWrapperStyle : undefined}
         contentContainerStyle={[
           styles.listContent,
           isWeb && styles.webListContent,
         ]}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.primary_green}
-            colors={[Colors.primary_green, Colors.primary_blue]}
+            tintColor={Colors.primary_accent}
+            colors={[Colors.primary_accent]}
             progressBackgroundColor={Colors.white}
           />
         }
-        // Performance optimizations
         removeClippedSubviews={Platform.OS !== "web"}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
+        maxToRenderPerBatch={5}
         windowSize={5}
-        initialNumToRender={numColumns * 3}
-        getItemLayout={undefined} // Let FlatList calculate
+        initialNumToRender={5}
       />
     );
   };
 
-  // Memoized render item to prevent unnecessary re-renders
   const renderItem = useCallback(
     ({ item }: { item: any }) => (
       <ListingCard listing={item} numColumns={numColumns} />
@@ -152,7 +144,6 @@ const Feed: React.FC = () => {
 
   const keyExtractor = useCallback((item: any) => item.id.toString(), []);
 
-  // Memoize column wrapper style
   const columnWrapperStyle = useMemo(
     () => [
       styles.row,
@@ -166,37 +157,41 @@ const Feed: React.FC = () => {
 
   return (
     <View style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.lightGray} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>DormDash</Text>
-            <Text style={styles.headerSubtitle}>Campus Marketplace</Text>
-          </View>
+      {/* Background Decor */}
+      <View style={styles.watermarkContainer} pointerEvents="none">
+        <Zap
+          size={windowWidth * 0.8}
+          color={Colors.primary_accent}
+          opacity={0.05}
+          style={{ transform: [{ rotate: "-15deg" }] }}
+        />
+      </View>
+
+      {/* Minimal Header */}
+      <View style={[styles.header, isWeb && styles.webHeader]}>
+        <View>
+          <Text style={styles.headerTitle}>DormDash</Text>
+          <Text style={styles.headerSubtitle}>Discover & Trade</Text>
+        </View>
+
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowFilters(true)}
+          >
+            <SlidersHorizontal size={24} color={Colors.darkTeal} />
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => navigation.navigate("CreateListing")}
-            style={[styles.newListingButton, isWeb && styles.webButton]}
+            style={styles.primaryButton}
           >
-            <View style={styles.newListingButtonInner}>
-              <Plus size={20} color={Colors.primary_green} />
-              <Text style={styles.newListingText}>Sell</Text>
-            </View>
+            <Plus size={20} color={Colors.white} strokeWidth={3} />
+            <Text style={styles.primaryButtonText}>Sell</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Filter Button */}
-      <View style={[styles.filterWrapper, isWeb && styles.webFilterWrapper]}>
-        <TouchableOpacity
-          style={[styles.filterButton, isWeb && styles.webButton]}
-          onPress={() => setShowFilters(true)}
-        >
-          <SlidersHorizontal size={22} color={Colors.darkTeal} />
-          <Text style={styles.filterButtonText}>Filters</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -228,128 +223,83 @@ const Feed: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.lightGray, // Overall background
   },
-
+  watermarkContainer: {
+    position: "absolute",
+    top: -50,
+    right: -100,
+    zIndex: 0,
+    overflow: "hidden",
+  },
   header: {
-    backgroundColor: Colors.primary_green,
-    paddingVertical: Spacing.lg,
-    paddingTop: Spacing.xl,
-  },
-
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === "android" ? Spacing.xl : Spacing.lg,
+    paddingBottom: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "transparent",
+    zIndex: 10,
   },
-
-  webHeaderContent: {
+  webHeader: {
     maxWidth: WebLayout.maxContentWidth,
     width: "100%",
     alignSelf: "center",
+    paddingTop: Spacing.xl,
   },
-
-  headerLeft: {
-    flex: 1,
-  },
-
   headerTitle: {
-    ...Typography.heading4,
+    fontSize: 32,
+    fontWeight: "800",
+    color: Colors.darkTeal,
+    letterSpacing: -1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: Colors.mutedGray,
+    fontWeight: "600",
+    marginTop: -4,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  iconButton: {
+    padding: Spacing.sm,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    ...Shadows.sm,
+  },
+  primaryButton: {
+    backgroundColor: Colors.primary_accent,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    gap: 6,
+    ...Shadows.glow,
+  },
+  primaryButtonText: {
     color: Colors.white,
     fontWeight: "700",
+    fontSize: 16,
   },
-
-  headerSubtitle: {
-    fontSize: 12,
-    color: Colors.lightMint,
-    marginTop: 2,
-    fontWeight: "500",
-    opacity: 0.9,
-  },
-
-  newListingButton: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.medium,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  newListingButtonInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-  },
-
-  newListingText: {
-    color: Colors.primary_green,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  // Web button styles
-  webButton: {
-    cursor: "pointer",
-  } as any,
-
-  // Filter wrapper for centering
-  filterWrapper: {
-    backgroundColor: Colors.lightMint,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
-  },
-
-  webFilterWrapper: {
-    alignItems: "center",
-  },
-
-  // Clean professional filter button
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    width: "100%",
-    maxWidth: WebLayout.maxContentWidth,
-  },
-  filterButtonText: {
-    ...Typography.bodyMedium,
-    color: Colors.darkTeal,
-    fontWeight: "600",
-  },
-
   content: {
     flex: 1,
-    backgroundColor: Colors.white,
+    // Transparent to show watermark
   },
-
-  emptyText: {
-    ...Typography.bodyLarge,
-    textAlign: "center",
-    marginTop: Spacing.xl,
-    color: Colors.mutedGray,
-  },
-
   row: {
-    justifyContent: "flex-start",
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
     gap: Spacing.lg,
-    width: "100%",
   },
-
   listContent: {
-    paddingBottom: 80,
-    paddingTop: Spacing.md,
+    paddingBottom: 100, // Space for floating tab bar
+    paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg, // Add padding to sides for single column
   },
-
   webListContent: {
     alignItems: "center",
   },

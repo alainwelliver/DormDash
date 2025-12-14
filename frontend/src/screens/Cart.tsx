@@ -382,6 +382,19 @@ const Cart: React.FC = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Filler for behind the floating tab bar */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 90,
+          backgroundColor: Colors.base_bg,
+          zIndex: -1,
+        }}
+      />
     </View>
   );
 };
@@ -431,7 +444,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: 220,
+    paddingBottom: 340, // Increased padding to clear checkout summary + tab bar
   },
   webScrollContent: {
     alignSelf: "center",
@@ -515,7 +528,7 @@ const styles = StyleSheet.create({
   },
   checkoutContainer: {
     position: "absolute",
-    bottom: 0,
+    bottom: 90, // Raised to sit above floating tab bar
     left: 0,
     right: 0,
     backgroundColor: Colors.white,
@@ -527,6 +540,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: -4 },
+    borderBottomLeftRadius: 24, // Rounded bottom corners for style
+    borderBottomRightRadius: 24,
   },
   webCheckoutContainer: {
     alignItems: "center",
