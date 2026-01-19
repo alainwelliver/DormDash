@@ -49,15 +49,19 @@ interface DasherInfo {
   total_earnings_cents: number;
 }
 
-interface DeliveryAssignment {
+interface DeliveryOrder {
   id: number;
+  order_number: string;
   pickup_address: string;
   delivery_address: string;
   status: string;
   delivery_fee_cents: number;
+  listing_title: string;
+  total_cents: number;
   created_at: string;
   seller_id: string;
   buyer_id: string;
+  dasher_id: string | null;
 }
 
 const DasherDashboard: React.FC = () => {
@@ -68,9 +72,9 @@ const DasherDashboard: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [dasherInfo, setDasherInfo] = useState<DasherInfo | null>(null);
   const [availableDeliveries, setAvailableDeliveries] = useState<
-    DeliveryAssignment[]
+    DeliveryOrder[]
   >([]);
-  const [myDeliveries, setMyDeliveries] = useState<DeliveryAssignment[]>([]);
+  const [myDeliveries, setMyDeliveries] = useState<DeliveryOrder[]>([]);
   const [togglingStatus, setTogglingStatus] = useState(false);
 
   const fetchDasherData = async () => {
@@ -102,7 +106,7 @@ const DasherDashboard: React.FC = () => {
 
       // Fetch available deliveries (pending, not assigned)
       const { data: available } = await supabase
-        .from("delivery_assignments")
+        .from("delivery_orders")
         .select("*")
         .eq("status", "pending")
         .is("dasher_id", null)
@@ -112,7 +116,7 @@ const DasherDashboard: React.FC = () => {
 
       // Fetch my active deliveries
       const { data: mine } = await supabase
-        .from("delivery_assignments")
+        .from("delivery_orders")
         .select("*")
         .eq("dasher_id", user.id)
         .in("status", ["accepted", "picked_up"])
@@ -169,17 +173,17 @@ const DasherDashboard: React.FC = () => {
     }
   };
 
-  const acceptDelivery = async (assignment: DeliveryAssignment) => {
+  const acceptDelivery = async (order: DeliveryOrder) => {
     if (!dasherInfo) return;
 
     try {
       const { error } = await supabase
-        .from("delivery_assignments")
+        .from("delivery_orders")
         .update({
           dasher_id: dasherInfo.id,
           status: "accepted",
         })
-        .eq("id", assignment.id)
+        .eq("id", order.id)
         .eq("status", "pending"); // Only update if still pending
 
       if (error) throw error;
@@ -197,7 +201,7 @@ const DasherDashboard: React.FC = () => {
   };
 
   const updateDeliveryStatus = async (
-    assignment: DeliveryAssignment,
+    order: DeliveryOrder,
     newStatus: string,
   ) => {
     try {
@@ -207,9 +211,9 @@ const DasherDashboard: React.FC = () => {
       if (newStatus === "delivered" && dasherInfo) {
         // Update delivery status
         const { error: deliveryError } = await supabase
-          .from("delivery_assignments")
+          .from("delivery_orders")
           .update(updates)
-          .eq("id", assignment.id);
+          .eq("id", order.id);
 
         if (deliveryError) throw deliveryError;
 
@@ -220,7 +224,7 @@ const DasherDashboard: React.FC = () => {
             total_deliveries: (dasherInfo.total_deliveries || 0) + 1,
             total_earnings_cents:
               (dasherInfo.total_earnings_cents || 0) +
-              assignment.delivery_fee_cents,
+              order.delivery_fee_cents,
             status: "online",
           })
           .eq("id", dasherInfo.id);
@@ -229,13 +233,13 @@ const DasherDashboard: React.FC = () => {
 
         alert(
           "Delivery Complete!",
-          `You earned ${formatPrice(assignment.delivery_fee_cents)}!`,
+          `You earned ${formatPrice(order.delivery_fee_cents)}!`,
         );
       } else {
         const { error } = await supabase
-          .from("delivery_assignments")
+          .from("delivery_orders")
           .update(updates)
-          .eq("id", assignment.id);
+          .eq("id", order.id);
 
         if (error) throw error;
 
@@ -269,7 +273,7 @@ const DasherDashboard: React.FC = () => {
     }
   };
 
-  const renderAvailableDelivery = ({ item }: { item: DeliveryAssignment }) => (
+  const renderAvailableDelivery = ({ item }: { item: DeliveryOrder }) => (
     <View style={styles.deliveryCard}>
       <View style={styles.deliveryHeader}>
         <View style={styles.earningsBadge}>
@@ -320,7 +324,7 @@ const DasherDashboard: React.FC = () => {
     </View>
   );
 
-  const renderMyDelivery = ({ item }: { item: DeliveryAssignment }) => (
+  const renderMyDelivery = ({ item }: { item: DeliveryOrder }) => (
     <View style={[styles.deliveryCard, styles.myDeliveryCard]}>
       <View style={styles.deliveryHeader}>
         <View

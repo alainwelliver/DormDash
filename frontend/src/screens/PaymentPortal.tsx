@@ -6,6 +6,7 @@ import {
   Text,
   Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Colors } from "../assets/styles";
@@ -17,10 +18,29 @@ if (Platform.OS !== "web") {
   WebView = require("react-native-webview").WebView;
 }
 
+interface OrderData {
+  deliveryMethod: "pickup" | "delivery";
+  items: Array<{
+    listing_id: number;
+    title: string;
+    price_cents: number;
+    quantity: number;
+  }>;
+  subtotalCents: number;
+  taxCents: number;
+  deliveryFeeCents: number;
+  deliveryAddress?: {
+    address: string;
+    lat?: number;
+    lng?: number;
+  };
+}
+
 type MainStackParamList = {
   PaymentPortal: {
     priceCents: number;
     listingTitle: string;
+    orderData?: OrderData;
   };
 };
 type PaymentPortalRouteProp = RouteProp<MainStackParamList, "PaymentPortal">;
@@ -35,7 +55,7 @@ type Props = {
 };
 
 const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
-  const { priceCents, listingTitle } = route.params;
+  const { priceCents, listingTitle, orderData } = route.params;
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +67,17 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCheckoutSession = async () => {
       try {
+        // Store pending order data before redirecting to Stripe
+        if (orderData) {
+          await AsyncStorage.setItem(
+            "pendingDeliveryOrder",
+            JSON.stringify({
+              ...orderData,
+              timestamp: Date.now(),
+            }),
+          );
+        }
+
         console.log(
           `Requesting session from: ${CONVEX_SITE_URL}/create-checkout-session`,
         );
@@ -92,7 +123,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
     };
 
     fetchCheckoutSession();
-  }, [listingTitle, priceCents]);
+  }, [listingTitle, priceCents, orderData]);
 
   const handleNavigationStateChange = (navState: any) => {
     const { url } = navState;

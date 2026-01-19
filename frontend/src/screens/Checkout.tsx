@@ -36,8 +36,26 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { supabase } from "../lib/supabase";
 
+interface OrderData {
+  deliveryMethod: "pickup" | "delivery";
+  items: Array<{
+    listing_id: number;
+    title: string;
+    price_cents: number;
+    quantity: number;
+  }>;
+  subtotalCents: number;
+  taxCents: number;
+  deliveryFeeCents: number;
+  deliveryAddress?: {
+    address: string;
+    lat?: number;
+    lng?: number;
+  };
+}
+
 type CheckoutNavigationProp = NativeStackNavigationProp<{
-  PaymentPortal: { priceCents: number; listingTitle: string };
+  PaymentPortal: { priceCents: number; listingTitle: string; orderData?: OrderData };
   AddAddress: { addressId?: number } | undefined;
   AddressList: undefined;
 }>;
@@ -179,9 +197,31 @@ const Checkout: React.FC = () => {
         {
           text: "Confirm",
           onPress: () => {
+            const orderData: OrderData = {
+              deliveryMethod,
+              items: selectedItems.map((item) => ({
+                listing_id: item.id,
+                title: item.title,
+                price_cents: item.price_cents,
+                quantity: item.quantity,
+              })),
+              subtotalCents: calculateSubtotal(),
+              taxCents: calculateTax(),
+              deliveryFeeCents: calculateDeliveryFee(),
+              ...(deliveryMethod === "delivery" && selectedAddress
+                ? {
+                    deliveryAddress: {
+                      address: getAddressDisplayText(selectedAddress),
+                      lat: selectedAddress.lat,
+                      lng: selectedAddress.lng,
+                    },
+                  }
+                : {}),
+            };
             navigation.navigate("PaymentPortal", {
               priceCents: calculateTotal(),
               listingTitle: `Order (${selectedItems.length} items)`,
+              orderData,
             });
           },
         },

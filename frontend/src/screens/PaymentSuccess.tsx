@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,109 @@ import {
   TouchableOpacity,
   Platform,
   Linking,
+  ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle, Mail, Home, Receipt } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { supabase } from "../lib/supabase";
 
 type Props = {
   navigation: NavigationProp<any>;
 };
 
 const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
+  const [processingOrder, setProcessingOrder] = useState(true);
+
+  useEffect(() => {
+    const createDeliveryOrder = async () => {
+      try {
+        // Retrieve pending order from AsyncStorage
+        const pendingOrderStr = await AsyncStorage.getItem("pendingDeliveryOrder");
+        if (!pendingOrderStr) {
+          setProcessingOrder(false);
+          return;
+        }
+
+        const orderData = JSON.parse(pendingOrderStr);
+
+        // Only create delivery order if delivery method was selected
+        if (orderData.deliveryMethod !== "delivery") {
+          await AsyncStorage.removeItem("pendingDeliveryOrder");
+          setProcessingOrder(false);
+          return;
+        }
+
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error("No user found");
+          setProcessingOrder(false);
+          return;
+        }
+
+        // Get seller info from the first item's listing
+        const firstItem = orderData.items[0];
+        const { data: listing, error: listingError } = await supabase
+          .from("listings")
+          .select("user_id, pickup_address")
+          .eq("id", firstItem.listing_id)
+          .single();
+
+        if (listingError || !listing) {
+          console.error("Error fetching listing:", listingError);
+          setProcessingOrder(false);
+          return;
+        }
+
+        // Generate order number
+        const orderNumber = `DD${Date.now().toString(36).toUpperCase()}`;
+
+        // Create delivery order
+        const { error: insertError } = await supabase
+          .from("delivery_orders")
+          .insert({
+            order_number: orderNumber,
+            buyer_id: user.id,
+            seller_id: listing.user_id,
+            listing_id: firstItem.listing_id,
+            listing_title: firstItem.title,
+            subtotal_cents: orderData.subtotalCents,
+            tax_cents: orderData.taxCents,
+            delivery_fee_cents: orderData.deliveryFeeCents,
+            total_cents: orderData.subtotalCents + orderData.taxCents + orderData.deliveryFeeCents,
+            pickup_address: listing.pickup_address || "Seller location",
+            delivery_address: orderData.deliveryAddress?.address || "Buyer location",
+            status: "pending",
+          });
+
+        if (insertError) {
+          console.error("Error creating delivery order:", insertError);
+        } else {
+          console.log("Delivery order created successfully:", orderNumber);
+
+          // Clear cart items for the ordered listings
+          const listingIds = orderData.items.map((item: any) => item.listing_id);
+          await supabase
+            .from("cart_items")
+            .delete()
+            .eq("user_id", user.id)
+            .in("listing_id", listingIds);
+        }
+
+        // Clear pending order from AsyncStorage
+        await AsyncStorage.removeItem("pendingDeliveryOrder");
+      } catch (error) {
+        console.error("Error processing order:", error);
+      } finally {
+        setProcessingOrder(false);
+      }
+    };
+
+    createDeliveryOrder();
+  }, []);
+
   const handleGoHome = () => {
     if (Platform.OS === "web") {
       window.location.href = "/feed";
@@ -34,6 +127,19 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
       routes: [{ name: "MainTabs" }, { name: "PastOrders" }],
     });
   };
+
+  if (processingOrder) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <ActivityIndicator size="large" color={Colors.primary_green} />
+          <Text style={[styles.subtitle, { marginTop: Spacing.lg }]}>
+            Processing your order...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

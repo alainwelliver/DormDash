@@ -114,9 +114,27 @@ interface CartItem {
   quantity: number;
 }
 
+interface OrderData {
+  deliveryMethod: "pickup" | "delivery";
+  items: Array<{
+    listing_id: number;
+    title: string;
+    price_cents: number;
+    quantity: number;
+  }>;
+  subtotalCents: number;
+  taxCents: number;
+  deliveryFeeCents: number;
+  deliveryAddress?: {
+    address: string;
+    lat?: number;
+    lng?: number;
+  };
+}
+
 type MainStackParamList = {
   MainTabs: undefined;
-  PaymentPortal: { priceCents: number; listingTitle: string };
+  PaymentPortal: { priceCents: number; listingTitle: string; orderData?: OrderData };
   ProductDetail: { listingId: number };
   Checkout: { selectedItems: CartItem[] };
   MyListings: undefined;
