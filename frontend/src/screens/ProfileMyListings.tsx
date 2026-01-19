@@ -1,0 +1,283 @@
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+  StatusBar,
+  Alert,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Package, ChevronLeft } from "lucide-react-native";
+import { supabase } from "../lib/supabase";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import ListingCard from "../components/ListingCard";
+import { Colors, Typography, Spacing } from "../assets/styles";
+
+type MyListingsNavigationProp = NativeStackNavigationProp<any>;
+
+const showAlert = (
+  title: string,
+  message: string,
+  buttons?: Array<{
+    text: string;
+    style?: "default" | "cancel" | "destructive";
+    onPress?: () => void;
+  }>,
+) => {
+  if (Platform.OS === "web") {
+    if (buttons && buttons.length > 1) {
+      const confirmed = window.confirm(`${title}\n\n${message}`);
+      if (confirmed) {
+        const destructiveBtn = buttons.find((b) => b.style === "destructive");
+        destructiveBtn?.onPress?.();
+      }
+    } else {
+      window.alert(`${title}\n\n${message}`);
+      buttons?.[0]?.onPress?.();
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
+
+const MyListings: React.FC = () => {
+  const navigation = useNavigation<MyListingsNavigationProp>();
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchMyListings = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*, listing_images(url, sort_order)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching my listings:", error.message);
+    } else {
+      setListings(data || []);
+    }
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchMyListings();
+    }, []),
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchMyListings();
+  };
+
+  const handleEditListing = (listingId: number) => {
+    navigation.navigate("EditListing", { listingId });
+  };
+
+  const handleDeleteListing = (listingId: number) => {
+    showAlert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Delete related records first (due to foreign key constraints)
+              await supabase
+                .from("listing_images")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("listing_tags")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("reviews")
+                .delete()
+                .eq("listing_id", listingId);
+
+              await supabase
+                .from("cart_items")
+                .delete()
+                .eq("listing_id", listingId);
+
+              // Delete the listing itself
+              const { error } = await supabase
+                .from("listings")
+                .delete()
+                .eq("id", listingId);
+
+              if (error) throw error;
+
+              // Update local state to remove the deleted listing
+              setListings((prev) => prev.filter((l) => l.id !== listingId));
+
+              showAlert("Success", "Listing has been deleted.");
+            } catch (error) {
+              console.error("Error deleting listing:", error);
+              showAlert("Error", "Failed to delete listing. Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <ActivityIndicator
+          size="large"
+          color={Colors.primary_blue}
+          style={{ marginTop: 20 }}
+        />
+      );
+    }
+
+    if (listings.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Package color={Colors.lightGray} size={80} />
+          <Text style={styles.emptyText}>No listings yet</Text>
+          <Text style={styles.emptySubtext}>
+            Start selling by creating your first listing
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={listings}
+        renderItem={({ item }) => (
+          <ListingCard
+            listing={item}
+            showMenu
+            onEdit={handleEditListing}
+            onDelete={handleDeleteListing}
+          />
+        )}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <ChevronLeft color={Colors.darkTeal} size={32} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Listings ({listings.length})</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>{renderContent()}</View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.base_bg,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.base_bg,
+    paddingTop: 50,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.lightGray,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontFamily: Typography.heading4.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  placeholder: {
+    width: 40,
+  },
+  content: {
+    flex: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xxxl,
+  },
+  emptyText: {
+    fontFamily: Typography.heading4.fontFamily,
+    fontSize: 20,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xs,
+  },
+  emptySubtext: {
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontSize: 14,
+    color: Colors.mutedGray,
+    textAlign: "center",
+  },
+  row: {
+    justifyContent: "space-between",
+    marginBottom: 16,
+    gap: 12,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+});
+
+export default MyListings;

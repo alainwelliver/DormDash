@@ -2,11 +2,16 @@
 
 **This project uses pnpm. Replace all commands from npm to pnpm equivalent**
 
+deployed on: www.dormdash.xyz
 
-To run project: 
+To run project:
 
-1. Download ExpoGo
-2. run "pnpm run start "
-3. Scan the QR code and you can run the app on your phone
+1. "cd" into dormdash folder
+2. start backend server with "pnpm dlx convex dev"
+3. start frontend with "pnpm run start"
 
 Formatting: Run "pnpm format"
+
+Unit Testing: Run "pnpm test"
+
+Deploy and Build script: Run "pnpm deploy"

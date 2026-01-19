@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "DormDash",
+    "slug": "dormdash",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/dormdash-logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/dormdash-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "icon": "./assets/dormdash-logo.png"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/dormdash-logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/dormdash-logo.png",
+      "name": "DormDash",
+      "shortName": "DormDash",
+      "bundler": "metro"
+    }
+  }
+}
