@@ -102,6 +102,11 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
   const [cats, setCats] = useState<Category[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Delivery options
+  const [deliveryAvailable, setDeliveryAvailable] = useState(true);
+  const [pickupAvailable, setPickupAvailable] = useState(true);
+  const [pickupAddress, setPickupAddress] = useState("");
+
   // Load categories and tags
   useEffect(() => {
     supabase
@@ -171,6 +176,8 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
       return Alert.alert("Missing title", "Please enter a title.");
     if (!categoryId)
       return Alert.alert("Missing category", "Please choose a category.");
+    if (!deliveryAvailable && !pickupAvailable)
+      return Alert.alert("Missing delivery option", "Please select at least one delivery option.");
 
     setSubmitting(true);
     const {
@@ -191,6 +198,9 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         price_cents,
         type,
         category_id: categoryId,
+        delivery_available: deliveryAvailable,
+        pickup_available: pickupAvailable,
+        pickup_address: pickupAvailable ? pickupAddress.trim() || null : null,
       })
       .select("id")
       .single();
@@ -345,6 +355,79 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
           </TouchableOpacity>
         ))}
       </View>
+
+      <Text style={styles.sectionTitle}>Delivery Options</Text>
+      <View style={styles.deliveryOptionsContainer}>
+        <TouchableOpacity
+          style={[
+            styles.deliveryOption,
+            deliveryAvailable && styles.deliveryOptionActive,
+          ]}
+          onPress={() => setDeliveryAvailable(!deliveryAvailable)}
+        >
+          <View style={styles.deliveryOptionIcon}>
+            <Text style={styles.deliveryOptionEmoji}>🚚</Text>
+          </View>
+          <View style={styles.deliveryOptionContent}>
+            <Text style={styles.deliveryOptionTitle}>Delivery</Text>
+            <Text style={styles.deliveryOptionDesc}>
+              You'll deliver to the buyer
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.checkbox,
+              deliveryAvailable && styles.checkboxActive,
+            ]}
+          >
+            {deliveryAvailable && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deliveryOption,
+            pickupAvailable && styles.deliveryOptionActive,
+          ]}
+          onPress={() => setPickupAvailable(!pickupAvailable)}
+        >
+          <View style={styles.deliveryOptionIcon}>
+            <Text style={styles.deliveryOptionEmoji}>📍</Text>
+          </View>
+          <View style={styles.deliveryOptionContent}>
+            <Text style={styles.deliveryOptionTitle}>Pickup</Text>
+            <Text style={styles.deliveryOptionDesc}>
+              Buyer picks up from you
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.checkbox,
+              pickupAvailable && styles.checkboxActive,
+            ]}
+          >
+            {pickupAvailable && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {pickupAvailable && (
+        <Input
+          label="Pickup Address"
+          placeholder="e.g. Gutmann College House, Room 123"
+          value={pickupAddress}
+          onChangeText={setPickupAddress}
+          inputStyle={styles.inputText}
+          labelStyle={styles.inputLabel}
+          containerStyle={styles.inputContainer}
+        />
+      )}
+
+      {!deliveryAvailable && !pickupAvailable && (
+        <Text style={styles.warningText}>
+          Please select at least one delivery option
+        </Text>
+      )}
 
       <Text style={styles.sectionTitle}>Tags</Text>
       <View style={styles.tagContainer}>
@@ -624,4 +707,74 @@ const styles = StyleSheet.create({
   },
 
   buttonRow: { flexDirection: "row", marginTop: 24 },
+
+  // Delivery options styles
+  deliveryOptionsContainer: {
+    marginVertical: 10,
+    gap: 10,
+  },
+  deliveryOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+  },
+  deliveryOptionActive: {
+    backgroundColor: COLORS.lightMint,
+    borderColor: COLORS.teal,
+  },
+  deliveryOptionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  deliveryOptionEmoji: {
+    fontSize: 20,
+  },
+  deliveryOptionContent: {
+    flex: 1,
+  },
+  deliveryOptionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.bodyText,
+    fontFamily: FONTS.body,
+  },
+  deliveryOptionDesc: {
+    fontSize: 13,
+    color: COLORS.subtleText,
+    fontFamily: FONTS.body,
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxActive: {
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
+  },
+  checkmark: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  warningText: {
+    color: "#EF4444",
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    marginTop: 8,
+  },
 });

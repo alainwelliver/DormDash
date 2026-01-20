@@ -12,16 +12,26 @@ import { Icon } from "@rneui/themed";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import type { DeliveryType } from "../types/order";
 
 type CheckoutNavigationProp = NativeStackNavigationProp<{
-  PaymentPortal: { priceCents: number; listingTitle: string };
+  PaymentPortal: {
+    priceCents: number;
+    listingTitle: string;
+    deliveryType: DeliveryType;
+    deliveryAddress: string;
+  };
 }>;
 
 interface CartItem {
   id: number;
+  listing_id?: number;
   title: string;
   price_cents: number;
   quantity: number;
+  delivery_available?: boolean;
+  pickup_available?: boolean;
+  pickup_address?: string;
 }
 
 interface RouteParams {
@@ -39,6 +49,15 @@ const Checkout: React.FC = () => {
     "Gutmann College House"
   );
   const [selectedPayment, setSelectedPayment] = useState("**** 4187");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("delivery");
+
+  // Check what delivery options are available
+  const deliveryAvailable = selectedItems.every(
+    (item) => item.delivery_available !== false
+  );
+  const pickupAvailable = selectedItems.every(
+    (item) => item.pickup_available !== false
+  );
 
   const calculateSubtotal = () => {
     return selectedItems.reduce(
@@ -51,8 +70,12 @@ const Checkout: React.FC = () => {
     return Math.round(calculateSubtotal() * 0.08); // 8% tax
   };
 
+  const calculateDeliveryFee = () => {
+    return deliveryType === "delivery" ? 299 : 0; // $2.99 delivery fee
+  };
+
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return calculateSubtotal() + calculateTax() + calculateDeliveryFee();
   };
 
   const formatPrice = (priceCents: number) => {
@@ -65,16 +88,17 @@ const Checkout: React.FC = () => {
   const handlePlaceOrder = () => {
     Alert.alert(
       "Place Order",
-      `Total: ${formatPrice(calculateTotal())}\n\nProceed with payment?`,
+      `Total: ${formatPrice(calculateTotal())}\n${deliveryType === "pickup" ? "Pickup" : "Delivery"} order\n\nProceed with payment?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Confirm",
           onPress: () => {
-            // Navigate to payment portal
             navigation.navigate("PaymentPortal", {
               priceCents: calculateTotal(),
               listingTitle: `Order (${selectedItems.length} items)`,
+              deliveryType,
+              deliveryAddress: selectedAddress,
             });
           },
         },
@@ -105,28 +129,130 @@ const Checkout: React.FC = () => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Delivery Address Section */}
+        {/* Delivery Type Selection */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Icon
-              name="map-marker"
+              name="truck-delivery"
               type="material-community"
               color={Colors.primary_blue}
               size={24}
             />
-            <Text style={styles.sectionTitle}>Delivery Address</Text>
+            <Text style={styles.sectionTitle}>Delivery Method</Text>
+          </View>
+          <View style={styles.deliveryTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.deliveryTypeOption,
+                deliveryType === "delivery" && styles.deliveryTypeOptionSelected,
+                !deliveryAvailable && styles.deliveryTypeOptionDisabled,
+              ]}
+              onPress={() => deliveryAvailable && setDeliveryType("delivery")}
+              disabled={!deliveryAvailable}
+            >
+              <Icon
+                name="truck-delivery"
+                type="material-community"
+                color={
+                  deliveryType === "delivery"
+                    ? Colors.white
+                    : !deliveryAvailable
+                      ? Colors.mutedGray
+                      : Colors.darkTeal
+                }
+                size={24}
+              />
+              <Text
+                style={[
+                  styles.deliveryTypeText,
+                  deliveryType === "delivery" && styles.deliveryTypeTextSelected,
+                  !deliveryAvailable && styles.deliveryTypeTextDisabled,
+                ]}
+              >
+                Delivery
+              </Text>
+              {deliveryType === "delivery" && (
+                <Text style={styles.deliveryTypeFee}>+$2.99</Text>
+              )}
+              {!deliveryAvailable && (
+                <Text style={styles.unavailableText}>Unavailable</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.deliveryTypeOption,
+                deliveryType === "pickup" && styles.deliveryTypeOptionSelected,
+                !pickupAvailable && styles.deliveryTypeOptionDisabled,
+              ]}
+              onPress={() => pickupAvailable && setDeliveryType("pickup")}
+              disabled={!pickupAvailable}
+            >
+              <Icon
+                name="walk"
+                type="material-community"
+                color={
+                  deliveryType === "pickup"
+                    ? Colors.white
+                    : !pickupAvailable
+                      ? Colors.mutedGray
+                      : Colors.darkTeal
+                }
+                size={24}
+              />
+              <Text
+                style={[
+                  styles.deliveryTypeText,
+                  deliveryType === "pickup" && styles.deliveryTypeTextSelected,
+                  !pickupAvailable && styles.deliveryTypeTextDisabled,
+                ]}
+              >
+                Pickup
+              </Text>
+              {deliveryType === "pickup" && (
+                <Text style={styles.deliveryTypeFee}>Free</Text>
+              )}
+              {!pickupAvailable && (
+                <Text style={styles.unavailableText}>Unavailable</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Address Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Icon
+              name={deliveryType === "pickup" ? "store" : "map-marker"}
+              type="material-community"
+              color={Colors.primary_blue}
+              size={24}
+            />
+            <Text style={styles.sectionTitle}>
+              {deliveryType === "pickup" ? "Pickup Location" : "Delivery Address"}
+            </Text>
           </View>
           <TouchableOpacity style={styles.selectionCard}>
             <View style={styles.selectionContent}>
-              <Text style={styles.selectionText}>{selectedAddress}</Text>
-              <Text style={styles.selectionSubtext}>Default address</Text>
+              <Text style={styles.selectionText}>
+                {deliveryType === "pickup"
+                  ? selectedItems[0]?.pickup_address || "Seller's location"
+                  : selectedAddress}
+              </Text>
+              <Text style={styles.selectionSubtext}>
+                {deliveryType === "pickup"
+                  ? "You'll pick up the item here"
+                  : "Default address"}
+              </Text>
             </View>
-            <Icon
-              name="chevron-right"
-              type="material-community"
-              color={Colors.mutedGray}
-              size={24}
-            />
+            {deliveryType === "delivery" && (
+              <Icon
+                name="chevron-right"
+                type="material-community"
+                color={Colors.mutedGray}
+                size={24}
+              />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -216,6 +342,14 @@ const Checkout: React.FC = () => {
                 {formatPrice(calculateTax())}
               </Text>
             </View>
+            {deliveryType === "delivery" && (
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Delivery Fee</Text>
+                <Text style={styles.priceValue}>
+                  {formatPrice(calculateDeliveryFee())}
+                </Text>
+              </View>
+            )}
             <View style={styles.priceDivider} />
             <View style={styles.priceRow}>
               <Text style={styles.totalLabel}>Total</Text>
@@ -230,7 +364,12 @@ const Checkout: React.FC = () => {
       {/* Place Order Button */}
       <View style={styles.bottomContainer}>
         <View style={styles.bottomSummary}>
-          <Text style={styles.bottomLabel}>Total Amount</Text>
+          <View>
+            <Text style={styles.bottomLabel}>Total Amount</Text>
+            <Text style={styles.bottomDeliveryType}>
+              {deliveryType === "pickup" ? "Pickup" : "Delivery"}
+            </Text>
+          </View>
           <Text style={styles.bottomTotal}>
             {formatPrice(calculateTotal())}
           </Text>
@@ -300,6 +439,52 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.darkTeal,
     marginLeft: Spacing.sm,
+  },
+  deliveryTypeContainer: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  deliveryTypeOption: {
+    flex: 1,
+    backgroundColor: Colors.lightGray,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.lg,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  deliveryTypeOptionSelected: {
+    backgroundColor: Colors.primary_blue,
+    borderColor: Colors.primary_blue,
+  },
+  deliveryTypeOptionDisabled: {
+    opacity: 0.5,
+  },
+  deliveryTypeText: {
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    marginTop: Spacing.sm,
+  },
+  deliveryTypeTextSelected: {
+    color: Colors.white,
+  },
+  deliveryTypeTextDisabled: {
+    color: Colors.mutedGray,
+  },
+  deliveryTypeFee: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.white,
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  unavailableText: {
+    fontSize: 11,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginTop: 4,
   },
   selectionCard: {
     backgroundColor: Colors.lightGray,
@@ -404,7 +589,7 @@ const styles = StyleSheet.create({
   },
   priceDivider: {
     height: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.base_bg,
     marginVertical: Spacing.md,
   },
   totalLabel: {
@@ -446,6 +631,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodyMedium.fontFamily,
     color: Colors.darkTeal,
     fontWeight: "500",
+  },
+  bottomDeliveryType: {
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginTop: 2,
   },
   bottomTotal: {
     fontSize: 24,

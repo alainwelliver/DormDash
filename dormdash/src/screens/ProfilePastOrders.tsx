@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,43 +14,40 @@ import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing } from "../assets/styles";
+import type { DeliveryOrder, OrderStatus } from "../types/order";
+import { STATUS_LABELS } from "../types/order";
 
-type PastOrdersNavigationProp = NativeStackNavigationProp<any>;
-
-interface Order {
-  id: number;
-  listing_title: string;
-  order_number: string;
-  created_at: string;
-  price_cents: number;
-}
+type PastOrdersNavigationProp = NativeStackNavigationProp<{
+  OrderStatus: { orderId: number };
+}>;
 
 const PastOrders: React.FC = () => {
   const navigation = useNavigation<PastOrdersNavigationProp>();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrders = async () => {
-    // Using mock data for now - will connect to database later
-    setOrders([
-      {
-        id: 1,
-        listing_title: "Dining Table",
-        order_number: "456765",
-        created_at: new Date().toISOString(),
-        price_cents: 5000,
-      },
-      {
-        id: 2,
-        listing_title: "Used Volleyball Net",
-        order_number: "35345",
-        created_at: new Date().toISOString(),
-        price_cents: 2500,
-      },
-    ]);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("delivery_orders")
+        .select("*")
+        .eq("buyer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -65,26 +62,116 @@ const PastOrders: React.FC = () => {
     fetchOrders();
   };
 
-  const renderOrderItem = ({ item }: { item: Order }) => (
-    <TouchableOpacity style={styles.orderCard}>
-      <View style={styles.iconContainer}>
+  const formatPrice = (priceCents: number) => {
+    return (priceCents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getStatusColor = (status: OrderStatus): string => {
+    switch (status) {
+      case "pending":
+        return "#FFA500";
+      case "accepted":
+        return Colors.primary_blue;
+      case "ready":
+      case "on_the_way":
+        return Colors.secondary;
+      case "delivered":
+        return Colors.primary_green;
+      case "cancelled":
+        return Colors.mutedGray;
+      default:
+        return Colors.mutedGray;
+    }
+  };
+
+  const getStatusIcon = (status: OrderStatus): string => {
+    switch (status) {
+      case "pending":
+        return "clock-outline";
+      case "accepted":
+        return "check-circle-outline";
+      case "ready":
+        return "package-variant";
+      case "on_the_way":
+        return "truck-delivery";
+      case "delivered":
+        return "check-circle";
+      case "cancelled":
+        return "close-circle-outline";
+      default:
+        return "circle-outline";
+    }
+  };
+
+  const renderOrderItem = ({ item }: { item: DeliveryOrder }) => (
+    <TouchableOpacity
+      style={styles.orderCard}
+      onPress={() => navigation.navigate("OrderStatus", { orderId: item.id })}
+    >
+      <View style={styles.orderHeader}>
+        <View style={styles.iconContainer}>
+          <Icon
+            name={getStatusIcon(item.status)}
+            type="material-community"
+            color={getStatusColor(item.status)}
+            size={28}
+          />
+        </View>
+        <View style={styles.orderInfo}>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            {item.listing_title}
+          </Text>
+          <Text style={styles.orderNumber}>Order #{item.order_number}</Text>
+          <Text style={styles.orderDate}>{formatDate(item.created_at)}</Text>
+        </View>
+        <View style={styles.orderRight}>
+          <Text style={styles.orderPrice}>{formatPrice(item.total_cents)}</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusColor(item.status) + "20" },
+            ]}
+          >
+            <Text
+              style={[styles.statusText, { color: getStatusColor(item.status) }]}
+            >
+              {STATUS_LABELS[item.status] || item.status}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.orderFooter}>
+        <View style={styles.deliveryTypeTag}>
+          <Icon
+            name={item.delivery_type === "pickup" ? "walk" : "truck-delivery"}
+            type="material-community"
+            color={Colors.mutedGray}
+            size={14}
+          />
+          <Text style={styles.deliveryTypeText}>
+            {item.delivery_type === "pickup" ? "Pickup" : "Delivery"}
+          </Text>
+        </View>
         <Icon
-          name="heart-outline"
+          name="chevron-right"
           type="material-community"
-          color={Colors.darkTeal}
-          size={32}
+          color={Colors.mutedGray}
+          size={24}
         />
       </View>
-      <View style={styles.orderInfo}>
-        <Text style={styles.orderTitle}>{item.listing_title}</Text>
-        <Text style={styles.orderNumber}>Order #{item.order_number}</Text>
-      </View>
-      <Icon
-        name="chevron-right"
-        type="material-community"
-        color={Colors.mutedGray}
-        size={24}
-      />
     </TouchableOpacity>
   );
 
@@ -144,7 +231,7 @@ const PastOrders: React.FC = () => {
             size={32}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Past Orders</Text>
+        <Text style={styles.headerTitle}>My Orders</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -190,32 +277,86 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxxl,
   },
   orderCard: {
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: Colors.lightGray,
     borderRadius: 12,
-    padding: Spacing.md,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
   },
+  orderHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
   iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.base_bg,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: Spacing.md,
   },
   orderInfo: {
     flex: 1,
   },
   orderTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: Typography.bodyLarge.fontFamily,
     fontWeight: "600",
     color: Colors.darkTeal,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   orderNumber: {
-    fontSize: 14,
-    fontFamily: Typography.bodyMedium.fontFamily,
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
+  },
+  orderDate: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginTop: 2,
+  },
+  orderRight: {
+    alignItems: "flex-end",
+  },
+  orderPrice: {
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.primary_blue,
+    marginBottom: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  statusText: {
+    fontSize: 11,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+  },
+  orderFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.base_bg,
+  },
+  deliveryTypeTag: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  deliveryTypeText: {
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,

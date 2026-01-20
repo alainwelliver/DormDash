@@ -23,6 +23,8 @@ import AddressList from "../screens/ProfileAddressList";
 import AddAddress from "../screens/ProfileAddAddress";
 import PaymentList from "../screens/ProfilePaymentList";
 import AddPayment from "../screens/ProfileAddPayment";
+import OrderStatus from "../screens/OrderStatus";
+import SellerOrders from "../screens/SellerOrders";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -52,6 +54,8 @@ type MainStackParamList = {
   AddAddress: undefined;
   PaymentList: undefined;
   AddPayment: undefined;
+  OrderStatus: { orderId: number };
+  SellerOrders: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -116,6 +120,8 @@ export default function AppNavigator() {
   <MainStack.Screen name="AddAddress" component={AddAddress} />
   <MainStack.Screen name="PaymentList" component={PaymentList} />
   <MainStack.Screen name="AddPayment" component={AddPayment} />
+  <MainStack.Screen name="OrderStatus" component={OrderStatus} />
+  <MainStack.Screen name="SellerOrders" component={SellerOrders} />
 
   <MainStack.Screen
     name="CreateListing"

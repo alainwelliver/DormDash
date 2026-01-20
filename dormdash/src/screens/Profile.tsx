@@ -27,6 +27,7 @@ type ProfileNavigationProp = NativeStackNavigationProp<{
   PastOrders: undefined;
   AddressList: undefined;
   PaymentList: undefined;
+  SellerOrders: undefined;
 }>;
 
 const Profile: React.FC = () => {
@@ -72,7 +73,8 @@ const Profile: React.FC = () => {
 
   const menuItems = [
     { title: "My Listings", icon: "format-list-bulleted", route: "MyListings" },
-    { title: "Past Orders", icon: "history", route: "PastOrders" },
+    { title: "My Orders", icon: "history", route: "PastOrders" },
+    { title: "Seller Orders", icon: "store", route: "SellerOrders" },
     { title: "Address", icon: "map-marker", route: "AddressList" },
     { title: "Payment", icon: "credit-card", route: "PaymentList" },
   ];
