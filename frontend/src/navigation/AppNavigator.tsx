@@ -207,8 +207,8 @@ function MainTabs() {
           borderRadius: 30, // Capsule shape
           height: 60,
           borderTopWidth: 0,
-          elevation: 0, // Disable default android shadow
           ...Shadows.glow, // Apply our custom glow
+          elevation: 0, // Disable default android shadow
           borderWidth: 1,
           borderColor: Colors.glass_border,
         },
