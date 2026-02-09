@@ -68,6 +68,7 @@ const linking: LinkingOptions<any> = {
       EditListing: "edit-listing/:listingId",
       MyListings: "my-listings",
       PastOrders: "past-orders",
+      OrderDetails: "order/:orderId",
       AddressList: "addresses",
       AddAddress: "add-address",
       PaymentList: "payments",
@@ -97,6 +98,7 @@ import Checkout from "../screens/Checkout";
 import Profile from "../screens/Profile";
 import MyListings from "../screens/ProfileMyListings";
 import PastOrders from "../screens/ProfilePastOrders";
+import OrderDetails from "../screens/OrderDetails";
 import AddressList from "../screens/ProfileAddressList";
 import AddAddress from "../screens/ProfileAddAddress";
 import PaymentList from "../screens/ProfilePaymentList";
@@ -158,6 +160,7 @@ type MainStackParamList = {
   Checkout: { selectedItems: CartItem[] };
   MyListings: undefined;
   PastOrders: undefined;
+  OrderDetails: { orderId: number };
   AddressList: undefined;
   AddAddress: { addressId?: number } | undefined;
   PaymentList: undefined;
@@ -375,6 +378,7 @@ export default function AppNavigator() {
           <MainStack.Screen name="Checkout" component={Checkout} />
           <MainStack.Screen name="MyListings" component={MyListings} />
           <MainStack.Screen name="PastOrders" component={PastOrders} />
+          <MainStack.Screen name="OrderDetails" component={OrderDetails} />
           <MainStack.Screen name="AddressList" component={AddressList} />
           <MainStack.Screen name="AddAddress" component={AddAddress} />
           <MainStack.Screen name="PaymentList" component={PaymentList} />

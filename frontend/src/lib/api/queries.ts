@@ -1,8 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase";
 
 // ============ Query Keys ============
-// Centralized query keys for cache management
 export const queryKeys = {
   listings: (filters?: {
     category?: number | null;
@@ -54,7 +53,6 @@ export const useListings = (filters: ListingFilters = {}) => {
   return useQuery({
     queryKey: queryKeys.listings(filters),
     queryFn: () => fetchListings(filters),
-    staleTime: 60 * 1000, // 1 minute - listings change frequently
   });
 };
 
@@ -93,7 +91,6 @@ export const useCategories = () => {
   return useQuery({
     queryKey: queryKeys.categories,
     queryFn: fetchCategories,
-    staleTime: 5 * 60 * 1000, // 5 minutes - categories rarely change
   });
 };
 
@@ -109,7 +106,6 @@ export const useTags = () => {
   return useQuery({
     queryKey: queryKeys.tags,
     queryFn: fetchTags,
-    staleTime: 5 * 60 * 1000, // 5 minutes - tags rarely change
   });
 };
 
@@ -139,7 +135,6 @@ export const useSeller = (userId: string | null) => {
     queryKey: queryKeys.seller(userId || ""),
     queryFn: () => fetchSeller(userId!),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 
@@ -190,24 +185,5 @@ export const useCart = (userId: string | null) => {
     queryKey: queryKeys.cart(userId || ""),
     queryFn: () => fetchCart(userId!),
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds - cart changes often
   });
-};
-
-// ============ Cache Invalidation Helpers ============
-export const useInvalidateListings = () => {
-  const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: ["listings"] });
-};
-
-export const useInvalidateCart = () => {
-  const queryClient = useQueryClient();
-  return (userId: string) =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.cart(userId) });
-};
-
-export const useInvalidateListing = () => {
-  const queryClient = useQueryClient();
-  return (id: number) =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.listing(id) });
 };

@@ -57,7 +57,7 @@ const PastOrders: React.FC = () => {
           "id, status, delivery_method, total_cents, created_at, order_items(id, title, price_cents, quantity)",
         )
         .eq("user_id", user.id)
-        .eq("status", "paid")
+        .in("status", ["paid", "cancelled"])
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -105,7 +105,12 @@ const PastOrders: React.FC = () => {
   const renderOrderItem = ({ item }: { item: Order }) => {
     const itemNames = item.order_items.map((oi) => oi.title).join(", ");
     return (
-      <TouchableOpacity style={styles.orderCard}>
+      <TouchableOpacity
+        style={styles.orderCard}
+        onPress={() =>
+          navigation.navigate("OrderDetails", { orderId: item.id })
+        }
+      >
         <View style={styles.iconContainer}>
           <Receipt color={Colors.darkTeal} size={32} />
         </View>
@@ -119,6 +124,7 @@ const PastOrders: React.FC = () => {
           <Text style={[styles.orderNumber, { marginTop: 2 }]}>
             {formatPrice(item.total_cents)} ·{" "}
             {item.delivery_method === "delivery" ? "Delivery" : "Pickup"}
+            {item.status === "cancelled" ? " · Cancelled" : ""}
           </Text>
         </View>
         <ChevronRight color={Colors.mutedGray} size={24} />
@@ -169,7 +175,9 @@ const PastOrders: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            navigation.navigate("MainTabs" as any, { screen: "ProfileTab" })
+          }
         >
           <ChevronLeft color={Colors.darkTeal} size={32} />
         </TouchableOpacity>

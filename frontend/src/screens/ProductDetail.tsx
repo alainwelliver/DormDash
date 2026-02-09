@@ -115,7 +115,6 @@ export default function ProductDetail({
       if (error) throw error;
       return data;
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // React Query for seller profile
@@ -140,7 +139,6 @@ export default function ProductDetail({
       return data;
     },
     enabled: !!listing?.user_id,
-    staleTime: 2 * 60 * 1000,
     select: (data) => ({
       id: data.id,
       username: data.display_name || "Seller",
@@ -171,7 +169,6 @@ export default function ProductDetail({
         reviewer_name: review.seller_profiles?.display_name || null,
       }));
     },
-    staleTime: 60 * 1000, // 1 minute
   });
 
   const loading = listingLoading;

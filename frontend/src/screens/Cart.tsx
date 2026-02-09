@@ -109,7 +109,6 @@ const Cart: React.FC = () => {
       }));
     },
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds
   });
 
   // Sync React Query data to local state
