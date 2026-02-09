@@ -151,6 +151,9 @@ const Cart: React.FC = () => {
         i.id === cartItemId ? { ...i, quantity: newQty } : i,
       ),
     );
+
+    // Keep cache in sync
+    queryClient.invalidateQueries({ queryKey: ["cart", userId] });
   };
 
   // Remove item from Supabase

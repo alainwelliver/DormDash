@@ -223,8 +223,7 @@ const DasherDashboard: React.FC = () => {
           .update({
             total_deliveries: (dasherInfo.total_deliveries || 0) + 1,
             total_earnings_cents:
-              (dasherInfo.total_earnings_cents || 0) +
-              order.delivery_fee_cents,
+              (dasherInfo.total_earnings_cents || 0) + order.delivery_fee_cents,
             status: "online",
           })
           .eq("id", dasherInfo.id);

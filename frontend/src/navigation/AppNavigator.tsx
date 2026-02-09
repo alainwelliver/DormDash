@@ -149,7 +149,11 @@ interface OrderData {
 
 type MainStackParamList = {
   MainTabs: undefined;
-  PaymentPortal: { priceCents: number; listingTitle: string; orderData?: OrderData };
+  PaymentPortal: {
+    priceCents: number;
+    listingTitle: string;
+    orderData?: OrderData;
+  };
   ProductDetail: { listingId: number };
   Checkout: { selectedItems: CartItem[] };
   MyListings: undefined;

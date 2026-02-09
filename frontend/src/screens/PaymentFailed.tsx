@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { XCircle, Info, RefreshCw, Home } from "lucide-react-native";
 import type { NavigationProp } from "@react-navigation/native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
@@ -36,12 +37,25 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
+      // Cancel the old pending order
+      const pendingOrderId = await AsyncStorage.getItem("pendingOrderId");
+      if (pendingOrderId) {
+        await supabase
+          .from("orders")
+          .update({ status: "cancelled" })
+          .eq("id", Number(pendingOrderId))
+          .eq("user_id", userId);
+        await AsyncStorage.removeItem("pendingOrderId");
+        await AsyncStorage.removeItem("pendingOrderListingIds");
+      }
+
       // Fetch cart items
       const { data: cartData, error: cartError } = await supabase
         .from("cart_items")
         .select(
           `
           id,
+          listing_id,
           quantity,
           listings (
             id,
@@ -70,16 +84,61 @@ const PaymentFailed: React.FC<Props> = ({ navigation }) => {
         return sum + item.listings.price_cents * item.quantity;
       }, 0);
       const tax = Math.round(subtotal * TAX_RATE);
+      const deliveryFeeCents = 0; // Default to pickup for retry
       const total = subtotal + tax;
+
+      // Create a new pending order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: userId,
+          status: "pending_payment",
+          delivery_method: "pickup",
+          subtotal_cents: subtotal,
+          tax_cents: tax,
+          delivery_fee_cents: deliveryFeeCents,
+          total_cents: total,
+        })
+        .select("id")
+        .single();
+
+      if (orderError || !order) {
+        throw orderError || new Error("Failed to create order");
+      }
+
+      // Insert order items
+      const orderItems = cartData.map((item: any) => ({
+        order_id: order.id,
+        listing_id: item.listing_id,
+        title: item.listings.title,
+        price_cents: item.listings.price_cents,
+        quantity: item.quantity,
+      }));
+
+      await supabase.from("order_items").insert(orderItems);
+
       const itemCount = cartData.reduce(
         (sum: number, item: any) => sum + item.quantity,
         0,
       );
 
-      // Navigate to payment portal
+      // Navigate to payment portal with order data
       (navigation as any).navigate("PaymentPortal", {
         priceCents: total,
         listingTitle: `Order (${itemCount} item${itemCount !== 1 ? "s" : ""})`,
+        orderData: {
+          deliveryMethod: "pickup",
+          items: cartData.map((item: any) => ({
+            listing_id: item.listing_id,
+            title: item.listings.title,
+            price_cents: item.listings.price_cents,
+            quantity: item.quantity,
+          })),
+          subtotalCents: subtotal,
+          taxCents: tax,
+          deliveryFeeCents: 0,
+          orderId: order.id,
+        },
       });
     } catch (error: any) {
       console.error("Error retrying payment:", error);

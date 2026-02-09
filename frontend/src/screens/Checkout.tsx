@@ -55,13 +55,18 @@ interface OrderData {
 }
 
 type CheckoutNavigationProp = NativeStackNavigationProp<{
-  PaymentPortal: { priceCents: number; listingTitle: string; orderData?: OrderData };
+  PaymentPortal: {
+    priceCents: number;
+    listingTitle: string;
+    orderData?: OrderData;
+  };
   AddAddress: { addressId?: number } | undefined;
   AddressList: undefined;
 }>;
 
 interface CartItem {
   id: number;
+  listing_id: number;
   title: string;
   price_cents: number;
   quantity: number;
@@ -178,6 +183,8 @@ const Checkout: React.FC = () => {
     });
   };
 
+  const [placingOrder, setPlacingOrder] = useState(false);
+
   const handlePlaceOrder = () => {
     if (deliveryMethod === "delivery" && !selectedAddress) {
       alert("Error", "Please select a delivery address");
@@ -196,33 +203,107 @@ const Checkout: React.FC = () => {
         { text: "Cancel", style: "cancel" },
         {
           text: "Confirm",
-          onPress: () => {
-            const orderData: OrderData = {
-              deliveryMethod,
-              items: selectedItems.map((item) => ({
-                listing_id: item.id,
+          onPress: async () => {
+            if (placingOrder) return;
+            setPlacingOrder(true);
+            try {
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
+              if (!user) {
+                alert("Error", "Please log in to place an order");
+                setPlacingOrder(false);
+                return;
+              }
+
+              const deliveryAddr =
+                deliveryMethod === "delivery" && selectedAddress
+                  ? getAddressDisplayText(selectedAddress)
+                  : null;
+
+              // 1. Create pending order in Supabase
+              const { data: order, error: orderError } = await supabase
+                .from("orders")
+                .insert({
+                  user_id: user.id,
+                  status: "pending_payment",
+                  delivery_method: deliveryMethod,
+                  subtotal_cents: calculateSubtotal(),
+                  tax_cents: calculateTax(),
+                  delivery_fee_cents: calculateDeliveryFee(),
+                  total_cents: calculateTotal(),
+                  delivery_address: deliveryAddr,
+                })
+                .select("id")
+                .single();
+
+              if (orderError || !order) {
+                console.error("Error creating order:", orderError);
+                alert("Error", "Failed to create order. Please try again.");
+                setPlacingOrder(false);
+                return;
+              }
+
+              // 2. Insert order items
+              const orderItems = selectedItems.map((item) => ({
+                order_id: order.id,
+                listing_id: item.listing_id,
                 title: item.title,
                 price_cents: item.price_cents,
                 quantity: item.quantity,
-              })),
-              subtotalCents: calculateSubtotal(),
-              taxCents: calculateTax(),
-              deliveryFeeCents: calculateDeliveryFee(),
-              ...(deliveryMethod === "delivery" && selectedAddress
-                ? {
-                    deliveryAddress: {
-                      address: getAddressDisplayText(selectedAddress),
-                      lat: selectedAddress.lat,
-                      lng: selectedAddress.lng,
-                    },
-                  }
-                : {}),
-            };
-            navigation.navigate("PaymentPortal", {
-              priceCents: calculateTotal(),
-              listingTitle: `Order (${selectedItems.length} items)`,
-              orderData,
-            });
+              }));
+
+              const { error: itemsError } = await supabase
+                .from("order_items")
+                .insert(orderItems);
+
+              if (itemsError) {
+                console.error("Error creating order items:", itemsError);
+                // Clean up the order
+                await supabase.from("orders").delete().eq("id", order.id);
+                alert(
+                  "Error",
+                  "Failed to create order items. Please try again.",
+                );
+                setPlacingOrder(false);
+                return;
+              }
+
+              // 3. Build orderData for payment flow
+              const orderData: OrderData = {
+                deliveryMethod,
+                items: selectedItems.map((item) => ({
+                  listing_id: item.listing_id,
+                  title: item.title,
+                  price_cents: item.price_cents,
+                  quantity: item.quantity,
+                })),
+                subtotalCents: calculateSubtotal(),
+                taxCents: calculateTax(),
+                deliveryFeeCents: calculateDeliveryFee(),
+                ...(deliveryMethod === "delivery" && selectedAddress
+                  ? {
+                      deliveryAddress: {
+                        address: getAddressDisplayText(selectedAddress),
+                        lat: selectedAddress.lat,
+                        lng: selectedAddress.lng,
+                      },
+                    }
+                  : {}),
+              };
+
+              // 4. Navigate to payment with the order ID
+              navigation.navigate("PaymentPortal", {
+                priceCents: calculateTotal(),
+                listingTitle: `Order (${selectedItems.length} items)`,
+                orderData: { ...orderData, orderId: order.id } as any,
+              });
+            } catch (error) {
+              console.error("Error placing order:", error);
+              alert("Error", "Something went wrong. Please try again.");
+            } finally {
+              setPlacingOrder(false);
+            }
           },
         },
       ],

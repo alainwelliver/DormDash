@@ -289,6 +289,9 @@ export default function ProductDetail({
             navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
         },
       ]);
+
+      // Invalidate cart cache so Cart screen shows updated data immediately
+      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
     } catch (error) {
       console.error("Add to cart error:", error);
       alert("Error", "Could not add item to cart.");
@@ -381,6 +384,9 @@ export default function ProductDetail({
                 .from("cart_items")
                 .delete()
                 .eq("listing_id", listingId);
+
+              // Invalidate cart cache after deleting cart items
+              queryClient.invalidateQueries({ queryKey: ["cart"] });
 
               // Delete the listing itself
               const { error } = await supabase

@@ -23,82 +23,137 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
   const [processingOrder, setProcessingOrder] = useState(true);
 
   useEffect(() => {
-    const createDeliveryOrder = async () => {
+    const finalizeOrder = async () => {
       try {
-        // Retrieve pending order from AsyncStorage
-        const pendingOrderStr = await AsyncStorage.getItem("pendingDeliveryOrder");
-        if (!pendingOrderStr) {
-          setProcessingOrder(false);
-          return;
-        }
-
-        const orderData = JSON.parse(pendingOrderStr);
-
-        // Only create delivery order if delivery method was selected
-        if (orderData.deliveryMethod !== "delivery") {
-          await AsyncStorage.removeItem("pendingDeliveryOrder");
-          setProcessingOrder(false);
-          return;
-        }
-
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        // 1. Get current user first — we need it for all paths
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           console.error("No user found");
           setProcessingOrder(false);
           return;
         }
 
-        // Get seller info from the first item's listing
-        const firstItem = orderData.items[0];
-        const { data: listing, error: listingError } = await supabase
-          .from("listings")
-          .select("user_id, pickup_address")
-          .eq("id", firstItem.listing_id)
-          .single();
+        // 2. Try to get pendingOrderId from AsyncStorage
+        let orderId: number | null = null;
+        const pendingOrderId = await AsyncStorage.getItem("pendingOrderId");
+        if (pendingOrderId) {
+          orderId = Number(pendingOrderId);
+        }
 
-        if (listingError || !listing) {
-          console.error("Error fetching listing:", listingError);
+        // 3. Fallback: if no AsyncStorage key (e.g. cross-origin redirect from Stripe),
+        //    find the most recent pending_payment order for this user
+        if (!orderId) {
+          console.log(
+            "No pendingOrderId in AsyncStorage, checking Supabase for recent pending order...",
+          );
+          const { data: pendingOrder } = await supabase
+            .from("orders")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("status", "pending_payment")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (pendingOrder) {
+            orderId = pendingOrder.id;
+            console.log("Found pending order from Supabase:", orderId);
+          }
+        }
+
+        if (!orderId) {
+          console.warn(
+            "No pending order found — may have already been finalized",
+          );
           setProcessingOrder(false);
           return;
         }
 
-        // Generate order number
-        const orderNumber = `DD${Date.now().toString(36).toUpperCase()}`;
+        // 4. Mark order as paid
+        const { error: updateError } = await supabase
+          .from("orders")
+          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .eq("id", orderId)
+          .eq("user_id", user.id)
+          .eq("status", "pending_payment"); // only update if still pending (idempotent)
 
-        // Create delivery order
-        const { error: insertError } = await supabase
-          .from("delivery_orders")
-          .insert({
-            order_number: orderNumber,
-            buyer_id: user.id,
-            seller_id: listing.user_id,
-            listing_id: firstItem.listing_id,
-            listing_title: firstItem.title,
-            subtotal_cents: orderData.subtotalCents,
-            tax_cents: orderData.taxCents,
-            delivery_fee_cents: orderData.deliveryFeeCents,
-            total_cents: orderData.subtotalCents + orderData.taxCents + orderData.deliveryFeeCents,
-            pickup_address: listing.pickup_address || "Seller location",
-            delivery_address: orderData.deliveryAddress?.address || "Buyer location",
-            status: "pending",
-          });
-
-        if (insertError) {
-          console.error("Error creating delivery order:", insertError);
+        if (updateError) {
+          console.error("Error finalizing order:", updateError);
         } else {
-          console.log("Delivery order created successfully:", orderNumber);
+          console.log("Order finalized successfully:", orderId);
+        }
 
-          // Clear cart items for the ordered listings
-          const listingIds = orderData.items.map((item: any) => item.listing_id);
+        // 5. Clear cart items for the ordered listings
+        //    Get listing IDs from AsyncStorage or from the order_items table
+        let listingIds: number[] = [];
+        const listingIdsStr = await AsyncStorage.getItem(
+          "pendingOrderListingIds",
+        );
+        if (listingIdsStr) {
+          listingIds = JSON.parse(listingIdsStr);
+        } else {
+          // Fallback: read listing IDs from order_items
+          const { data: items } = await supabase
+            .from("order_items")
+            .select("listing_id")
+            .eq("order_id", orderId);
+          if (items) {
+            listingIds = items.map((i: any) => i.listing_id);
+          }
+        }
+
+        if (listingIds.length > 0) {
           await supabase
             .from("cart_items")
             .delete()
             .eq("user_id", user.id)
             .in("listing_id", listingIds);
+          console.log("Cart cleared for listings:", listingIds);
         }
 
-        // Clear pending order from AsyncStorage
+        // 6. If delivery, also create a delivery_orders record for the dasher flow
+        const { data: orderData } = await supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .eq("id", orderId)
+          .single();
+
+        if (orderData && orderData.delivery_method === "delivery") {
+          const firstItem = orderData.order_items?.[0];
+          if (firstItem) {
+            // Look up seller from listing
+            const { data: listing } = await supabase
+              .from("listings")
+              .select("user_id, pickup_address")
+              .eq("id", firstItem.listing_id)
+              .single();
+
+            if (listing) {
+              const orderNumber = `DD${Date.now().toString(36).toUpperCase()}`;
+              await supabase.from("delivery_orders").insert({
+                order_number: orderNumber,
+                buyer_id: user.id,
+                seller_id: listing.user_id,
+                listing_id: firstItem.listing_id,
+                listing_title: firstItem.title,
+                subtotal_cents: orderData.subtotal_cents,
+                tax_cents: orderData.tax_cents,
+                delivery_fee_cents: orderData.delivery_fee_cents,
+                total_cents: orderData.total_cents,
+                pickup_address: listing.pickup_address || "Seller location",
+                delivery_address:
+                  orderData.delivery_address || "Buyer location",
+                status: "pending",
+              });
+            }
+          }
+        }
+
+        // 7. Clean up AsyncStorage
+        await AsyncStorage.removeItem("pendingOrderId");
+        await AsyncStorage.removeItem("pendingOrderListingIds");
         await AsyncStorage.removeItem("pendingDeliveryOrder");
       } catch (error) {
         console.error("Error processing order:", error);
@@ -107,7 +162,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation }) => {
       }
     };
 
-    createDeliveryOrder();
+    finalizeOrder();
   }, []);
 
   const handleGoHome = () => {

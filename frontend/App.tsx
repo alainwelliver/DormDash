@@ -8,12 +8,12 @@ import AppNavigator from "./src/navigation/AppNavigator";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Data is considered fresh for 2 minutes
-      staleTime: 2 * 60 * 1000,
-      // Keep unused data in cache for 10 minutes
-      gcTime: 10 * 60 * 1000,
-      // Don't refetch on window focus (prevents unnecessary requests)
-      refetchOnWindowFocus: false,
+      // Data is considered fresh for 30 seconds
+      staleTime: 30 * 1000,
+      // Keep unused data in cache for 5 minutes
+      gcTime: 5 * 60 * 1000,
+      // Refetch stale queries when window regains focus (e.g. after Stripe redirect)
+      refetchOnWindowFocus: true,
       // Retry failed requests once
       retry: 1,
     },

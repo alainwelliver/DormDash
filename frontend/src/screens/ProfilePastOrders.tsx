@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Heart, ChevronRight, Receipt, ChevronLeft } from "lucide-react-native";
+import { ChevronRight, Receipt, ChevronLeft } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -18,12 +18,20 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 
 type PastOrdersNavigationProp = NativeStackNavigationProp<any>;
 
+interface OrderItem {
+  id: number;
+  title: string;
+  price_cents: number;
+  quantity: number;
+}
+
 interface Order {
   id: number;
-  listing_title: string;
-  order_number: string;
+  status: string;
+  delivery_method: string;
+  total_cents: number;
   created_at: string;
-  price_cents: number;
+  order_items: OrderItem[];
 }
 
 const PastOrders: React.FC = () => {
@@ -33,25 +41,38 @@ const PastOrders: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrders = async () => {
-    // Using mock data for now - will connect to database later
-    setOrders([
-      {
-        id: 1,
-        listing_title: "Dining Table",
-        order_number: "456765",
-        created_at: new Date().toISOString(),
-        price_cents: 5000,
-      },
-      {
-        id: 2,
-        listing_title: "Used Volleyball Net",
-        order_number: "35345",
-        created_at: new Date().toISOString(),
-        price_cents: 2500,
-      },
-    ]);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("orders")
+        .select(
+          "id, status, delivery_method, total_cents, created_at, order_items(id, title, price_cents, quantity)",
+        )
+        .eq("user_id", user.id)
+        .eq("status", "paid")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching orders:", error);
+        setOrders([]);
+      } else {
+        setOrders(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -66,18 +87,44 @@ const PastOrders: React.FC = () => {
     fetchOrders();
   };
 
-  const renderOrderItem = ({ item }: { item: Order }) => (
-    <TouchableOpacity style={styles.orderCard}>
-      <View style={styles.iconContainer}>
-        <Heart color={Colors.darkTeal} size={32} />
-      </View>
-      <View style={styles.orderInfo}>
-        <Text style={styles.orderTitle}>{item.listing_title}</Text>
-        <Text style={styles.orderNumber}>Order #{item.order_number}</Text>
-      </View>
-      <ChevronRight color={Colors.mutedGray} size={24} />
-    </TouchableOpacity>
-  );
+  const formatPrice = (cents: number) =>
+    (cents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const renderOrderItem = ({ item }: { item: Order }) => {
+    const itemNames = item.order_items.map((oi) => oi.title).join(", ");
+    return (
+      <TouchableOpacity style={styles.orderCard}>
+        <View style={styles.iconContainer}>
+          <Receipt color={Colors.darkTeal} size={32} />
+        </View>
+        <View style={styles.orderInfo}>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            {itemNames || "Order"}
+          </Text>
+          <Text style={styles.orderNumber}>
+            Order #{item.id} · {formatDate(item.created_at)}
+          </Text>
+          <Text style={[styles.orderNumber, { marginTop: 2 }]}>
+            {formatPrice(item.total_cents)} ·{" "}
+            {item.delivery_method === "delivery" ? "Delivery" : "Pickup"}
+          </Text>
+        </View>
+        <ChevronRight color={Colors.mutedGray} size={24} />
+      </TouchableOpacity>
+    );
+  };
 
   const renderContent = () => {
     if (loading) {

@@ -67,14 +67,17 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCheckoutSession = async () => {
       try {
-        // Store pending order data before redirecting to Stripe
+        // Store pending order ID before redirecting to Stripe
         if (orderData) {
+          const orderId = (orderData as any).orderId;
+          if (orderId) {
+            await AsyncStorage.setItem("pendingOrderId", String(orderId));
+          }
+          // Also store listing IDs for cart cleanup
+          const listingIds = orderData.items.map((item) => item.listing_id);
           await AsyncStorage.setItem(
-            "pendingDeliveryOrder",
-            JSON.stringify({
-              ...orderData,
-              timestamp: Date.now(),
-            }),
+            "pendingOrderListingIds",
+            JSON.stringify(listingIds),
           );
         }
 

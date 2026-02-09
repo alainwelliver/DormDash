@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   Colors,
@@ -101,8 +101,14 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     fetchUserProfile();
-    fetchUserStats();
   }, []);
+
+  // Refresh stats every time the Profile screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserStats();
+    }, []),
+  );
 
   const fetchUserStats = async () => {
     try {
@@ -117,11 +123,12 @@ const Profile: React.FC = () => {
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-      // Fetch orders count
+      // Fetch orders count (only paid orders)
       const { count: ordersCount } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .eq("status", "paid");
 
       // Fetch reviews given
       const { count: reviewsCount } = await supabase
