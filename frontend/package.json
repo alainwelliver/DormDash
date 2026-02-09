@@ -11,7 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build:web": "expo export --platform web && npx shx cp -r public/* dist/",
+    "build:web": "node scripts/export-web-with-env.mjs && npx shx cp -r public/* dist/",
     "deploy": "pnpm run build:web && wrangler pages deploy dist --project-name dormdash"
   },
   "dependencies": {

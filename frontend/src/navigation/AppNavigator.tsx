@@ -5,6 +5,7 @@ import {
   Image,
   Text,
   StyleSheet,
+  ActivityIndicator,
   useWindowDimensions,
 } from "react-native";
 import { supabase } from "../lib/supabase";
@@ -25,11 +26,25 @@ import {
 // Linking configuration for web URL routing
 const linking: LinkingOptions<any> = {
   prefixes: [
-    // Add your production URL here
     "https://dormdash.pages.dev",
     "http://localhost:8081",
-    "http://www.dormdash.xyz",
+    "https://www.dormdash.xyz",
+    "https://dormdash.xyz",
   ],
+  // On web, the bare root "/" doesn't map to any screen path.
+  // Return null so React Navigation skips deep-linking and renders
+  // the first screen of whichever navigator is currently mounted
+  // (Welcome for guests, Feed for authenticated users).
+  getInitialURL() {
+    if (Platform.OS === "web") {
+      const path = window.location.pathname;
+      if (!path || path === "/") {
+        return null;
+      }
+      return window.location.href;
+    }
+    return undefined; // native: default Linking.getInitialURL
+  },
   config: {
     screens: {
       // Auth screens
@@ -316,9 +331,20 @@ export default function AppNavigator() {
     };
   }, []);
 
-  // Show nothing while loading to prevent incorrect route resolution
+  // Show a branded splash while the session is being restored
   if (isLoading) {
-    return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: Colors.base_bg,
+        }}
+      >
+        <ActivityIndicator size="large" color={Colors.primary_accent} />
+      </View>
+    );
   }
 
   return (
