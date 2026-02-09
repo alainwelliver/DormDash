@@ -92,7 +92,10 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name: listingTitle,
-              price: priceCents, // This requires a server to process safely
+              price: priceCents,
+              ...(orderData && (orderData as any).orderId
+                ? { orderId: (orderData as any).orderId }
+                : {}),
             }),
           },
         );

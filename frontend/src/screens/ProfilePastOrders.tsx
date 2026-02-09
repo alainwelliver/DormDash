@@ -3,14 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  SectionList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, Receipt, ChevronLeft } from "lucide-react-native";
+import { ChevronRight, Receipt, ChevronLeft, Ban } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -104,33 +104,77 @@ const PastOrders: React.FC = () => {
 
   const renderOrderItem = ({ item }: { item: Order }) => {
     const itemNames = item.order_items.map((oi) => oi.title).join(", ");
+    const isCancelled = item.status === "cancelled";
     return (
       <TouchableOpacity
-        style={styles.orderCard}
+        style={[styles.orderCard, isCancelled && styles.cancelledCard]}
         onPress={() =>
           navigation.navigate("OrderDetails", { orderId: item.id })
         }
       >
         <View style={styles.iconContainer}>
-          <Receipt color={Colors.darkTeal} size={32} />
+          {isCancelled ? (
+            <Ban color="#DC2626" size={32} />
+          ) : (
+            <Receipt color={Colors.darkTeal} size={32} />
+          )}
         </View>
         <View style={styles.orderInfo}>
-          <Text style={styles.orderTitle} numberOfLines={1}>
+          <Text
+            style={[styles.orderTitle, isCancelled && styles.cancelledTitle]}
+            numberOfLines={1}
+          >
             {itemNames || "Order"}
           </Text>
-          <Text style={styles.orderNumber}>
+          <Text
+            style={[styles.orderNumber, isCancelled && styles.cancelledSubtext]}
+          >
             Order #{item.id} · {formatDate(item.created_at)}
           </Text>
-          <Text style={[styles.orderNumber, { marginTop: 2 }]}>
+          <Text
+            style={[
+              styles.orderNumber,
+              { marginTop: 2 },
+              isCancelled && styles.cancelledSubtext,
+            ]}
+          >
             {formatPrice(item.total_cents)} ·{" "}
             {item.delivery_method === "delivery" ? "Delivery" : "Pickup"}
-            {item.status === "cancelled" ? " · Cancelled" : ""}
+            {isCancelled ? " · Cancelled" : ""}
           </Text>
         </View>
-        <ChevronRight color={Colors.mutedGray} size={24} />
+        <ChevronRight
+          color={isCancelled ? "#DC2626" : Colors.mutedGray}
+          size={24}
+        />
       </TouchableOpacity>
     );
   };
+
+  const completedOrders = orders.filter((o) => o.status !== "cancelled");
+  const cancelledOrders = orders.filter((o) => o.status === "cancelled");
+
+  const sections = [
+    ...(completedOrders.length > 0
+      ? [{ title: "Completed", data: completedOrders }]
+      : []),
+    ...(cancelledOrders.length > 0
+      ? [{ title: "Cancelled", data: cancelledOrders }]
+      : []),
+  ];
+
+  const renderSectionHeader = ({ section }: { section: { title: string } }) => (
+    <View style={styles.sectionHeaderContainer}>
+      <Text
+        style={[
+          styles.sectionHeader,
+          section.title === "Cancelled" && styles.cancelledSectionHeader,
+        ]}
+      >
+        {section.title}
+      </Text>
+    </View>
+  );
 
   const renderContent = () => {
     if (loading) {
@@ -156,11 +200,13 @@ const PastOrders: React.FC = () => {
     }
 
     return (
-      <FlatList
-        data={orders}
+      <SectionList
+        sections={sections}
         renderItem={renderOrderItem}
+        renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
+        stickySectionHeadersEnabled={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -236,6 +282,11 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     marginBottom: Spacing.md,
   },
+  cancelledCard: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
   iconContainer: {
     marginRight: Spacing.md,
   },
@@ -249,10 +300,28 @@ const styles = StyleSheet.create({
     color: Colors.darkTeal,
     marginBottom: 4,
   },
+  cancelledTitle: {
+    color: "#DC2626",
+  },
   orderNumber: {
     fontSize: 14,
     fontFamily: Typography.bodyMedium.fontFamily,
     color: Colors.mutedGray,
+  },
+  cancelledSubtext: {
+    color: "#B91C1C",
+  },
+  sectionHeaderContainer: {
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  cancelledSectionHeader: {
+    color: "#DC2626",
   },
   emptyContainer: {
     flex: 1,

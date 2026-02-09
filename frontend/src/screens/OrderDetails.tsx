@@ -187,22 +187,17 @@ const OrderDetails: React.FC = () => {
               }
 
               if (order.delivery_method === "delivery") {
-                const firstItemTitle = order.order_items?.[0]?.title;
-                if (firstItemTitle) {
-                  try {
-                    await supabase
-                      .from("delivery_orders")
-                      .update({ status: "cancelled", dasher_id: null })
-                      .eq("buyer_id", user.id)
-                      .eq("total_cents", order.total_cents)
-                      .eq("listing_title", firstItemTitle)
-                      .in("status", ["pending", "accepted", "picked_up"]);
-                  } catch (deliveryCancelError) {
-                    console.warn(
-                      "Best-effort delivery cancel failed:",
-                      deliveryCancelError,
-                    );
-                  }
+                try {
+                  await supabase
+                    .from("delivery_orders")
+                    .update({ status: "cancelled", dasher_id: null })
+                    .eq("order_id", order.id)
+                    .in("status", ["pending", "accepted", "picked_up"]);
+                } catch (deliveryCancelError) {
+                  console.warn(
+                    "Best-effort delivery cancel failed:",
+                    deliveryCancelError,
+                  );
                 }
               }
 

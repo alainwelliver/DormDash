@@ -10,7 +10,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     try {
       const body = await request.json();
-      const { name, price } = body;
+      const { name, price, orderId } = body;
 
       if (!name || typeof price !== "number") {
         return new Response(
@@ -25,6 +25,7 @@ http.route({
       const result = await ctx.runAction(api.checkout.createCheckoutSession, {
         name,
         price,
+        ...(orderId ? { orderId: Number(orderId) } : {}),
       });
 
       return new Response(JSON.stringify(result), {
