@@ -22,13 +22,20 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.xiangc21sorganization.dormdash"
     },
     "web": {
       "favicon": "./assets/dormdash-logo.png",
       "name": "DormDash",
       "shortName": "DormDash",
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "145ee260-df3e-45ca-948e-a2ace17c822d"
+      }
+    },
+    "owner": "xiangc21s-organization"
   }
 }
