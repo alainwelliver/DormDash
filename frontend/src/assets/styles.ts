@@ -11,13 +11,13 @@ export const Colors = {
   card_bg: "#DCF4F0",
 
   // PRIMARY COLORS
-  primary_blue: "#3498DB",
-  primary_green: "#2ECC71",
-  secondary: "#1ABC9C",
-  lightMint: "#E8F8F5",
+  primary_blue: "#31A1E9",
+  primary_green: "#65D1A2",
+  secondary: "#47BEBE",
+  lightMint: "#DCF4F0",
 
   // UNIQUE ACCENTS
-  primary_accent: "#6C5CE7", // A vibrant purple/indigo for unique flair
+  primary_accent: "#47BEBE", // Teal accent for secondary emphasis
   glass_bg: "rgba(255, 255, 255, 0.85)",
   glass_border: "rgba(255, 255, 255, 0.5)",
   glass_shadow: "rgba(0, 0, 0, 0.1)",
@@ -29,16 +29,16 @@ export const Colors = {
   lightGray: "#F8FAFC", // Slightly cooler gray
 
   // Button States
-  grayDisabled: "#95A5A6",
-  primaryHover: "#2E86C1",
+  grayDisabled: "#A0A0A0",
+  primaryHover: "#2889CC",
   borderLight: "#ECF0F1",
   borderGray: "#BDC3C7",
-  secondaryText: "#2E86C1",
-  secondaryHover: "#2C6FA6",
+  secondaryText: "#31A1E9",
+  secondaryHover: "#2780B5",
   error: "#E74C3C",
-  success: "#27AE60",
+  success: "#65D1A2",
   warning: "#F39C12",
-  info: "#3498DB",
+  info: "#31A1E9",
 
   overlay: "rgba(0, 0, 0, 0.3)",
   overlayDark: "rgba(0, 0, 0, 0.5)",
@@ -176,7 +176,7 @@ export const CommonStyles = {
 
   // Primary Button - Style Guide specifications
   primaryButton: {
-    backgroundColor: Colors.primary_blue, // #3498DB
+    backgroundColor: Colors.primary_blue, // #31A1E9
     paddingVertical: Spacing.md, // 12px (was 15px)
     borderRadius: BorderRadius.medium, // 8px
     borderWidth: 0, // none
@@ -234,7 +234,7 @@ export const CommonStyles = {
     fontWeight: Typography.buttonText.fontWeight, // 600
     fontFamily: Typography.buttonText.fontFamily, // Angora
     letterSpacing: Typography.buttonText.letterSpacing, // 1.2
-    color: Colors.secondaryText, // #2E86C1
+    color: Colors.secondaryText, // #31A1E9
   },
 
   title: {

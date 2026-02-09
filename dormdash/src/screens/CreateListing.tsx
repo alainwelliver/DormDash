@@ -27,18 +27,18 @@ const BUCKET = "listings";
 
 /** ---- Style Guide Tokens ----
  * Colors from your guide (best-effort matches):
- * Primary Blue:   #1A73E8
- * Primary Green:  #60C694
- * Teal Accent:    #47B7C7
- * Light Mint:     #E6F5EE
+ * Primary Blue:   #31A1E9
+ * Primary Green:  #65D1A2
+ * Teal Accent:    #47BEBE
+ * Light Mint:     #DCF4F0
  * White:          #FFFFFF
  * Gray Disabled:  #A0A0A0
  */
 const COLORS = {
-  primaryBlue: "#1A73E8",
-  primaryGreen: "#60C694",
-  teal: "#47B7C7",
-  lightMint: "#E6F5EE",
+  primaryBlue: "#31A1E9",
+  primaryGreen: "#65D1A2",
+  teal: "#47BEBE",
+  lightMint: "#DCF4F0",
   white: "#FFFFFF",
   grayDisabled: "#A0A0A0",
   bodyText: "#1F2937", // neutral-800

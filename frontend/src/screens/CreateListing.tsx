@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   headerUnderline: {
     height: 6,
     width: 72,
-    backgroundColor: Colors.secondary, // Teal #1ABC9C
+    backgroundColor: Colors.secondary, // Teal #47BEBE
     borderRadius: BorderRadius.medium, // 8px (was 3)
     marginTop: Spacing.sm, // 8px
   },
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   toggleActive: {
     backgroundColor: Colors.lightMint,
-    borderColor: Colors.secondary, // Teal #1ABC9C
+    borderColor: Colors.secondary, // Teal #47BEBE
   },
   toggleText: {
     color: Colors.mutedGray,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   },
   categoryActive: {
     backgroundColor: Colors.primary_blue + "22", // subtle tint
-    borderColor: Colors.primary_blue, // #3498DB
+    borderColor: Colors.primary_blue, // #31A1E9
   },
   categoryText: {
     color: Colors.mutedGray,
@@ -561,18 +561,18 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm, // 8px
     marginBottom: Spacing.sm, // 8px
     borderWidth: 1,
-    borderColor: Colors.secondary, // Teal #1ABC9C
+    borderColor: Colors.secondary, // Teal #47BEBE
   },
   customTagChip: {
     backgroundColor: Colors.white,
     borderColor: Colors.lightGray,
   },
   tagChipActive: {
-    backgroundColor: Colors.primary_blue, // #3498DB
+    backgroundColor: Colors.primary_blue, // #31A1E9
     borderColor: Colors.primary_blue,
   },
   tagText: {
-    color: Colors.secondary, // Teal #1ABC9C
+    color: Colors.secondary, // Teal #47BEBE
     fontSize: 14,
     fontFamily: Fonts.body, // Open Sans
   },
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
 
   // Buttons (Primary/Secondary per style guide)
   primaryButton: {
-    backgroundColor: Colors.primary_blue, // #3498DB
+    backgroundColor: Colors.primary_blue, // #31A1E9
     borderRadius: BorderRadius.medium, // 8px (was 12)
     paddingVertical: Spacing.md, // 12px
   },
@@ -607,14 +607,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md, // 12px
   },
   secondaryButtonTitle: {
-    color: Colors.secondaryText, // #2E86C1
+    color: Colors.secondaryText, // #31A1E9
     fontFamily: Fonts.heading, // Angora
     fontWeight: "600",
     letterSpacing: Typography.buttonText.letterSpacing, // 1.2
     fontSize: Typography.buttonText.fontSize, // 14px
   },
   linkButtonTitle: {
-    color: Colors.primary_blue, // #3498DB
+    color: Colors.primary_blue, // #31A1E9
     fontFamily: Fonts.heading, // Angora
     fontWeight: "600",
     letterSpacing: Typography.buttonText.letterSpacing, // 1.2
