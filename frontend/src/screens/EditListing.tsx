@@ -124,7 +124,9 @@ export default function EditListing({ route, navigation }: EditListingProps) {
 
           if (defaultAddress?.lat != null && defaultAddress?.lng != null) {
             const baseAddress =
-              defaultAddress.street_address || defaultAddress.building_name || "";
+              defaultAddress.street_address ||
+              defaultAddress.building_name ||
+              "";
             if (baseAddress) {
               const addressLine = defaultAddress.building_name
                 ? defaultAddress.room_number

@@ -27,9 +27,7 @@ describe("buildOpenInMapsUrl", () => {
       platform: "android",
       address: "3700 Walnut St, Philadelphia, PA",
     });
-    expect(url).toBe(
-      "geo:0,0?q=3700%20Walnut%20St%2C%20Philadelphia%2C%20PA",
-    );
+    expect(url).toBe("geo:0,0?q=3700%20Walnut%20St%2C%20Philadelphia%2C%20PA");
   });
 
   test("builds Android URL with address and coordinates", () => {

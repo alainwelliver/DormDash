@@ -250,7 +250,9 @@ const Checkout: React.FC = () => {
 
               if (
                 orderResult.error &&
-                /delivery_lat|delivery_lng/i.test(orderResult.error.message || "")
+                /delivery_lat|delivery_lng/i.test(
+                  orderResult.error.message || "",
+                )
               ) {
                 orderResult = await supabase
                   .from("orders")

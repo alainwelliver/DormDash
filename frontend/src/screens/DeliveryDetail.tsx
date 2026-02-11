@@ -59,10 +59,7 @@ type DeliveryPickup = {
   pickup_lng: number;
 };
 
-const toLatLng = (
-  lat?: number | null,
-  lng?: number | null,
-): LatLng | null => {
+const toLatLng = (lat?: number | null, lng?: number | null): LatLng | null => {
   if (lat == null || lng == null) return null;
   return { latitude: lat, longitude: lng };
 };
@@ -75,7 +72,9 @@ const distanceBetweenMiles = (
 
   const dx = (from.latitude - to.latitude) * 69;
   const dy =
-    (from.longitude - to.longitude) * 54.6 * Math.cos((from.latitude * Math.PI) / 180);
+    (from.longitude - to.longitude) *
+    54.6 *
+    Math.cos((from.latitude * Math.PI) / 180);
   return Math.sqrt(dx * dx + dy * dy);
 };
 
@@ -96,7 +95,9 @@ const statusToTitle = (status: string) => {
   }
 };
 
-const getPickupForOrder = (order: DeliveryOrder | null): DeliveryPickup | null => {
+const getPickupForOrder = (
+  order: DeliveryOrder | null,
+): DeliveryPickup | null => {
   if (!order?.delivery_pickups) return null;
   if (Array.isArray(order.delivery_pickups)) {
     return (order.delivery_pickups[0] as DeliveryPickup | undefined) ?? null;
@@ -107,17 +108,23 @@ const getPickupForOrder = (order: DeliveryOrder | null): DeliveryPickup | null =
 const DeliveryDetail: React.FC = () => {
   const navigation = useNavigation<DeliveryDetailNavigation>();
   const route = useRoute();
-  const deliveryOrderId = Number((route.params as RouteParams)?.deliveryOrderId);
+  const deliveryOrderId = Number(
+    (route.params as RouteParams)?.deliveryOrderId,
+  );
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deliveryOrder, setDeliveryOrder] = useState<DeliveryOrder | null>(null);
-  const [currentLocation, setCurrentLocation] = useState<LatLng | null>(null);
-  const [trackingLocation, setTrackingLocation] = useState<TrackingLocation | null>(
+  const [deliveryOrder, setDeliveryOrder] = useState<DeliveryOrder | null>(
     null,
   );
+  const [currentLocation, setCurrentLocation] = useState<LatLng | null>(null);
+  const [trackingLocation, setTrackingLocation] =
+    useState<TrackingLocation | null>(null);
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
-  const deliveryPickup = useMemo(() => getPickupForOrder(deliveryOrder), [deliveryOrder]);
+  const deliveryPickup = useMemo(
+    () => getPickupForOrder(deliveryOrder),
+    [deliveryOrder],
+  );
   const pickupAddress = useMemo(
     () => deliveryPickup?.pickup_address || deliveryOrder?.pickup_address || "",
     [deliveryPickup, deliveryOrder?.pickup_address],
@@ -172,7 +179,13 @@ const DeliveryDetail: React.FC = () => {
       return [dasherMarker, destination];
     }
     return [];
-  }, [deliveryOrder?.status, pickupLatLng, dropoffLatLng, dasherMarker, destination]);
+  }, [
+    deliveryOrder?.status,
+    pickupLatLng,
+    dropoffLatLng,
+    dasherMarker,
+    destination,
+  ]);
 
   const fetchDeliveryOrder = useCallback(async () => {
     try {
@@ -286,7 +299,10 @@ const DeliveryDetail: React.FC = () => {
   }, [deliveryOrder?.id]);
 
   useEffect(() => {
-    if (!deliveryOrder || !["accepted", "picked_up"].includes(deliveryOrder.status))
+    if (
+      !deliveryOrder ||
+      !["accepted", "picked_up"].includes(deliveryOrder.status)
+    )
       return;
 
     const interval = setInterval(() => {
@@ -330,7 +346,10 @@ const DeliveryDetail: React.FC = () => {
         .update({ status: "busy" } as any)
         .eq("id", user.id);
 
-      const trackingResult = await startDeliveryTracking(deliveryOrder.id, user.id);
+      const trackingResult = await startDeliveryTracking(
+        deliveryOrder.id,
+        user.id,
+      );
       if (!trackingResult.started && trackingResult.reason) {
         alert("Accepted", trackingResult.reason);
       } else if (trackingResult.reason) {
@@ -398,7 +417,10 @@ const DeliveryDetail: React.FC = () => {
           } as any)
           .eq("id", user.id);
 
-        alert("Delivery Completed", "Nice work, this order is marked delivered.");
+        alert(
+          "Delivery Completed",
+          "Nice work, this order is marked delivered.",
+        );
       }
 
       await fetchDeliveryOrder();
@@ -430,7 +452,11 @@ const DeliveryDetail: React.FC = () => {
     }
 
     const mapPlatform =
-      Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
+      Platform.OS === "ios"
+        ? "ios"
+        : Platform.OS === "android"
+          ? "android"
+          : "web";
     const url = buildOpenInMapsUrl({
       platform: mapPlatform,
       address: selectedAddress,
@@ -472,14 +498,19 @@ const DeliveryDetail: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.goBack()}
+          >
             <ChevronLeft size={24} color={Colors.darkTeal} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Delivery Details</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.errorCard}>
-          <Text style={styles.errorText}>This delivery is no longer available.</Text>
+          <Text style={styles.errorText}>
+            This delivery is no longer available.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -498,12 +529,17 @@ const DeliveryDetail: React.FC = () => {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => navigation.goBack()}
+        >
           <ChevronLeft size={24} color={Colors.darkTeal} />
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
           <Text style={styles.headerTitle}>Delivery #{deliveryOrder.id}</Text>
-          <Text style={styles.headerSubtitle}>{statusToTitle(deliveryOrder.status)}</Text>
+          <Text style={styles.headerSubtitle}>
+            {statusToTitle(deliveryOrder.status)}
+          </Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -577,17 +613,24 @@ const DeliveryDetail: React.FC = () => {
           <Package size={18} color={Colors.primary_blue} />
           <Text style={styles.addressLabel}>Pickup</Text>
         </View>
-        <Text style={styles.addressValue}>{pickupAddress || "Private pickup"}</Text>
+        <Text style={styles.addressValue}>
+          {pickupAddress || "Private pickup"}
+        </Text>
 
         <View style={[styles.addressRow, { marginTop: Spacing.md }]}>
           <MapPin size={18} color={Colors.primary_green} />
           <Text style={styles.addressLabel}>Dropoff</Text>
         </View>
-        <Text style={styles.addressValue}>{deliveryOrder.delivery_address}</Text>
+        <Text style={styles.addressValue}>
+          {deliveryOrder.delivery_address}
+        </Text>
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={openNativeNavigation}>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={openNativeNavigation}
+        >
           <Navigation size={18} color={Colors.primary_blue} />
           <Text style={styles.secondaryButtonText}>{mapButtonLabel}</Text>
         </TouchableOpacity>
@@ -628,7 +671,10 @@ const DeliveryDetail: React.FC = () => {
 
         {canConfirmDelivered ? (
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: Colors.primary_green }]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: Colors.primary_green },
+            ]}
             onPress={() => handleStatusUpdate("delivered")}
             disabled={submitting}
           >

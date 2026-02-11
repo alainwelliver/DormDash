@@ -6,7 +6,8 @@ type EnvLike = Record<string, string | undefined>;
 export const getMapTileUrlTemplateFromEnv = (env: EnvLike) => {
   const mapboxToken = env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
   if (mapboxToken) {
-    const styleId = env.EXPO_PUBLIC_MAPBOX_STYLE?.trim() || DEFAULT_MAPBOX_STYLE;
+    const styleId =
+      env.EXPO_PUBLIC_MAPBOX_STYLE?.trim() || DEFAULT_MAPBOX_STYLE;
     return `https://api.mapbox.com/styles/v1/${styleId}/tiles/256/{z}/{x}/{y}?access_token=${mapboxToken}`;
   }
 

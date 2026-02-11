@@ -149,9 +149,8 @@ const OrderDetails: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>([]);
-  const [trackingLocation, setTrackingLocation] = useState<TrackingLocation | null>(
-    null,
-  );
+  const [trackingLocation, setTrackingLocation] =
+    useState<TrackingLocation | null>(null);
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
@@ -164,25 +163,28 @@ const OrderDetails: React.FC = () => {
     [deliveryOrders],
   );
 
-  const loadTrackingForDelivery = useCallback(async (deliveryOrderId: number) => {
-    const { data } = await supabase
-      .from("delivery_tracking")
-      .select("*")
-      .eq("delivery_order_id", deliveryOrderId)
-      .limit(1)
-      .maybeSingle();
+  const loadTrackingForDelivery = useCallback(
+    async (deliveryOrderId: number) => {
+      const { data } = await supabase
+        .from("delivery_tracking")
+        .select("*")
+        .eq("delivery_order_id", deliveryOrderId)
+        .limit(1)
+        .maybeSingle();
 
-    if (!data) {
-      setTrackingLocation(null);
-      return;
-    }
+      if (!data) {
+        setTrackingLocation(null);
+        return;
+      }
 
-    setTrackingLocation({
-      lat: data.lat,
-      lng: data.lng,
-      updatedAt: data.updated_at || null,
-    });
-  }, []);
+      setTrackingLocation({
+        lat: data.lat,
+        lng: data.lng,
+        updatedAt: data.updated_at || null,
+      });
+    },
+    [],
+  );
 
   const fetchOrder = useCallback(async () => {
     setErrorMsg(null);
@@ -213,7 +215,10 @@ const OrderDetails: React.FC = () => {
       orderData = withCoordsResult.data;
       orderError = withCoordsResult.error;
 
-      if (orderError && /delivery_lat|delivery_lng/i.test(orderError.message || "")) {
+      if (
+        orderError &&
+        /delivery_lat|delivery_lng/i.test(orderError.message || "")
+      ) {
         const fallbackResult = await supabase
           .from("orders")
           .select(withoutCoordsSelect)
@@ -422,8 +427,10 @@ const OrderDetails: React.FC = () => {
     return rows;
   }, [order]);
 
-  const dropoffLat = (order as any)?.delivery_lat ?? activeDelivery?.delivery_lat ?? null;
-  const dropoffLng = (order as any)?.delivery_lng ?? activeDelivery?.delivery_lng ?? null;
+  const dropoffLat =
+    (order as any)?.delivery_lat ?? activeDelivery?.delivery_lat ?? null;
+  const dropoffLng =
+    (order as any)?.delivery_lng ?? activeDelivery?.delivery_lng ?? null;
 
   const mapCenter = useMemo(() => {
     if (trackingLocation) {
@@ -461,7 +468,9 @@ const OrderDetails: React.FC = () => {
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
           <Text style={styles.headerTitle}>Order Details</Text>
-          {order?.id ? <Text style={styles.headerSubtitle}>Order #{order.id}</Text> : null}
+          {order?.id ? (
+            <Text style={styles.headerSubtitle}>Order #{order.id}</Text>
+          ) : null}
         </View>
         <View style={styles.placeholder} />
       </View>
@@ -485,7 +494,9 @@ const OrderDetails: React.FC = () => {
         <View style={styles.emptyContainer}>
           <Receipt color={Colors.lightGray} size={80} />
           <Text style={styles.emptyText}>Order not found</Text>
-          <Text style={styles.emptySubtext}>This order may have been removed.</Text>
+          <Text style={styles.emptySubtext}>
+            This order may have been removed.
+          </Text>
         </View>
       ) : (
         <ScrollView
@@ -509,7 +520,9 @@ const OrderDetails: React.FC = () => {
 
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Placed</Text>
-              <Text style={styles.metaValue}>{formatDateTime(order.created_at)}</Text>
+              <Text style={styles.metaValue}>
+                {formatDateTime(order.created_at)}
+              </Text>
             </View>
 
             <View style={styles.metaRow}>
@@ -522,7 +535,9 @@ const OrderDetails: React.FC = () => {
             {order.delivery_method === "delivery" && order.delivery_address ? (
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Address</Text>
-                <Text style={[styles.metaValue, { flex: 1, textAlign: "right" }]}>
+                <Text
+                  style={[styles.metaValue, { flex: 1, textAlign: "right" }]}
+                >
                   {order.delivery_address}
                 </Text>
               </View>
@@ -582,14 +597,17 @@ const OrderDetails: React.FC = () => {
                             }
                           : undefined
                       }
-                      routeCoordinates={routeLine.length > 1 ? routeLine : undefined}
+                      routeCoordinates={
+                        routeLine.length > 1 ? routeLine : undefined
+                      }
                     />
                   </View>
                 ) : (
                   <View style={styles.mapFallback}>
                     <MapPin size={16} color={Colors.primary_blue} />
                     <Text style={styles.mapFallbackText}>
-                      Tracking map appears on iOS/Android using in-app map tiles.
+                      Tracking map appears on iOS/Android using in-app map
+                      tiles.
                     </Text>
                   </View>
                 )}
@@ -598,7 +616,9 @@ const OrderDetails: React.FC = () => {
                   <View style={styles.deliveryList}>
                     {deliveryOrders.map((delivery) => (
                       <View key={delivery.id} style={styles.deliveryRow}>
-                        <Text style={styles.deliveryRowTitle}>Delivery #{delivery.id}</Text>
+                        <Text style={styles.deliveryRowTitle}>
+                          Delivery #{delivery.id}
+                        </Text>
                         <Text style={styles.deliveryRowStatus}>
                           {getDeliveryTrackingLabel(delivery.status)}
                         </Text>
@@ -640,10 +660,14 @@ const OrderDetails: React.FC = () => {
           <View style={styles.card}>
             {summaryRows.map((row) => (
               <View key={row.label} style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, row.bold && styles.summaryBold]}>
+                <Text
+                  style={[styles.summaryLabel, row.bold && styles.summaryBold]}
+                >
                   {row.label}
                 </Text>
-                <Text style={[styles.summaryValue, row.bold && styles.summaryBold]}>
+                <Text
+                  style={[styles.summaryValue, row.bold && styles.summaryBold]}
+                >
                   {row.value}
                 </Text>
               </View>

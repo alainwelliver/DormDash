@@ -30,6 +30,9 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Badge from "./Badge";
 import OptimizedImage from "./OptimizedImage";
+import { supabase } from "../lib/supabase";
+import { alert } from "../lib/utils/platform";
+import { useQueryClient } from "@tanstack/react-query";
 
 type ListingCardProps = {
   listing: {
@@ -60,10 +63,12 @@ function ListingCardComponent({
   onDelete,
 }: ListingCardProps) {
   const navigation = useNavigation<NavProp>();
+  const queryClient = useQueryClient();
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [menuVisible, setMenuVisible] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const getCardWidth = () => {
     const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
@@ -130,6 +135,56 @@ function ListingCardComponent({
     onDelete?.(listing.id);
   };
 
+  const handleQuickAdd = async (e: any) => {
+    e.stopPropagation();
+    if (addingToCart) return;
+
+    try {
+      setAddingToCart(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+
+      if (!userId) {
+        alert("Login Required", "You must be logged in to add to cart.");
+        return;
+      }
+
+      const { data: existing, error: existingError } = await supabase
+        .from("cart_items")
+        .select("id, quantity")
+        .eq("user_id", userId)
+        .eq("listing_id", listing.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("cart_items")
+          .update({ quantity: existing.quantity + 1 })
+          .eq("id", existing.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("cart_items")
+          .insert({
+            user_id: userId,
+            listing_id: listing.id,
+            quantity: 1,
+          });
+        if (insertError) throw insertError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
+      alert("Added to Cart", `${listing.title} was added to your cart.`);
+    } catch (error) {
+      console.error("Quick add to cart error:", error);
+      alert("Error", "Could not add item to cart.");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[styles.cardContainer, { width: cardWidth }]}
@@ -190,12 +245,9 @@ function ListingCardComponent({
         {/* Quick Action Button (Bottom Right) */}
         {!showMenu && (
           <TouchableOpacity
-            style={styles.fab}
-            onPress={(e) => {
-              e.stopPropagation();
-              // Add to cart logic here or simple navigation
-              navigation.navigate("ProductDetail", { listingId: listing.id });
-            }}
+            style={[styles.fab, addingToCart && styles.fabDisabled]}
+            onPress={handleQuickAdd}
+            disabled={addingToCart}
           >
             <Plus color={Colors.white} size={20} strokeWidth={3} />
           </TouchableOpacity>
@@ -330,6 +382,9 @@ const styles = StyleSheet.create({
     ...Shadows.glow,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.2)",
+  },
+  fabDisabled: {
+    opacity: 0.6,
   },
   menuButton: {
     position: "absolute",

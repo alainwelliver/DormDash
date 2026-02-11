@@ -106,7 +106,11 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         .limit(1)
         .maybeSingle();
 
-      if (!defaultAddress || defaultAddress.lat == null || defaultAddress.lng == null) {
+      if (
+        !defaultAddress ||
+        defaultAddress.lat == null ||
+        defaultAddress.lng == null
+      ) {
         return;
       }
 

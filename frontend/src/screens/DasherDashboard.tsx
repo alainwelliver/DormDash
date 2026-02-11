@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -40,7 +40,10 @@ import {
   startDeliveryTracking,
   stopDeliveryTracking,
 } from "../lib/locationTracking";
-import { formatDistanceMiles, haversineDistanceMiles } from "../lib/utils/distance";
+import {
+  formatDistanceMiles,
+  haversineDistanceMiles,
+} from "../lib/utils/distance";
 import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
 
 type DasherDashboardNavigationProp = NativeStackNavigationProp<{
@@ -64,13 +67,20 @@ const DasherDashboard: React.FC = () => {
     lat: number;
     lng: number;
   } | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const realtimeRefreshTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const fetchDasherDataRef = useRef<() => Promise<void>>(async () => {});
 
   const getPickupDetails = useCallback((order: DeliveryOrder) => {
     const relation = (order as any).delivery_pickups;
     const pickupRow = Array.isArray(relation) ? relation[0] : relation;
     return {
       address:
-        pickupRow?.pickup_address || order.pickup_address || "Private pickup location",
+        pickupRow?.pickup_address ||
+        order.pickup_address ||
+        "Private pickup location",
       lat:
         pickupRow?.pickup_lat != null
           ? Number(pickupRow.pickup_lat)
@@ -86,7 +96,14 @@ const DasherDashboard: React.FC = () => {
     };
   }, []);
 
-  const fetchDasherData = async () => {
+  const refreshCurrentLocation = useCallback(async () => {
+    const location = await getCurrentDeviceLocation();
+    if (location) {
+      setCurrentLocation({ lat: location.lat, lng: location.lng });
+    }
+  }, []);
+
+  const fetchDasherData = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -113,33 +130,36 @@ const DasherDashboard: React.FC = () => {
 
       setDasherInfo(dasher);
 
-      // Fetch available deliveries (pending, not assigned)
-      const { data: available } = await supabase
-        .from("delivery_orders")
-        .select(
-          "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-        )
-        .eq("status", "pending")
-        .is("dasher_id", null)
-        .order("created_at", { ascending: false });
+      const [availableResult, mineResult] = await Promise.all([
+        supabase
+          .from("delivery_orders")
+          .select(
+            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+          )
+          .eq("status", "pending")
+          .is("dasher_id", null)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("delivery_orders")
+          .select(
+            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+          )
+          .eq("dasher_id", user.id)
+          .in("status", ["accepted", "picked_up"])
+          .order("created_at", { ascending: false }),
+      ]);
 
-      setAvailableDeliveries(available || []);
+      setAvailableDeliveries(availableResult.data || []);
+      setMyDeliveries(mineResult.data || []);
 
-      // Fetch my active deliveries
-      const { data: mine } = await supabase
-        .from("delivery_orders")
-        .select(
-          "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-        )
-        .eq("dasher_id", user.id)
-        .in("status", ["accepted", "picked_up"])
-        .order("created_at", { ascending: false });
+      if (!hasLoadedOnce) {
+        setHasLoadedOnce(true);
+      }
 
-      setMyDeliveries(mine || []);
-
-      const location = await getCurrentDeviceLocation();
-      if (location) {
-        setCurrentLocation({ lat: location.lat, lng: location.lng });
+      // Non-blocking on mobile to avoid delaying dashboard render.
+      if (!currentLocation) {
+        void refreshCurrentLocation();
       }
     } catch (error) {
       console.error("Error fetching dasher data:", error);
@@ -147,13 +167,32 @@ const DasherDashboard: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [currentLocation, hasLoadedOnce, refreshCurrentLocation]);
+
+  useEffect(() => {
+    fetchDasherDataRef.current = fetchDasherData;
+  }, [fetchDasherData]);
+
+  const queueRealtimeRefresh = useCallback(() => {
+    if (realtimeRefreshTimeoutRef.current) {
+      clearTimeout(realtimeRefreshTimeoutRef.current);
+    }
+
+    realtimeRefreshTimeoutRef.current = setTimeout(() => {
+      void fetchDasherDataRef.current();
+    }, 350);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      fetchDasherData();
-    }, []),
+      if (!hasLoadedOnce) {
+        setLoading(true);
+      }
+      void fetchDasherData();
+      if (hasLoadedOnce) {
+        void refreshCurrentLocation();
+      }
+    }, [fetchDasherData, hasLoadedOnce, refreshCurrentLocation]),
   );
 
   useEffect(() => {
@@ -164,9 +203,15 @@ const DasherDashboard: React.FC = () => {
     const startTrackingIfNeeded = async () => {
       const currentTrackingId = await getActiveTrackingDeliveryOrderId();
       if (currentTrackingId === activeDelivery.id) return;
-      const result = await startDeliveryTracking(activeDelivery.id, dasherInfo.id);
+      const result = await startDeliveryTracking(
+        activeDelivery.id,
+        dasherInfo.id,
+      );
       if (!result.started && result.reason) {
-        console.warn("Unable to start active delivery tracking:", result.reason);
+        console.warn(
+          "Unable to start active delivery tracking:",
+          result.reason,
+        );
       }
     };
 
@@ -179,13 +224,86 @@ const DasherDashboard: React.FC = () => {
     void stopDeliveryTracking();
   }, [myDeliveries.length, dasherInfo]);
 
+  useEffect(() => {
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const watchRealtimeUpdates = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!isMounted || !user) return;
+
+      channel = supabase
+        .channel(`dasher-dashboard-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "delivery_orders" },
+          (payload: any) => {
+            const relevantStatuses = new Set([
+              "pending",
+              "accepted",
+              "picked_up",
+              "delivered",
+              "cancelled",
+            ]);
+
+            const newStatus = payload?.new?.status as string | undefined;
+            const oldStatus = payload?.old?.status as string | undefined;
+
+            if (
+              relevantStatuses.has(newStatus || "") ||
+              relevantStatuses.has(oldStatus || "")
+            ) {
+              queueRealtimeRefresh();
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "dashers",
+            filter: `id=eq.${user.id}`,
+          },
+          () => {
+            queueRealtimeRefresh();
+          },
+        )
+        .subscribe();
+    };
+
+    void watchRealtimeUpdates();
+
+    return () => {
+      isMounted = false;
+      if (realtimeRefreshTimeoutRef.current) {
+        clearTimeout(realtimeRefreshTimeoutRef.current);
+        realtimeRefreshTimeoutRef.current = null;
+      }
+      if (channel) {
+        void supabase.removeChannel(channel);
+      }
+    };
+  }, [queueRealtimeRefresh]);
+
   const onRefresh = () => {
     setRefreshing(true);
-    fetchDasherData();
+    void fetchDasherData();
+    void refreshCurrentLocation();
   };
 
   const toggleOnlineStatus = async () => {
     if (!dasherInfo) return;
+    if (dasherInfo.status === "busy") {
+      alert(
+        "You're currently on a delivery",
+        "Complete your active delivery before changing your availability.",
+      );
+      return;
+    }
 
     const newStatus: DasherStatus =
       dasherInfo.status === "offline" ? "online" : "offline";
@@ -218,23 +336,19 @@ const DasherDashboard: React.FC = () => {
     if (!dasherInfo) return;
 
     try {
-      const { error } = await supabase
-        .from("delivery_orders")
-        .update({
-          dasher_id: dasherInfo.id,
-          status: "accepted",
-        })
-        .eq("id", order.id)
-        .eq("status", "pending"); // Only update if still pending
+      const { data: acceptedOrder, error } = await supabase.rpc(
+        "accept_delivery_order",
+        { p_order_id: order.id },
+      );
 
       if (error) throw error;
 
-      await supabase
-        .from("dashers")
-        .update({ status: "busy" } as any)
-        .eq("id", dasherInfo.id);
+      setDasherInfo({ ...dasherInfo, status: "busy" });
 
-      const trackingResult = await startDeliveryTracking(order.id, dasherInfo.id);
+      const trackingResult = await startDeliveryTracking(
+        acceptedOrder?.id ?? order.id,
+        dasherInfo.id,
+      );
 
       if (trackingResult.reason) {
         alert("Delivery Accepted!", trackingResult.reason);
@@ -244,11 +358,11 @@ const DasherDashboard: React.FC = () => {
           "Head to the pickup location to collect the item.",
         );
       }
-      fetchDasherData();
+      void fetchDasherData();
     } catch (error: any) {
       console.error("Error accepting delivery:", error);
       alert("Error", "Failed to accept delivery. It may have been taken.");
-      fetchDasherData();
+      void fetchDasherData();
     }
   };
 
@@ -257,50 +371,44 @@ const DasherDashboard: React.FC = () => {
     newStatus: string,
   ) => {
     try {
-      const updates: any = { status: newStatus };
+      const { error: statusError } = await supabase.rpc("set_delivery_status", {
+        p_order_id: order.id,
+        p_status: newStatus,
+      });
 
-      // If completing delivery, update dasher stats
+      if (statusError) throw statusError;
+
       if (newStatus === "delivered" && dasherInfo) {
-        // Update delivery status
-        const { error: deliveryError } = await supabase
-          .from("delivery_orders")
-          .update(updates)
-          .eq("id", order.id);
-
-        if (deliveryError) throw deliveryError;
-
-        // Update dasher stats
         const { error: dasherError } = await supabase
           .from("dashers")
           .update({
             total_deliveries: (dasherInfo.total_deliveries || 0) + 1,
             total_earnings_cents:
               (dasherInfo.total_earnings_cents || 0) + order.delivery_fee_cents,
-            status: "online",
           })
           .eq("id", dasherInfo.id);
 
-        if (dasherError) throw dasherError;
-        await stopDeliveryTracking();
+        if (dasherError) {
+          console.error("Error updating dasher stats:", dasherError);
+        }
 
+        await stopDeliveryTracking();
+        setDasherInfo({
+          ...dasherInfo,
+          status: "online",
+          total_deliveries: (dasherInfo.total_deliveries || 0) + 1,
+          total_earnings_cents:
+            (dasherInfo.total_earnings_cents || 0) + order.delivery_fee_cents,
+        });
         alert(
           "Delivery Complete!",
           `You earned ${formatPrice(order.delivery_fee_cents)}!`,
         );
-      } else {
-        const { error } = await supabase
-          .from("delivery_orders")
-          .update(updates)
-          .eq("id", order.id);
-
-        if (error) throw error;
-
-        if (newStatus === "picked_up") {
-          alert("Item Picked Up", "Now deliver it to the buyer's location.");
-        }
+      } else if (newStatus === "picked_up") {
+        alert("Item Picked Up", "Now deliver it to the buyer's location.");
       }
 
-      fetchDasherData();
+      void fetchDasherData();
     } catch (error: any) {
       console.error("Error updating delivery:", error);
       alert("Error", "Failed to update delivery status");
@@ -323,6 +431,12 @@ const DasherDashboard: React.FC = () => {
       default:
         return Colors.mutedGray;
     }
+  };
+
+  const getStatusLabel = (status: DasherStatus | undefined) => {
+    if (status === "online") return "Online";
+    if (status === "busy") return "Busy";
+    return "Offline";
   };
 
   const getDistanceToPickup = useCallback(
@@ -566,6 +680,7 @@ const DasherDashboard: React.FC = () => {
           style={[
             styles.statusToggle,
             dasherInfo?.status === "online" && styles.statusToggleOnline,
+            dasherInfo?.status === "busy" && styles.statusToggleBusy,
           ]}
           onPress={toggleOnlineStatus}
           disabled={togglingStatus}
@@ -589,13 +704,15 @@ const DasherDashboard: React.FC = () => {
                   styles.statusToggleText,
                   dasherInfo?.status === "online" &&
                     styles.statusToggleTextOnline,
+                  dasherInfo?.status === "busy" && styles.statusToggleTextBusy,
                 ]}
               >
-                {dasherInfo?.status === "online" ? "Online" : "Offline"}
+                {getStatusLabel(dasherInfo?.status)}
               </Text>
               <Power
                 color={
-                  dasherInfo?.status === "online"
+                  dasherInfo?.status === "online" ||
+                  dasherInfo?.status === "busy"
                     ? Colors.white
                     : Colors.mutedGray
                 }
@@ -630,11 +747,19 @@ const DasherDashboard: React.FC = () => {
                 {availableDeliveries.length > 0 &&
                   ` (${availableDeliveries.length})`}
               </Text>
-              {dasherInfo?.status !== "online" ? (
+              {dasherInfo?.status === "offline" ? (
                 <View style={styles.offlineMessage}>
                   <Info color={Colors.mutedGray} size={24} />
                   <Text style={styles.offlineMessageText}>
                     Go online to see and accept deliveries
+                  </Text>
+                </View>
+              ) : dasherInfo?.status === "busy" ? (
+                <View style={styles.offlineMessage}>
+                  <Info color={Colors.mutedGray} size={24} />
+                  <Text style={styles.offlineMessageText}>
+                    You are on an active delivery. Complete it before accepting
+                    a new one.
                   </Text>
                 </View>
               ) : availableDeliveries.length === 0 ? (
@@ -729,6 +854,9 @@ const styles = StyleSheet.create({
   statusToggleOnline: {
     backgroundColor: Colors.primary_green,
   },
+  statusToggleBusy: {
+    backgroundColor: Colors.warning,
+  },
   statusDot: {
     width: 10,
     height: 10,
@@ -741,6 +869,9 @@ const styles = StyleSheet.create({
     color: Colors.darkTeal,
   },
   statusToggleTextOnline: {
+    color: Colors.white,
+  },
+  statusToggleTextBusy: {
     color: Colors.white,
   },
   // List Content

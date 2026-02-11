@@ -83,7 +83,9 @@ const hydrateTrackingIdentity = async () => {
     TRACKING_DASHER_KEY,
   ]);
 
-  const deliveryRaw = values.find(([key]) => key === TRACKING_DELIVERY_KEY)?.[1];
+  const deliveryRaw = values.find(
+    ([key]) => key === TRACKING_DELIVERY_KEY,
+  )?.[1];
   const dasherRaw = values.find(([key]) => key === TRACKING_DASHER_KEY)?.[1];
 
   if (deliveryRaw && !Number.isNaN(Number(deliveryRaw))) {
@@ -153,21 +155,26 @@ const ensureBackgroundTaskDefined = () => {
 
   TaskManager.defineTask(
     BACKGROUND_LOCATION_TASK,
-    async ({ data, error }: { data?: unknown; error?: { message?: string } }) => {
-    if (error) {
-      console.error("Background location task error:", error.message);
-      return;
-    }
+    async ({
+      data,
+      error,
+    }: {
+      data?: unknown;
+      error?: { message?: string };
+    }) => {
+      if (error) {
+        console.error("Background location task error:", error.message);
+        return;
+      }
 
-      const locations = (data as { locations?: LocationObject[] })
-      ?.locations;
-    if (!locations || locations.length === 0) return;
+      const locations = (data as { locations?: LocationObject[] })?.locations;
+      if (!locations || locations.length === 0) return;
 
-    await hydrateTrackingIdentity();
-    if (!activeDeliveryOrderId || !activeDasherId) return;
+      await hydrateTrackingIdentity();
+      if (!activeDeliveryOrderId || !activeDasherId) return;
 
-    const latestLocation = locations[locations.length - 1];
-    await processLocation(latestLocation, "background");
+      const latestLocation = locations[locations.length - 1];
+      await processLocation(latestLocation, "background");
     },
   );
 };
@@ -231,7 +238,8 @@ export const startDeliveryTracking = async (
   activeDasherId = dasherId;
   await persistTrackingIdentity(deliveryOrderId, dasherId);
 
-  const foregroundPermission = await Location.requestForegroundPermissionsAsync();
+  const foregroundPermission =
+    await Location.requestForegroundPermissionsAsync();
   if (!foregroundPermission.granted) {
     return { started: false, reason: "Location permission denied." };
   }
@@ -253,7 +261,8 @@ export const startDeliveryTracking = async (
     },
   );
 
-  const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+  const backgroundPermission =
+    await Location.requestBackgroundPermissionsAsync();
   if (backgroundPermission.granted) {
     await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
       accuracy: Location.Accuracy.Balanced,
