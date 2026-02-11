@@ -33,7 +33,7 @@ export const formatDistanceMiles = (miles: number | null | undefined) => {
 
 export const estimateEtaMinutes = (
   miles: number | null | undefined,
-  mph = 12,
+  mph = 3,
 ) => {
   if (miles == null || Number.isNaN(miles) || miles <= 0) return 0;
   return Math.max(1, Math.ceil((miles / mph) * 60));

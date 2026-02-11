@@ -41,24 +41,24 @@ describe("buildOpenInMapsUrl", () => {
     );
   });
 
-  test("builds web URL with coordinates", () => {
+  test("builds web Google Maps URL with coordinates", () => {
     const url = buildOpenInMapsUrl({
       platform: "web",
       address: "3700 Walnut St, Philadelphia, PA",
       coordinate: { latitude: 39.9522, longitude: -75.1932 },
     });
     expect(url).toBe(
-      "https://www.openstreetmap.org/?mlat=39.9522&mlon=-75.1932#map=16/39.9522/-75.1932",
+      "https://www.google.com/maps/search/?api=1&query=3700%20Walnut%20St%2C%20Philadelphia%2C%20PA",
     );
   });
 
-  test("builds web search URL without coordinates", () => {
+  test("builds web Google Maps URL without coordinates", () => {
     const url = buildOpenInMapsUrl({
       platform: "web",
       address: "3700 Walnut St, Philadelphia, PA",
     });
     expect(url).toBe(
-      "https://www.openstreetmap.org/search?query=3700%20Walnut%20St%2C%20Philadelphia%2C%20PA",
+      "https://www.google.com/maps/search/?api=1&query=3700%20Walnut%20St%2C%20Philadelphia%2C%20PA",
     );
   });
 });

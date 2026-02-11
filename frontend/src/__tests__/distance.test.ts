@@ -34,4 +34,8 @@ describe("distance utils", () => {
     expect(estimateEtaMinutes(1.2, 12)).toBe(6);
     expect(estimateEtaMinutes(null, 12)).toBe(0);
   });
+
+  test("estimateEtaMinutes default uses walking pace", () => {
+    expect(estimateEtaMinutes(0.4)).toBe(8);
+  });
 });

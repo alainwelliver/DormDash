@@ -39,8 +39,5 @@ export const buildOpenInMapsUrl = ({
     return `geo:0,0?q=${encodedAddress}`;
   }
 
-  if (hasCoordinate) {
-    return `https://www.openstreetmap.org/?mlat=${coordinate.latitude}&mlon=${coordinate.longitude}#map=16/${coordinate.latitude}/${coordinate.longitude}`;
-  }
-  return `https://www.openstreetmap.org/search?query=${encodedAddress}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 };
