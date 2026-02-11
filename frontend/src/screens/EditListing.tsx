@@ -86,6 +86,8 @@ export default function EditListing({ route, navigation }: EditListingProps) {
   const [pickupLocation, setPickupLocation] = useState<LocationData | null>(
     null,
   );
+  const [defaultPickupLocation, setDefaultPickupLocation] =
+    useState<LocationData | null>(null);
 
   // Load categories, tags, and existing listing data
   useEffect(() => {
@@ -104,6 +106,48 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           .select("id,name")
           .order("name");
         if (tagsData) setAllTags(tagsData);
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: defaultAddress } = await supabase
+            .from("addresses")
+            .select(
+              "building_name, room_number, street_address, city, state, zip_code, lat, lng",
+            )
+            .eq("user_id", user.id)
+            .eq("is_default", true)
+            .limit(1)
+            .maybeSingle();
+
+          if (defaultAddress?.lat != null && defaultAddress?.lng != null) {
+            const baseAddress =
+              defaultAddress.street_address || defaultAddress.building_name || "";
+            if (baseAddress) {
+              const addressLine = defaultAddress.building_name
+                ? defaultAddress.room_number
+                  ? `${defaultAddress.building_name}, ${defaultAddress.room_number}`
+                  : defaultAddress.building_name
+                : [
+                    defaultAddress.street_address,
+                    defaultAddress.city,
+                    defaultAddress.state,
+                    defaultAddress.zip_code,
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
+
+              setDefaultPickupLocation({
+                address: addressLine || baseAddress,
+                lat: defaultAddress.lat,
+                lng: defaultAddress.lng,
+                buildingName: defaultAddress.building_name || undefined,
+              });
+            }
+          }
+        }
 
         // Load existing listing
         const { data: listing, error } = await supabase
@@ -125,12 +169,26 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           setType(listing.type || "item");
           setCategoryId(listing.category_id);
 
-          // Load pickup location if exists
-          if (listing.pickup_address || listing.pickup_lat) {
+          const { data: pickupData } = await supabase
+            .from("listing_pickup_locations")
+            .select(
+              "pickup_address, pickup_building_name, pickup_lat, pickup_lng",
+            )
+            .eq("listing_id", listingId)
+            .maybeSingle();
+
+          if (pickupData) {
+            setPickupLocation({
+              address: pickupData.pickup_address,
+              lat: pickupData.pickup_lat,
+              lng: pickupData.pickup_lng,
+              buildingName: pickupData.pickup_building_name || undefined,
+            });
+          } else if (listing.pickup_address || listing.pickup_lat) {
             setPickupLocation({
               address: listing.pickup_address || "",
-              lat: listing.pickup_lat || 0,
-              lng: listing.pickup_lng || 0,
+              lat: Number(listing.pickup_lat || 0),
+              lng: Number(listing.pickup_lng || 0),
             });
           }
 
@@ -226,10 +284,26 @@ export default function EditListing({ route, navigation }: EditListingProps) {
     if (!title.trim()) return alert("Missing title", "Please enter a title.");
     if (!categoryId)
       return alert("Missing category", "Please choose a category.");
+    if (!pickupLocation) {
+      return alert(
+        "Missing pickup location",
+        "Please choose a pickup location for dashers.",
+      );
+    }
 
     setSubmitting(true);
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user?.id) {
+        alert("Error", "Please log in to update this listing.");
+        setSubmitting(false);
+        return;
+      }
+
       // 1) Update listing
       const { error: updateErr } = await supabase
         .from("listings")
@@ -239,14 +313,27 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           price_cents,
           type,
           category_id: categoryId,
-          // Update pickup location for dasher system
-          pickup_address: pickupLocation?.address || null,
-          pickup_lat: pickupLocation?.lat || null,
-          pickup_lng: pickupLocation?.lng || null,
         })
         .eq("id", listingId);
 
       if (updateErr) throw updateErr;
+
+      const { error: pickupError } = await supabase
+        .from("listing_pickup_locations")
+        .upsert(
+          {
+            listing_id: listingId,
+            seller_id: user.id,
+            pickup_address: pickupLocation.address,
+            pickup_building_name: pickupLocation.buildingName || null,
+            pickup_lat: pickupLocation.lat,
+            pickup_lng: pickupLocation.lng,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "listing_id" },
+        );
+
+      if (pickupError) throw pickupError;
 
       // 2) Delete removed images
       if (imagesToDelete.length > 0) {
@@ -593,12 +680,22 @@ export default function EditListing({ route, navigation }: EditListingProps) {
         )}
 
         <Text style={styles.sectionTitle}>Pickup Location</Text>
+        {defaultPickupLocation ? (
+          <TouchableOpacity
+            style={styles.defaultLocationButton}
+            onPress={() => setPickupLocation(defaultPickupLocation)}
+          >
+            <Text style={styles.defaultLocationButtonText}>
+              Use profile default location
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         <LocationPicker
           value={pickupLocation}
           onChange={setPickupLocation}
           placeholder="Select where item can be picked up"
           label=""
-          helperText="This location is hidden from buyers browsing the feed. Only dashers will see it for deliveries."
+          helperText="Required. This location is hidden from buyers and only shown to dashers for delivery orders."
         />
 
         <View style={styles.buttonRow}>
@@ -758,6 +855,22 @@ const styles = StyleSheet.create({
   subtleText: {
     color: Colors.mutedGray,
     fontFamily: Fonts.body,
+  },
+  defaultLocationButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    marginBottom: Spacing.sm,
+    backgroundColor: `${Colors.primary_blue}14`,
+  },
+  defaultLocationButtonText: {
+    color: Colors.primary_blue,
+    fontFamily: Fonts.body,
+    fontWeight: "700",
+    fontSize: 13,
   },
 
   imageLabel: {

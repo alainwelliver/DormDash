@@ -222,20 +222,44 @@ const Checkout: React.FC = () => {
                   : null;
 
               // 1. Create pending order in Supabase
-              const { data: order, error: orderError } = await supabase
+              const orderInsertBase = {
+                user_id: user.id,
+                status: "pending_payment",
+                delivery_method: deliveryMethod,
+                subtotal_cents: calculateSubtotal(),
+                tax_cents: calculateTax(),
+                delivery_fee_cents: calculateDeliveryFee(),
+                total_cents: calculateTotal(),
+                delivery_address: deliveryAddr,
+              };
+
+              const orderInsertWithCoords =
+                deliveryMethod === "delivery" && selectedAddress
+                  ? {
+                      ...orderInsertBase,
+                      delivery_lat: selectedAddress.lat ?? null,
+                      delivery_lng: selectedAddress.lng ?? null,
+                    }
+                  : orderInsertBase;
+
+              let orderResult = await supabase
                 .from("orders")
-                .insert({
-                  user_id: user.id,
-                  status: "pending_payment",
-                  delivery_method: deliveryMethod,
-                  subtotal_cents: calculateSubtotal(),
-                  tax_cents: calculateTax(),
-                  delivery_fee_cents: calculateDeliveryFee(),
-                  total_cents: calculateTotal(),
-                  delivery_address: deliveryAddr,
-                })
+                .insert(orderInsertWithCoords as any)
                 .select("id")
                 .single();
+
+              if (
+                orderResult.error &&
+                /delivery_lat|delivery_lng/i.test(orderResult.error.message || "")
+              ) {
+                orderResult = await supabase
+                  .from("orders")
+                  .insert(orderInsertBase)
+                  .select("id")
+                  .single();
+              }
+
+              const { data: order, error: orderError } = orderResult;
 
               if (orderError || !order) {
                 console.error("Error creating order:", orderError);

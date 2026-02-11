@@ -77,6 +77,7 @@ const linking: LinkingOptions<any> = {
       PaymentSuccess: "payment-success",
       PaymentFailed: "payment-failed",
       DasherRegister: "dasher-register",
+      DeliveryDetail: "delivery/:deliveryOrderId",
     },
   },
 };
@@ -108,6 +109,7 @@ import PaymentFailed from "../screens/PaymentFailed";
 import EditListing from "../screens/EditListing";
 import DasherDashboard from "../screens/DasherDashboard";
 import DasherRegister from "../screens/DasherRegister";
+import DeliveryDetail from "../screens/DeliveryDetail";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -170,6 +172,7 @@ type MainStackParamList = {
   PaymentSuccess: undefined;
   PaymentFailed: undefined;
   DasherRegister: undefined;
+  DeliveryDetail: { deliveryOrderId: number };
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -416,6 +419,11 @@ export default function AppNavigator() {
           <MainStack.Screen
             name="DasherRegister"
             component={DasherRegister}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="DeliveryDetail"
+            component={DeliveryDetail}
             options={{ headerShown: false }}
           />
         </MainStack.Navigator>

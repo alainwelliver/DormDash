@@ -165,102 +165,24 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           .single();
 
         if (orderData && orderData.delivery_method === "delivery") {
-          // Check if delivery orders already exist for this order (idempotency)
-          const { data: existingDelivery } = await supabase
-            .from("delivery_orders")
-            .select("id")
-            .eq("order_id", orderId)
-            .limit(1);
+          const { data: rpcRows, error: rpcError } = await supabase.rpc(
+            "create_delivery_orders_for_order",
+            { p_order_id: orderId },
+          );
 
-          if (existingDelivery && existingDelivery.length > 0) {
-            console.log("Delivery orders already exist for order:", orderId);
+          if (rpcError) {
+            console.error(
+              "Failed to create delivery orders via RPC for order:",
+              orderId,
+              rpcError,
+            );
           } else {
-            // Fetch order items separately to avoid RLS join issues
-            const { data: orderItems } = await supabase
-              .from("order_items")
-              .select("*")
-              .eq("order_id", orderId);
-
-            if (orderItems && orderItems.length > 0) {
-              // Get unique listing IDs to look up sellers
-              const uniqueListingIds = [
-                ...new Set(orderItems.map((item: any) => item.listing_id)),
-              ];
-
-              const { data: listings } = await supabase
-                .from("listings")
-                .select("id, user_id, pickup_address, pickup_lat, pickup_lng")
-                .in("id", uniqueListingIds);
-
-              const listingMap = new Map(
-                (listings || []).map((l: any) => [l.id, l]),
-              );
-
-              // Group items by seller
-              const sellerGroups = new Map<
-                string,
-                { items: any[]; listing: any }
-              >();
-              for (const item of orderItems) {
-                const listing = listingMap.get(item.listing_id);
-                if (!listing) continue;
-                const sellerId = listing.user_id;
-                if (!sellerGroups.has(sellerId)) {
-                  sellerGroups.set(sellerId, { items: [], listing });
-                }
-                sellerGroups.get(sellerId)!.items.push(item);
-              }
-
-              // Create one delivery order per seller
-              for (const [sellerId, group] of sellerGroups) {
-                const itemTitles = group.items
-                  .map((i: any) => i.title)
-                  .join(", ");
-                const orderNumber = `DD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
-
-                const { error: deliveryError } = await supabase
-                  .from("delivery_orders")
-                  .insert({
-                    order_id: orderId,
-                    order_number: orderNumber,
-                    buyer_id: user.id,
-                    seller_id: sellerId,
-                    listing_id: group.items[0].listing_id,
-                    listing_title: itemTitles,
-                    subtotal_cents: orderData.subtotal_cents,
-                    tax_cents: orderData.tax_cents,
-                    delivery_fee_cents: orderData.delivery_fee_cents,
-                    total_cents: orderData.total_cents,
-                    pickup_address:
-                      group.listing.pickup_address || "Seller location",
-                    pickup_lat: group.listing.pickup_lat || null,
-                    pickup_lng: group.listing.pickup_lng || null,
-                    delivery_address:
-                      orderData.delivery_address || "Buyer location",
-                    status: "pending",
-                  });
-
-                if (deliveryError) {
-                  console.error(
-                    "Error creating delivery order for seller",
-                    sellerId,
-                    deliveryError,
-                  );
-                } else {
-                  console.log(
-                    "Delivery order created for seller:",
-                    sellerId,
-                    "order:",
-                    orderId,
-                  );
-                }
-              }
-            } else {
-              console.warn(
-                "No order items found for delivery order creation, orderId:",
-                orderId,
-              );
-            }
+            console.log(
+              "Delivery orders created via RPC for order:",
+              orderId,
+              "count:",
+              Array.isArray(rpcRows) ? rpcRows.length : 0,
+            );
           }
         }
 

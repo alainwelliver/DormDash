@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/dormdash-logo.png"
+      "icon": "./assets/dormdash-logo.png",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DormDash uses your location to show nearby deliveries and navigation routes.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "DormDash uses background location while you deliver so customers can track your order."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +27,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.xiangc21sorganization.dormdash"
+      "package": "com.xiangc21sorganization.dormdash",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE"
+      ]
     },
     "web": {
       "favicon": "./assets/dormdash-logo.png",
@@ -31,6 +41,18 @@
       "shortName": "DormDash",
       "bundler": "metro"
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "DormDash uses your location to show nearby deliveries and navigation routes.",
+          "locationAlwaysAndWhenInUsePermission": "DormDash uses background location while you deliver so customers can track your order.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "145ee260-df3e-45ca-948e-a2ace17c822d"

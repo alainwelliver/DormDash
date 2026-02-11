@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   ActivityIndicator,
@@ -42,6 +42,8 @@ type MainStackParamList = {
     listingTitle: string;
     orderData?: OrderData;
   };
+  PaymentSuccess: { orderId?: number } | undefined;
+  PaymentFailed: undefined;
 };
 type PaymentPortalRouteProp = RouteProp<MainStackParamList, "PaymentPortal">;
 type PaymentPortalNavigationProp = StackNavigationProp<
@@ -58,6 +60,7 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   const { priceCents, listingTitle, orderData } = route.params;
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasHandledRedirectRef = useRef(false);
 
   // ---------------------------------------------------------
   // NETWORK CONFIGURATION
@@ -133,11 +136,46 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
 
   const handleNavigationStateChange = (navState: any) => {
     const { url } = navState;
-    // Handle redirects from Stripe
-    if (url.includes("/success")) {
-      navigation.replace("PaymentSuccess" as any);
-    } else if (url.includes("/cancel")) {
-      navigation.replace("PaymentFailed" as any);
+    if (!url || hasHandledRedirectRef.current) return;
+
+    const normalizedUrl = url.toLowerCase();
+    const isCancel =
+      normalizedUrl.includes("/cancel") ||
+      normalizedUrl.includes("payment-failed") ||
+      normalizedUrl.includes("cancelled") ||
+      normalizedUrl.includes("canceled");
+
+    if (isCancel) {
+      hasHandledRedirectRef.current = true;
+      navigation.replace("PaymentFailed");
+      return;
+    }
+
+    const isKnownSuccessPath =
+      normalizedUrl.includes("/success") ||
+      normalizedUrl.includes("payment-success") ||
+      normalizedUrl.includes("redirect_status=succeeded");
+
+    // Some Stripe return configurations may land on the app domain root/feed.
+    // If checkout has already left Stripe and comes back to dormdash domains, treat as success.
+    const isReturnToAppDomain =
+      normalizedUrl.includes("dormdash.xyz") ||
+      normalizedUrl.includes("dormdash.pages.dev");
+
+    if (isKnownSuccessPath || isReturnToAppDomain) {
+      hasHandledRedirectRef.current = true;
+      let orderId: number | undefined;
+      try {
+        const parsedUrl = new URL(url);
+        const orderIdRaw = parsedUrl.searchParams.get("orderId");
+        if (orderIdRaw && !Number.isNaN(Number(orderIdRaw))) {
+          orderId = Number(orderIdRaw);
+        }
+      } catch {
+        // Ignore parse errors and rely on AsyncStorage fallback in PaymentSuccess.
+      }
+
+      navigation.replace("PaymentSuccess", orderId ? { orderId } : undefined);
     }
   };
 

@@ -69,24 +69,75 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
   const [pickupLocation, setPickupLocation] = useState<LocationData | null>(
     null,
   );
+  const [defaultPickupLocation, setDefaultPickupLocation] =
+    useState<LocationData | null>(null);
 
   // Load categories and tags
   useEffect(() => {
-    supabase
-      .from("categories")
-      .select("id,name")
-      .order("name")
-      .then(({ data }) => {
-        if (data) setCats(data);
-      });
+    const loadCreateListingData = async () => {
+      supabase
+        .from("categories")
+        .select("id,name")
+        .order("name")
+        .then(({ data }) => {
+          if (data) setCats(data);
+        });
 
-    supabase
-      .from("tags")
-      .select("id,name")
-      .order("name")
-      .then(({ data }) => {
-        if (data) setAllTags(data);
-      });
+      supabase
+        .from("tags")
+        .select("id,name")
+        .order("name")
+        .then(({ data }) => {
+          if (data) setAllTags(data);
+        });
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: defaultAddress } = await supabase
+        .from("addresses")
+        .select(
+          "building_name, room_number, street_address, city, state, zip_code, lat, lng",
+        )
+        .eq("user_id", user.id)
+        .eq("is_default", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!defaultAddress || defaultAddress.lat == null || defaultAddress.lng == null) {
+        return;
+      }
+
+      const baseAddress =
+        defaultAddress.street_address || defaultAddress.building_name || "";
+      if (!baseAddress) return;
+
+      const addressLine = defaultAddress.building_name
+        ? defaultAddress.room_number
+          ? `${defaultAddress.building_name}, ${defaultAddress.room_number}`
+          : defaultAddress.building_name
+        : [
+            defaultAddress.street_address,
+            defaultAddress.city,
+            defaultAddress.state,
+            defaultAddress.zip_code,
+          ]
+            .filter(Boolean)
+            .join(", ");
+
+      const location: LocationData = {
+        address: addressLine || baseAddress,
+        lat: defaultAddress.lat,
+        lng: defaultAddress.lng,
+        buildingName: defaultAddress.building_name || undefined,
+      };
+      setDefaultPickupLocation(location);
+      setPickupLocation(location);
+    };
+
+    void loadCreateListingData();
   }, []);
 
   const price_cents = useMemo(() => {
@@ -135,6 +186,12 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     if (!title.trim()) return alert("Missing title", "Please enter a title.");
     if (!categoryId)
       return alert("Missing category", "Please choose a category.");
+    if (!pickupLocation) {
+      return alert(
+        "Missing pickup location",
+        "Please choose a pickup location for dashers.",
+      );
+    }
 
     setSubmitting(true);
     const {
@@ -155,10 +212,6 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         price_cents,
         type,
         category_id: categoryId,
-        // Pickup location for dasher system (hidden from feed)
-        pickup_address: pickupLocation?.address || null,
-        pickup_lat: pickupLocation?.lat || null,
-        pickup_lng: pickupLocation?.lng || null,
       })
       .select("id")
       .single();
@@ -171,6 +224,22 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     const listingId = listing.id as number;
 
     try {
+      const { error: pickupError } = await supabase
+        .from("listing_pickup_locations")
+        .insert({
+          listing_id: listingId,
+          seller_id: user.id,
+          pickup_address: pickupLocation.address,
+          pickup_building_name: pickupLocation.buildingName || null,
+          pickup_lat: pickupLocation.lat,
+          pickup_lng: pickupLocation.lng,
+        });
+
+      if (pickupError) {
+        await supabase.from("listings").delete().eq("id", listingId);
+        throw pickupError;
+      }
+
       // 2) Upload images → listing_images
       for (let i = 0; i < localImages.length; i++) {
         const uri = localImages[i];
@@ -412,12 +481,22 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         </ScrollView>
 
         <Text style={styles.sectionTitle}>Pickup Location</Text>
+        {defaultPickupLocation ? (
+          <TouchableOpacity
+            style={styles.defaultLocationButton}
+            onPress={() => setPickupLocation(defaultPickupLocation)}
+          >
+            <Text style={styles.defaultLocationButtonText}>
+              Use profile default location
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         <LocationPicker
           value={pickupLocation}
           onChange={setPickupLocation}
           placeholder="Select where item can be picked up"
           label=""
-          helperText="This location is hidden from buyers browsing the feed. Only dashers will see it for deliveries."
+          helperText="Required. This location is hidden from buyers and only shown to dashers for delivery orders."
         />
 
         <View style={styles.buttonRow}>
@@ -585,6 +664,22 @@ const styles = StyleSheet.create({
   subtleText: {
     color: Colors.mutedGray,
     fontFamily: Fonts.body, // Open Sans
+  },
+  defaultLocationButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    marginBottom: Spacing.sm,
+    backgroundColor: `${Colors.primary_blue}14`,
+  },
+  defaultLocationButtonText: {
+    color: Colors.primary_blue,
+    fontFamily: Fonts.body,
+    fontWeight: "700",
+    fontSize: 13,
   },
 
   // Buttons (Primary/Secondary per style guide)

@@ -1,15 +1,16 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
-  FlatList,
   TouchableOpacity,
   StatusBar,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronLeft, Receipt, Ban } from "lucide-react-native";
+import { ChevronLeft, Receipt, Ban, MapPin, Bike } from "lucide-react-native";
 import {
   useFocusEffect,
   useNavigation,
@@ -19,6 +20,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
+import NativeOSMMap from "../components/NativeOSMMap";
+import { getMapTileUrlTemplate } from "../lib/osm";
 
 type OrderDetailsNavigationProp = NativeStackNavigationProp<any>;
 
@@ -38,6 +41,8 @@ interface Order {
   status: string;
   delivery_method: string;
   delivery_address: string | null;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
   subtotal_cents: number;
   tax_cents: number;
   delivery_fee_cents: number;
@@ -45,6 +50,22 @@ interface Order {
   created_at: string;
   paid_at: string | null;
   order_items: OrderItem[];
+}
+
+interface DeliveryOrder {
+  id: number;
+  status: string;
+  delivery_address: string;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
+  dasher_id: string | null;
+  created_at: string;
+}
+
+interface TrackingLocation {
+  lat: number;
+  lng: number;
+  updatedAt: string | null;
 }
 
 const formatPrice = (cents: number) =>
@@ -90,6 +111,33 @@ const getStatusColors = (status: string) => {
   }
 };
 
+const getDeliveryTrackingLabel = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "Searching for a dasher";
+    case "accepted":
+      return "Dasher heading to pickup";
+    case "picked_up":
+      return "Out for delivery";
+    case "delivered":
+      return "Delivered";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return status;
+  }
+};
+
+const pickActiveDelivery = (deliveries: DeliveryOrder[]) => {
+  return (
+    deliveries.find((delivery) => delivery.status === "picked_up") ||
+    deliveries.find((delivery) => delivery.status === "accepted") ||
+    deliveries.find((delivery) => delivery.status === "pending") ||
+    deliveries[0] ||
+    null
+  );
+};
+
 const OrderDetails: React.FC = () => {
   const navigation = useNavigation<OrderDetailsNavigationProp>();
   const route = useRoute();
@@ -100,11 +148,41 @@ const OrderDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>([]);
+  const [trackingLocation, setTrackingLocation] = useState<TrackingLocation | null>(
+    null,
+  );
+  const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
     if (!order) return false;
     return order.status === "paid" || order.status === "pending_payment";
   }, [order]);
+
+  const activeDelivery = useMemo(
+    () => pickActiveDelivery(deliveryOrders),
+    [deliveryOrders],
+  );
+
+  const loadTrackingForDelivery = useCallback(async (deliveryOrderId: number) => {
+    const { data } = await supabase
+      .from("delivery_tracking")
+      .select("*")
+      .eq("delivery_order_id", deliveryOrderId)
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) {
+      setTrackingLocation(null);
+      return;
+    }
+
+    setTrackingLocation({
+      lat: data.lat,
+      lng: data.lng,
+      updatedAt: data.updated_at || null,
+    });
+  }, []);
 
   const fetchOrder = useCallback(async () => {
     setErrorMsg(null);
@@ -118,23 +196,65 @@ const OrderDetails: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      const withCoordsSelect =
+        "id, status, delivery_method, delivery_address, delivery_lat, delivery_lng, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, title, price_cents, quantity)";
+      const withoutCoordsSelect =
+        "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, title, price_cents, quantity)";
+
+      let orderData: any = null;
+      let orderError: any = null;
+      const withCoordsResult = await supabase
         .from("orders")
-        .select(
-          "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, title, price_cents, quantity)",
-        )
+        .select(withCoordsSelect)
         .eq("id", orderId)
         .eq("user_id", user.id)
         .single();
 
-      if (error) {
-        console.error("Error fetching order:", error);
+      orderData = withCoordsResult.data;
+      orderError = withCoordsResult.error;
+
+      if (orderError && /delivery_lat|delivery_lng/i.test(orderError.message || "")) {
+        const fallbackResult = await supabase
+          .from("orders")
+          .select(withoutCoordsSelect)
+          .eq("id", orderId)
+          .eq("user_id", user.id)
+          .single();
+        orderData = fallbackResult.data;
+        orderError = fallbackResult.error;
+      }
+
+      if (orderError) {
+        console.error("Error fetching order:", orderError);
         setOrder(null);
         setErrorMsg("Couldn't load this order. Please try again.");
         return;
       }
 
-      setOrder((data as any) || null);
+      setOrder((orderData as Order) || null);
+
+      if (orderData?.delivery_method === "delivery") {
+        const { data: deliveries, error: deliveriesError } = await supabase
+          .from("delivery_orders")
+          .select("*")
+          .eq("order_id", orderId)
+          .eq("buyer_id", user.id)
+          .order("created_at", { ascending: true });
+
+        if (!deliveriesError) {
+          const rows = (deliveries || []) as DeliveryOrder[];
+          setDeliveryOrders(rows);
+          const selected = pickActiveDelivery(rows);
+          if (selected) {
+            await loadTrackingForDelivery(selected.id);
+          } else {
+            setTrackingLocation(null);
+          }
+        }
+      } else {
+        setDeliveryOrders([]);
+        setTrackingLocation(null);
+      }
     } catch (e) {
       console.error("Error fetching order:", e);
       setOrder(null);
@@ -142,14 +262,80 @@ const OrderDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, loadTrackingForDelivery]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      fetchOrder();
+      void fetchOrder();
     }, [fetchOrder]),
   );
+
+  useEffect(() => {
+    if (!order || order.delivery_method !== "delivery") return;
+
+    const channel = supabase
+      .channel(`order-delivery-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_orders",
+          filter: `order_id=eq.${orderId}`,
+        },
+        (payload: any) => {
+          const updated = payload.new as DeliveryOrder | null;
+          if (!updated) return;
+          setDeliveryOrders((prev) => {
+            const index = prev.findIndex((item) => item.id === updated.id);
+            if (index === -1) return [...prev, updated];
+            const next = [...prev];
+            next[index] = updated;
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [orderId, order]);
+
+  useEffect(() => {
+    if (!activeDelivery?.id) return;
+
+    let didCancel = false;
+    void loadTrackingForDelivery(activeDelivery.id);
+
+    const channel = supabase
+      .channel(`order-tracking-${activeDelivery.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "delivery_tracking",
+          filter: `delivery_order_id=eq.${activeDelivery.id}`,
+        },
+        (payload: any) => {
+          if (!payload.new) return;
+          if (didCancel) return;
+          setTrackingLocation({
+            lat: payload.new.lat,
+            lng: payload.new.lng,
+            updatedAt: payload.new.updated_at || null,
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      didCancel = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [activeDelivery?.id, loadTrackingForDelivery]);
 
   const handleCancel = async () => {
     if (!order || !canCancel || cancelling) return;
@@ -216,22 +402,6 @@ const OrderDetails: React.FC = () => {
 
   const statusColors = order ? getStatusColors(order.status) : null;
 
-  const renderLineItem = ({ item }: { item: OrderItem }) => (
-    <View style={styles.lineItemRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.lineItemTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={styles.lineItemMeta}>
-          {formatPrice(item.price_cents)} · Qty {item.quantity}
-        </Text>
-      </View>
-      <Text style={styles.lineItemTotal}>
-        {formatPrice(item.price_cents * item.quantity)}
-      </Text>
-    </View>
-  );
-
   const summaryRows = useMemo(() => {
     if (!order) return [];
     const rows: Array<{ label: string; value: string; bold?: boolean }> = [
@@ -252,6 +422,32 @@ const OrderDetails: React.FC = () => {
     return rows;
   }, [order]);
 
+  const dropoffLat = (order as any)?.delivery_lat ?? activeDelivery?.delivery_lat ?? null;
+  const dropoffLng = (order as any)?.delivery_lng ?? activeDelivery?.delivery_lng ?? null;
+
+  const mapCenter = useMemo(() => {
+    if (trackingLocation) {
+      return {
+        latitude: trackingLocation.lat,
+        longitude: trackingLocation.lng,
+      };
+    }
+    if (dropoffLat != null && dropoffLng != null) {
+      return { latitude: dropoffLat, longitude: dropoffLng };
+    }
+    return null;
+  }, [trackingLocation, dropoffLat, dropoffLng]);
+
+  const routeLine = useMemo(() => {
+    if (trackingLocation && dropoffLat != null && dropoffLng != null) {
+      return [
+        { latitude: trackingLocation.lat, longitude: trackingLocation.lng },
+        { latitude: dropoffLat, longitude: dropoffLng },
+      ];
+    }
+    return [];
+  }, [trackingLocation, dropoffLat, dropoffLng]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -265,9 +461,7 @@ const OrderDetails: React.FC = () => {
         </TouchableOpacity>
         <View style={{ alignItems: "center" }}>
           <Text style={styles.headerTitle}>Order Details</Text>
-          {order?.id ? (
-            <Text style={styles.headerSubtitle}>Order #{order.id}</Text>
-          ) : null}
+          {order?.id ? <Text style={styles.headerSubtitle}>Order #{order.id}</Text> : null}
         </View>
         <View style={styles.placeholder} />
       </View>
@@ -291,12 +485,13 @@ const OrderDetails: React.FC = () => {
         <View style={styles.emptyContainer}>
           <Receipt color={Colors.lightGray} size={80} />
           <Text style={styles.emptyText}>Order not found</Text>
-          <Text style={styles.emptySubtext}>
-            This order may have been removed.
-          </Text>
+          <Text style={styles.emptySubtext}>This order may have been removed.</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: Spacing.xxxl }}
+        >
           <View style={styles.card}>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Status</Text>
@@ -314,9 +509,7 @@ const OrderDetails: React.FC = () => {
 
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Placed</Text>
-              <Text style={styles.metaValue}>
-                {formatDateTime(order.created_at)}
-              </Text>
+              <Text style={styles.metaValue}>{formatDateTime(order.created_at)}</Text>
             </View>
 
             <View style={styles.metaRow}>
@@ -329,38 +522,128 @@ const OrderDetails: React.FC = () => {
             {order.delivery_method === "delivery" && order.delivery_address ? (
               <View style={styles.metaRow}>
                 <Text style={styles.metaLabel}>Address</Text>
-                <Text
-                  style={[styles.metaValue, { flex: 1, textAlign: "right" }]}
-                >
+                <Text style={[styles.metaValue, { flex: 1, textAlign: "right" }]}>
                   {order.delivery_address}
                 </Text>
               </View>
             ) : null}
           </View>
 
+          {order.delivery_method === "delivery" ? (
+            <>
+              <Text style={styles.sectionTitle}>Delivery Tracking</Text>
+              <View style={styles.card}>
+                <View style={styles.trackingHeader}>
+                  <Bike size={18} color={Colors.primary_blue} />
+                  <Text style={styles.trackingStatusText}>
+                    {activeDelivery
+                      ? getDeliveryTrackingLabel(activeDelivery.status)
+                      : "Preparing delivery"}
+                  </Text>
+                </View>
+                {trackingLocation?.updatedAt ? (
+                  <Text style={styles.trackingUpdatedText}>
+                    Updated {formatDateTime(trackingLocation.updatedAt)}
+                  </Text>
+                ) : null}
+
+                {Platform.OS !== "web" && mapCenter ? (
+                  <View style={styles.mapContainer}>
+                    <NativeOSMMap
+                      initialRegion={{
+                        latitude: mapCenter.latitude,
+                        longitude: mapCenter.longitude,
+                        latitudeDelta: 0.02,
+                        longitudeDelta: 0.02,
+                      }}
+                      tileUrlTemplate={mapTileUrlTemplate}
+                      dropoff={
+                        dropoffLat != null && dropoffLng != null
+                          ? {
+                              coordinate: {
+                                latitude: dropoffLat,
+                                longitude: dropoffLng,
+                              },
+                              title: "Dropoff",
+                              description: order.delivery_address || "Dropoff",
+                              pinColor: Colors.primary_green,
+                            }
+                          : undefined
+                      }
+                      dasher={
+                        trackingLocation
+                          ? {
+                              coordinate: {
+                                latitude: trackingLocation.lat,
+                                longitude: trackingLocation.lng,
+                              },
+                              title: "Dasher",
+                              pinColor: Colors.primary_blue,
+                            }
+                          : undefined
+                      }
+                      routeCoordinates={routeLine.length > 1 ? routeLine : undefined}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.mapFallback}>
+                    <MapPin size={16} color={Colors.primary_blue} />
+                    <Text style={styles.mapFallbackText}>
+                      Tracking map appears on iOS/Android using in-app map tiles.
+                    </Text>
+                  </View>
+                )}
+
+                {deliveryOrders.length > 0 ? (
+                  <View style={styles.deliveryList}>
+                    {deliveryOrders.map((delivery) => (
+                      <View key={delivery.id} style={styles.deliveryRow}>
+                        <Text style={styles.deliveryRowTitle}>Delivery #{delivery.id}</Text>
+                        <Text style={styles.deliveryRowStatus}>
+                          {getDeliveryTrackingLabel(delivery.status)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.trackingUpdatedText}>
+                    Waiting for delivery assignment.
+                  </Text>
+                )}
+              </View>
+            </>
+          ) : null}
+
           <Text style={styles.sectionTitle}>Items</Text>
           <View style={styles.card}>
-            <FlatList
-              data={order.order_items || []}
-              renderItem={renderLineItem}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
-            />
+            {(order.order_items || []).map((item, index) => (
+              <View key={item.id}>
+                {index > 0 ? <View style={styles.separator} /> : null}
+                <View style={styles.lineItemRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.lineItemTitle} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.lineItemMeta}>
+                      {formatPrice(item.price_cents)} · Qty {item.quantity}
+                    </Text>
+                  </View>
+                  <Text style={styles.lineItemTotal}>
+                    {formatPrice(item.price_cents * item.quantity)}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
 
           <Text style={styles.sectionTitle}>Summary</Text>
           <View style={styles.card}>
             {summaryRows.map((row) => (
               <View key={row.label} style={styles.summaryRow}>
-                <Text
-                  style={[styles.summaryLabel, row.bold && styles.summaryBold]}
-                >
+                <Text style={[styles.summaryLabel, row.bold && styles.summaryBold]}>
                   {row.label}
                 </Text>
-                <Text
-                  style={[styles.summaryValue, row.bold && styles.summaryBold]}
-                >
+                <Text style={[styles.summaryValue, row.bold && styles.summaryBold]}>
                   {row.value}
                 </Text>
               </View>
@@ -383,7 +666,7 @@ const OrderDetails: React.FC = () => {
               )}
             </TouchableOpacity>
           ) : null}
-        </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -428,7 +711,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
   },
   card: {
     backgroundColor: Colors.lightGray,
@@ -438,8 +720,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
-    fontSize: 16,
-    fontFamily: Typography.bodyLarge.fontFamily,
+    fontSize: 17,
+    fontFamily: Typography.heading4.fontFamily,
     fontWeight: "700",
     color: Colors.darkTeal,
   },
@@ -447,11 +729,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.sm,
+    paddingVertical: 6,
   },
   metaLabel: {
     fontSize: 14,
-    fontFamily: Typography.bodyMedium.fontFamily,
+    fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
   },
   metaValue: {
@@ -461,49 +743,115 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   statusPill: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   statusText: {
     fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "700",
+  },
+  trackingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  trackingStatusText: {
+    fontSize: 14,
     fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  trackingUpdatedText: {
+    marginTop: Spacing.xs,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
+  mapContainer: {
+    marginTop: Spacing.md,
+    height: 220,
+    borderRadius: BorderRadius.medium,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  mapFallback: {
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    padding: Spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+  },
+  mapFallbackText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    lineHeight: 18,
+  },
+  deliveryList: {
+    marginTop: Spacing.md,
+    gap: Spacing.xs,
+  },
+  deliveryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.small,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  deliveryRowTitle: {
+    fontSize: 13,
+    color: Colors.darkTeal,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+  },
+  deliveryRowStatus: {
+    fontSize: 12,
+    color: Colors.mutedGray,
+    fontFamily: Typography.bodySmall.fontFamily,
+  },
+  lineItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  lineItemTitle: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    color: Colors.darkTeal,
+    fontWeight: "600",
+  },
+  lineItemMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
+  lineItemTotal: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    color: Colors.darkTeal,
     fontWeight: "700",
   },
   separator: {
     height: 1,
-    backgroundColor: `${Colors.mutedGray}22`,
-    marginVertical: Spacing.sm,
-  },
-  lineItemRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  lineItemTitle: {
-    fontSize: 15,
-    fontFamily: Typography.bodyLarge.fontFamily,
-    fontWeight: "700",
-    color: Colors.darkTeal,
-  },
-  lineItemMeta: {
-    marginTop: 2,
-    fontSize: 13,
-    fontFamily: Typography.bodyMedium.fontFamily,
-    color: Colors.mutedGray,
-  },
-  lineItemTotal: {
-    marginLeft: Spacing.md,
-    fontSize: 15,
-    fontFamily: Typography.bodyLarge.fontFamily,
-    fontWeight: "700",
-    color: Colors.darkTeal,
+    backgroundColor: Colors.borderLight,
   },
   summaryRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.sm,
+    alignItems: "center",
+    paddingVertical: Spacing.xs,
   },
   summaryLabel: {
     fontSize: 14,
@@ -514,60 +862,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Typography.bodyMedium.fontFamily,
     color: Colors.darkTeal,
-    fontWeight: "600",
   },
   summaryBold: {
-    fontWeight: "800",
+    fontWeight: "700",
     color: Colors.darkTeal,
   },
   cancelButton: {
-    marginTop: Spacing.xl,
-    backgroundColor: "#EF4444",
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.error,
     borderRadius: BorderRadius.medium,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
   },
   cancelButtonText: {
+    fontSize: 15,
     color: Colors.white,
-    fontSize: 16,
-    fontFamily: Typography.bodyLarge.fontFamily,
+    fontFamily: Typography.buttonText.fontFamily,
     fontWeight: "700",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: Spacing.xxxl,
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xl,
   },
   emptyText: {
-    fontFamily: Typography.heading4.fontFamily,
+    marginTop: Spacing.md,
     fontSize: 20,
-    fontWeight: "600",
     color: Colors.darkTeal,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
+    fontFamily: Typography.heading4.fontFamily,
+    fontWeight: "700",
   },
   emptySubtext: {
-    fontFamily: Typography.bodyMedium.fontFamily,
+    marginTop: Spacing.xs,
     fontSize: 14,
     color: Colors.mutedGray,
+    fontFamily: Typography.bodySmall.fontFamily,
     textAlign: "center",
+    lineHeight: 20,
   },
   retryButton: {
     marginTop: Spacing.lg,
     backgroundColor: Colors.primary_blue,
     borderRadius: BorderRadius.medium,
-    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
   },
   retryButtonText: {
     color: Colors.white,
-    fontFamily: Typography.bodyLarge.fontFamily,
+    fontSize: 14,
     fontWeight: "700",
+    fontFamily: Typography.buttonText.fontFamily,
   },
 });
 

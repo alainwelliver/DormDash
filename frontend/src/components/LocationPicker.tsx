@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TextInput,
   Modal,
   ScrollView,
-  ActivityIndicator,
   Platform,
 } from "react-native";
 import { Colors, Fonts, Spacing, BorderRadius } from "../assets/styles";
@@ -101,9 +100,6 @@ export default function LocationPicker({
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<typeof PENN_LOCATIONS>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [customAddress, setCustomAddress] = useState("");
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter Penn locations based on search
   useEffect(() => {
@@ -129,62 +125,6 @@ export default function LocationPicker({
     });
     setModalVisible(false);
     setSearchQuery("");
-  };
-
-  const handleCustomAddress = async () => {
-    if (!customAddress.trim()) return;
-
-    setIsSearching(true);
-
-    // For now, we'll use a simple geocoding approach
-    // In production, you'd integrate Google Maps Geocoding API
-    try {
-      // Use Google Maps Geocoding API if available
-      const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-      if (apiKey) {
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-            customAddress + ", Philadelphia, PA",
-          )}&key=${apiKey}`,
-        );
-        const data = await response.json();
-
-        if (data.results && data.results.length > 0) {
-          const result = data.results[0];
-          onChange({
-            address: result.formatted_address,
-            lat: result.geometry.location.lat,
-            lng: result.geometry.location.lng,
-          });
-          setModalVisible(false);
-          setCustomAddress("");
-          return;
-        }
-      }
-
-      // Fallback: Use address without coordinates (coordinates can be added later)
-      // Default to Penn campus center coordinates
-      onChange({
-        address: customAddress,
-        lat: 39.9522, // Penn campus center
-        lng: -75.1932,
-      });
-      setModalVisible(false);
-      setCustomAddress("");
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      // Fallback to just setting the address
-      onChange({
-        address: customAddress,
-        lat: 39.9522,
-        lng: -75.1932,
-      });
-      setModalVisible(false);
-      setCustomAddress("");
-    } finally {
-      setIsSearching(false);
-    }
   };
 
   const clearLocation = () => {
@@ -265,36 +205,9 @@ export default function LocationPicker({
 
             {searchResults.length === 0 && searchQuery && (
               <Text style={styles.noResults}>
-                No Penn locations found. Enter a custom address below.
+                No Penn locations found. Try searching by building name.
               </Text>
             )}
-
-            <View style={styles.customAddressSection}>
-              <Text style={styles.sectionTitle}>Custom Address</Text>
-              <TextInput
-                style={styles.customAddressInput}
-                placeholder="Enter full address..."
-                value={customAddress}
-                onChangeText={setCustomAddress}
-                multiline
-              />
-              <TouchableOpacity
-                style={[
-                  styles.useCustomButton,
-                  !customAddress.trim() && styles.useCustomButtonDisabled,
-                ]}
-                onPress={handleCustomAddress}
-                disabled={!customAddress.trim() || isSearching}
-              >
-                {isSearching ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <Text style={styles.useCustomButtonText}>
-                    Use This Address
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -445,37 +358,5 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     textAlign: "center",
     fontStyle: "italic",
-  },
-  customAddressSection: {
-    padding: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.lightGray,
-    marginTop: Spacing.md,
-  },
-  customAddressInput: {
-    borderWidth: 1,
-    borderColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium,
-    padding: Spacing.md,
-    fontSize: 16,
-    fontFamily: Fonts.body,
-    minHeight: 80,
-    textAlignVertical: "top",
-    marginBottom: Spacing.md,
-  },
-  useCustomButton: {
-    backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,
-    padding: Spacing.md,
-    alignItems: "center",
-  },
-  useCustomButtonDisabled: {
-    backgroundColor: Colors.grayDisabled,
-  },
-  useCustomButtonText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: Fonts.heading,
   },
 });

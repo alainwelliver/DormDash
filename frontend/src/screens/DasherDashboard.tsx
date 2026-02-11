@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Power,
   Info,
+  Navigation,
 } from "lucide-react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -33,36 +34,19 @@ import {
 } from "../assets/styles";
 import { supabase } from "../lib/supabase";
 import { alert } from "../lib/utils/platform";
+import {
+  getActiveTrackingDeliveryOrderId,
+  getCurrentDeviceLocation,
+  startDeliveryTracking,
+  stopDeliveryTracking,
+} from "../lib/locationTracking";
+import { formatDistanceMiles, haversineDistanceMiles } from "../lib/utils/distance";
+import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
 
 type DasherDashboardNavigationProp = NativeStackNavigationProp<{
   DasherRegister: undefined;
-  DeliveryDetail: { assignmentId: number };
+  DeliveryDetail: { deliveryOrderId: number };
 }>;
-
-type DasherStatus = "offline" | "online" | "busy";
-
-interface DasherInfo {
-  id: string;
-  status: DasherStatus;
-  vehicle_type: string;
-  total_deliveries: number;
-  total_earnings_cents: number;
-}
-
-interface DeliveryOrder {
-  id: number;
-  order_number: string;
-  pickup_address: string;
-  delivery_address: string;
-  status: string;
-  delivery_fee_cents: number;
-  listing_title: string;
-  total_cents: number;
-  created_at: string;
-  seller_id: string;
-  buyer_id: string;
-  dasher_id: string | null;
-}
 
 const DasherDashboard: React.FC = () => {
   const navigation = useNavigation<DasherDashboardNavigationProp>();
@@ -76,6 +60,31 @@ const DasherDashboard: React.FC = () => {
   >([]);
   const [myDeliveries, setMyDeliveries] = useState<DeliveryOrder[]>([]);
   const [togglingStatus, setTogglingStatus] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  const getPickupDetails = useCallback((order: DeliveryOrder) => {
+    const relation = (order as any).delivery_pickups;
+    const pickupRow = Array.isArray(relation) ? relation[0] : relation;
+    return {
+      address:
+        pickupRow?.pickup_address || order.pickup_address || "Private pickup location",
+      lat:
+        pickupRow?.pickup_lat != null
+          ? Number(pickupRow.pickup_lat)
+          : order.pickup_lat != null
+            ? Number(order.pickup_lat)
+            : null,
+      lng:
+        pickupRow?.pickup_lng != null
+          ? Number(pickupRow.pickup_lng)
+          : order.pickup_lng != null
+            ? Number(order.pickup_lng)
+            : null,
+    };
+  }, []);
 
   const fetchDasherData = async () => {
     try {
@@ -107,7 +116,9 @@ const DasherDashboard: React.FC = () => {
       // Fetch available deliveries (pending, not assigned)
       const { data: available } = await supabase
         .from("delivery_orders")
-        .select("*")
+        .select(
+          "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+        )
         .eq("status", "pending")
         .is("dasher_id", null)
         .order("created_at", { ascending: false });
@@ -117,12 +128,19 @@ const DasherDashboard: React.FC = () => {
       // Fetch my active deliveries
       const { data: mine } = await supabase
         .from("delivery_orders")
-        .select("*")
+        .select(
+          "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+        )
         .eq("dasher_id", user.id)
         .in("status", ["accepted", "picked_up"])
         .order("created_at", { ascending: false });
 
       setMyDeliveries(mine || []);
+
+      const location = await getCurrentDeviceLocation();
+      if (location) {
+        setCurrentLocation({ lat: location.lat, lng: location.lng });
+      }
     } catch (error) {
       console.error("Error fetching dasher data:", error);
     } finally {
@@ -137,6 +155,29 @@ const DasherDashboard: React.FC = () => {
       fetchDasherData();
     }, []),
   );
+
+  useEffect(() => {
+    if (!dasherInfo || myDeliveries.length === 0) return;
+    const activeDelivery = myDeliveries[0];
+    if (!activeDelivery?.id) return;
+
+    const startTrackingIfNeeded = async () => {
+      const currentTrackingId = await getActiveTrackingDeliveryOrderId();
+      if (currentTrackingId === activeDelivery.id) return;
+      const result = await startDeliveryTracking(activeDelivery.id, dasherInfo.id);
+      if (!result.started && result.reason) {
+        console.warn("Unable to start active delivery tracking:", result.reason);
+      }
+    };
+
+    void startTrackingIfNeeded();
+  }, [myDeliveries, dasherInfo]);
+
+  useEffect(() => {
+    if (!dasherInfo) return;
+    if (myDeliveries.length > 0) return;
+    void stopDeliveryTracking();
+  }, [myDeliveries.length, dasherInfo]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -188,10 +229,21 @@ const DasherDashboard: React.FC = () => {
 
       if (error) throw error;
 
-      alert(
-        "Delivery Accepted!",
-        "Head to the pickup location to collect the item.",
-      );
+      await supabase
+        .from("dashers")
+        .update({ status: "busy" } as any)
+        .eq("id", dasherInfo.id);
+
+      const trackingResult = await startDeliveryTracking(order.id, dasherInfo.id);
+
+      if (trackingResult.reason) {
+        alert("Delivery Accepted!", trackingResult.reason);
+      } else {
+        alert(
+          "Delivery Accepted!",
+          "Head to the pickup location to collect the item.",
+        );
+      }
       fetchDasherData();
     } catch (error: any) {
       console.error("Error accepting delivery:", error);
@@ -229,6 +281,7 @@ const DasherDashboard: React.FC = () => {
           .eq("id", dasherInfo.id);
 
         if (dasherError) throw dasherError;
+        await stopDeliveryTracking();
 
         alert(
           "Delivery Complete!",
@@ -272,6 +325,27 @@ const DasherDashboard: React.FC = () => {
     }
   };
 
+  const getDistanceToPickup = useCallback(
+    (order: DeliveryOrder) => {
+      const pickup = getPickupDetails(order);
+      if (!currentLocation || pickup.lat == null || pickup.lng == null) {
+        return null;
+      }
+
+      return haversineDistanceMiles(
+        { lat: currentLocation.lat, lng: currentLocation.lng },
+        { lat: pickup.lat, lng: pickup.lng },
+      );
+    },
+    [currentLocation, getPickupDetails],
+  );
+
+  const openDeliveryDetail = (order: DeliveryOrder) => {
+    navigation.navigate("DeliveryDetail", {
+      deliveryOrderId: order.id,
+    });
+  };
+
   const renderAvailableDelivery = ({ item }: { item: DeliveryOrder }) => (
     <View style={styles.deliveryCard}>
       <View style={styles.deliveryHeader}>
@@ -280,12 +354,17 @@ const DasherDashboard: React.FC = () => {
             {formatPrice(item.delivery_fee_cents)}
           </Text>
         </View>
-        <Text style={styles.deliveryTime}>
-          {new Date(item.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </Text>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={styles.deliveryTime}>
+            {new Date(item.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+          <Text style={styles.distanceText}>
+            {`Pickup ${formatDistanceMiles(getDistanceToPickup(item))}`}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.deliveryRoute}>
@@ -294,7 +373,7 @@ const DasherDashboard: React.FC = () => {
           <Text style={styles.routeLabel}>Pickup</Text>
         </View>
         <Text style={styles.routeAddress} numberOfLines={2}>
-          {item.pickup_address}
+          {getPickupDetails(item).address}
         </Text>
       </View>
 
@@ -314,12 +393,21 @@ const DasherDashboard: React.FC = () => {
         </Text>
       </View>
 
-      <TouchableOpacity
-        style={styles.acceptButton}
-        onPress={() => acceptDelivery(item)}
-      >
-        <Text style={styles.acceptButtonText}>Accept Delivery</Text>
-      </TouchableOpacity>
+      <View style={styles.deliveryActionRow}>
+        <TouchableOpacity
+          style={[styles.mapButton, styles.deliveryActionButtonHalf]}
+          onPress={() => openDeliveryDetail(item)}
+        >
+          <Navigation color={Colors.primary_blue} size={16} />
+          <Text style={styles.mapButtonText}>View Map</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.acceptButton}
+          onPress={() => acceptDelivery(item)}
+        >
+          <Text style={styles.acceptButtonText}>Accept Delivery</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -359,7 +447,7 @@ const DasherDashboard: React.FC = () => {
           <Text style={styles.routeLabel}>Pickup</Text>
         </View>
         <Text style={styles.routeAddress} numberOfLines={2}>
-          {item.pickup_address}
+          {getPickupDetails(item).address}
         </Text>
       </View>
 
@@ -385,6 +473,14 @@ const DasherDashboard: React.FC = () => {
           {item.delivery_address}
         </Text>
       </View>
+
+      <TouchableOpacity
+        style={[styles.mapButton, styles.mapButtonStandalone]}
+        onPress={() => openDeliveryDetail(item)}
+      >
+        <Navigation color={Colors.primary_blue} size={16} />
+        <Text style={styles.mapButtonText}>Open Live Map</Text>
+      </TouchableOpacity>
 
       {item.status === "accepted" ? (
         <TouchableOpacity
@@ -698,6 +794,13 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
   },
+  distanceText: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.primary_blue,
+    fontWeight: "600",
+  },
   deliveryEarnings: {
     fontSize: 16,
     fontFamily: Typography.bodyMedium.fontFamily,
@@ -754,12 +857,41 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: Colors.lightGray,
   },
+  deliveryActionRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  mapButton: {
+    borderColor: Colors.primary_blue,
+    borderWidth: 1,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+  },
+  mapButtonStandalone: {
+    marginTop: Spacing.md,
+  },
+  deliveryActionButtonHalf: {
+    flex: 1,
+  },
+  mapButtonText: {
+    fontSize: 14,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+    color: Colors.primary_blue,
+  },
   acceptButton: {
+    flex: 1,
     backgroundColor: Colors.primary_blue,
     borderRadius: BorderRadius.medium,
     paddingVertical: Spacing.md,
     alignItems: "center",
-    marginTop: Spacing.md,
+    justifyContent: "center",
   },
   acceptButtonText: {
     fontSize: 16,
