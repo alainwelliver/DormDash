@@ -16,6 +16,7 @@ import { Plus, SlidersHorizontal, FilterX } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
 import ListingCard from "../components/ListingCard";
 import FilterModal from "../components/FilterModal";
 import SearchBar from "../components/SearchBar";
@@ -26,6 +27,7 @@ import {
   SectionHeader,
   StatusPill,
   SurfaceCard,
+  BuyAgainRail,
 } from "../components";
 import {
   Colors,
@@ -36,6 +38,7 @@ import {
   BorderRadius,
   WebLayout,
 } from "../assets/styles";
+import { fetchBuyAgainListings } from "../lib/api/repeatBuying";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -86,6 +89,11 @@ const Explore: React.FC = () => {
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [quickMode, setQuickMode] = useState<"all" | "budget" | "fresh">("all");
+  const { data: buyAgainListings = [], isLoading: buyAgainLoading } = useQuery({
+    queryKey: ["buyAgainListings", "explore"],
+    queryFn: () => fetchBuyAgainListings(8),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const resetFilters = useCallback(() => {
     setSelectedCategory(null);
@@ -378,6 +386,15 @@ const Explore: React.FC = () => {
         )}
       </View>
 
+      <View style={[styles.buyAgainWrap, isWeb && styles.webSearchWrapper]}>
+        <BuyAgainRail
+          title="Buy Again"
+          subtitle="Your recent picks, ready instantly"
+          listings={buyAgainListings as any}
+          loading={buyAgainLoading}
+        />
+      </View>
+
       {/* Content */}
       <View style={styles.content}>{renderContent()}</View>
 
@@ -457,6 +474,10 @@ const styles = StyleSheet.create({
   searchWrapper: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+  },
+  buyAgainWrap: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xs,
   },
   webSearchWrapper: {
     alignItems: "center",

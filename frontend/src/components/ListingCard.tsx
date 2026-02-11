@@ -1,4 +1,4 @@
-import React, { useRef, useState, memo } from "react";
+import React, { useRef, useState, useEffect, memo } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   Pencil,
   Trash2,
   Plus,
+  Check,
   Clock,
   Star,
 } from "lucide-react-native";
@@ -69,6 +70,10 @@ function ListingCardComponent({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [menuVisible, setMenuVisible] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const addFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const getCardWidth = () => {
     const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
@@ -135,6 +140,14 @@ function ListingCardComponent({
     onDelete?.(listing.id);
   };
 
+  useEffect(() => {
+    return () => {
+      if (addFeedbackTimeoutRef.current) {
+        clearTimeout(addFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleQuickAdd = async (e: any) => {
     e.stopPropagation();
     if (addingToCart) return;
@@ -176,7 +189,13 @@ function ListingCardComponent({
       }
 
       queryClient.invalidateQueries({ queryKey: ["cart", userId] });
-      alert("Added to Cart", `${listing.title} was added to your cart.`);
+      setJustAdded(true);
+      if (addFeedbackTimeoutRef.current) {
+        clearTimeout(addFeedbackTimeoutRef.current);
+      }
+      addFeedbackTimeoutRef.current = setTimeout(() => {
+        setJustAdded(false);
+      }, 900);
     } catch (error) {
       console.error("Quick add to cart error:", error);
       alert("Error", "Could not add item to cart.");
@@ -245,11 +264,19 @@ function ListingCardComponent({
         {/* Quick Action Button (Bottom Right) */}
         {!showMenu && (
           <TouchableOpacity
-            style={[styles.fab, addingToCart && styles.fabDisabled]}
+            style={[
+              styles.fab,
+              (addingToCart || justAdded) && styles.fabDisabled,
+              justAdded && styles.fabAdded,
+            ]}
             onPress={handleQuickAdd}
             disabled={addingToCart}
           >
-            <Plus color={Colors.white} size={20} strokeWidth={3} />
+            {justAdded ? (
+              <Check color={Colors.white} size={20} strokeWidth={3} />
+            ) : (
+              <Plus color={Colors.white} size={20} strokeWidth={3} />
+            )}
           </TouchableOpacity>
         )}
 
@@ -385,6 +412,9 @@ const styles = StyleSheet.create({
   },
   fabDisabled: {
     opacity: 0.6,
+  },
+  fabAdded: {
+    backgroundColor: Colors.primary_green,
   },
   menuButton: {
     position: "absolute",

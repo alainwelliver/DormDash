@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Platform,
-  Linking,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,8 +21,15 @@ type Props = {
 
 const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
   const [processingOrder, setProcessingOrder] = useState(true);
+  const [processingWarning, setProcessingWarning] = useState<string | null>(
+    null,
+  );
+  const hasFinalizedRef = useRef(false);
 
   useEffect(() => {
+    if (hasFinalizedRef.current) return;
+    hasFinalizedRef.current = true;
+
     const finalizeOrder = async () => {
       try {
         // 1. Wait for auth session to be ready (critical after Stripe redirect)
@@ -87,67 +93,81 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           }
         }
 
-        // 2d. Fallback: find the most recent pending_payment order
-        if (!orderId) {
-          console.log(
-            "No orderId from URL/storage, checking Supabase for recent pending order...",
-          );
-          const { data: pendingOrder } = await supabase
-            .from("orders")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("status", "pending_payment")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
-
-          if (pendingOrder) {
-            orderId = pendingOrder.id;
-            console.log("Found pending order from Supabase:", orderId);
-          }
-        }
-
-        if (!orderId) {
-          console.warn(
-            "No pending order found — may have already been finalized",
+        if (!orderId || Number.isNaN(orderId)) {
+          console.warn("No orderId found in URL, route params, or storage");
+          setProcessingWarning(
+            "We could not confirm which order to finalize. Please check your order history.",
           );
           setProcessingOrder(false);
           return;
         }
 
-        // 3. Mark order as paid
+        // 3. Verify order ownership before finalization.
+        const { data: orderBeforeFinalize, error: orderLookupError } =
+          await supabase
+            .from("orders")
+            .select("id, status, delivery_method")
+            .eq("id", orderId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        if (orderLookupError || !orderBeforeFinalize) {
+          console.error("Could not find order to finalize:", orderLookupError);
+          setProcessingWarning(
+            "Payment succeeded, but we could not find your order record. Please contact support.",
+          );
+          setProcessingOrder(false);
+          return;
+        }
+
+        // 4. Mark order as paid when still pending (idempotent).
         const { error: updateError } = await supabase
           .from("orders")
-          .update({ status: "paid", paid_at: new Date().toISOString() })
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+          })
           .eq("id", orderId)
           .eq("user_id", user.id)
-          .eq("status", "pending_payment"); // only update if still pending (idempotent)
+          .eq("status", "pending_payment");
 
         if (updateError) {
           console.error("Error finalizing order:", updateError);
-        } else {
+          setProcessingWarning(
+            "Payment succeeded, but order finalization needs a retry from your Orders page.",
+          );
+        } else if (orderBeforeFinalize.status === "pending_payment") {
           console.log("Order finalized successfully:", orderId);
         }
 
-        // 4. Clear cart items for the ordered listings
-        //    Get listing IDs from AsyncStorage or from the order_items table
-        let listingIds: number[] = [];
-        const listingIdsStr = await AsyncStorage.getItem(
-          "pendingOrderListingIds",
-        );
-        if (listingIdsStr) {
-          listingIds = JSON.parse(listingIdsStr);
-        } else {
-          // Fallback: read listing IDs from order_items
-          const { data: items } = await supabase
-            .from("order_items")
-            .select("listing_id")
-            .eq("order_id", orderId);
-          if (items) {
-            listingIds = items.map((i: any) => i.listing_id);
-          }
+        // 5. Resolve final order state and ordered listing IDs.
+        const { data: orderData, error: orderDataError } = await supabase
+          .from("orders")
+          .select("id, status, delivery_method")
+          .eq("id", orderId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (orderDataError || !orderData) {
+          console.error("Error loading finalized order:", orderDataError);
+          setProcessingOrder(false);
+          return;
         }
 
+        const { data: items, error: orderItemsError } = await supabase
+          .from("order_items")
+          .select("listing_id")
+          .eq("order_id", orderId);
+
+        if (orderItemsError) {
+          console.error("Error loading order items:", orderItemsError);
+        }
+
+        const listingIds = Array.from(
+          new Set((items || []).map((item: any) => Number(item.listing_id))),
+        ).filter((id) => Number.isFinite(id));
+
+        // 6. Clear cart items for the ordered listings.
         if (listingIds.length > 0) {
           await supabase
             .from("cart_items")
@@ -157,14 +177,11 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           console.log("Cart cleared for listings:", listingIds);
         }
 
-        // 5. If delivery, create delivery_orders records for the dasher flow
-        const { data: orderData } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("id", orderId)
-          .single();
-
-        if (orderData && orderData.delivery_method === "delivery") {
+        // 7. If delivery, create delivery_orders records for the dasher flow.
+        if (
+          orderData.delivery_method === "delivery" &&
+          orderData.status === "paid"
+        ) {
           const { data: rpcRows, error: rpcError } = await supabase.rpc(
             "create_delivery_orders_for_order",
             { p_order_id: orderId },
@@ -176,6 +193,12 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
               orderId,
               rpcError,
             );
+            const message =
+              typeof rpcError?.message === "string" &&
+              /missing pickup locations/i.test(rpcError.message)
+                ? "Order paid, but at least one listing is missing a pickup location. Ask the seller to update listing location details."
+                : "Order paid, but delivery assignment is still processing. Refresh Orders in a moment.";
+            setProcessingWarning(message);
           } else {
             console.log(
               "Delivery orders created via RPC for order:",
@@ -186,7 +209,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           }
         }
 
-        // 6. Clean up AsyncStorage
+        // 8. Clean up AsyncStorage
         await AsyncStorage.removeItem("pendingOrderId");
         await AsyncStorage.removeItem("pendingOrderListingIds");
         await AsyncStorage.removeItem("pendingDeliveryOrder");
@@ -245,6 +268,12 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           Thank you for your purchase. Your order has been confirmed and is
           being processed.
         </Text>
+
+        {processingWarning ? (
+          <View style={styles.warningBox}>
+            <Text style={styles.warningText}>{processingWarning}</Text>
+          </View>
+        ) : null}
 
         {/* Order Info */}
         <View style={styles.infoBox}>
@@ -325,6 +354,21 @@ const styles = StyleSheet.create({
     color: Colors.darkTeal,
     marginLeft: Spacing.md,
     flex: 1,
+  },
+  warningBox: {
+    width: "100%",
+    backgroundColor: "#FFF7ED",
+    borderColor: "#FB923C",
+    borderWidth: 1,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  warningText: {
+    ...Typography.bodySmall,
+    color: "#9A3412",
+    textAlign: "left",
+    lineHeight: 20,
   },
   buttonContainer: {
     width: "100%",

@@ -10,11 +10,19 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, Receipt, ChevronLeft, Ban } from "lucide-react-native";
+import {
+  ChevronRight,
+  Receipt,
+  ChevronLeft,
+  Ban,
+  ShoppingCart,
+} from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import { alert } from "../lib/utils/platform";
+import { addOrderToCart, summarizeBatchResults } from "../lib/api/repeatBuying";
 
 type PastOrdersNavigationProp = NativeStackNavigationProp<any>;
 
@@ -39,6 +47,24 @@ const PastOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [reorderingOrderId, setReorderingOrderId] = useState<number | null>(
+    null,
+  );
+
+  const buildReorderMessage = (rows: any[]) => {
+    const summary = summarizeBatchResults(rows);
+    if (summary.total === 0 || summary.skipped === summary.total) {
+      return "No available items from this order could be added to cart.";
+    }
+    return [
+      `${summary.added + summary.merged} item${summary.added + summary.merged === 1 ? "" : "s"} added.`,
+      summary.skipped > 0
+        ? `${summary.skipped} unavailable item${summary.skipped === 1 ? "" : "s"} skipped.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
 
   const fetchOrders = async () => {
     try {
@@ -85,6 +111,28 @@ const PastOrders: React.FC = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchOrders();
+  };
+
+  const handleOrderAgain = async (orderId: number) => {
+    if (reorderingOrderId) return;
+    try {
+      setReorderingOrderId(orderId);
+      const rows = await addOrderToCart(orderId);
+      const message = buildReorderMessage(rows);
+      alert("Added to cart", message, [
+        { text: "Stay here", style: "cancel" },
+        {
+          text: "Open cart",
+          onPress: () =>
+            navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
+        },
+      ]);
+    } catch (error) {
+      console.error("Order-again failed:", error);
+      alert("Error", "Couldn't reorder this past order.");
+    } finally {
+      setReorderingOrderId(null);
+    }
   };
 
   const formatPrice = (cents: number) =>
@@ -142,6 +190,28 @@ const PastOrders: React.FC = () => {
             {item.delivery_method === "delivery" ? "Delivery" : "Pickup"}
             {isCancelled ? " · Cancelled" : ""}
           </Text>
+          {!isCancelled && (
+            <TouchableOpacity
+              style={[
+                styles.reorderButton,
+                reorderingOrderId === item.id && styles.reorderButtonDisabled,
+              ]}
+              onPress={(event: any) => {
+                event?.stopPropagation?.();
+                void handleOrderAgain(item.id);
+              }}
+              disabled={reorderingOrderId === item.id}
+            >
+              {reorderingOrderId === item.id ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <>
+                  <ShoppingCart color={Colors.white} size={14} />
+                  <Text style={styles.reorderButtonText}>Order Again</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
         <ChevronRight
           color={isCancelled ? "#DC2626" : Colors.mutedGray}
@@ -307,6 +377,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Typography.bodyMedium.fontFamily,
     color: Colors.mutedGray,
+  },
+  reorderButton: {
+    marginTop: Spacing.sm,
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    backgroundColor: Colors.primary_blue,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  reorderButtonDisabled: {
+    opacity: 0.75,
+  },
+  reorderButtonText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.white,
+    fontWeight: "700",
   },
   cancelledSubtext: {
     color: "#B91C1C",

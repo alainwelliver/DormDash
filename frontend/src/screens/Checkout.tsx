@@ -193,6 +193,40 @@ const Checkout: React.FC = () => {
 
   const [placingOrder, setPlacingOrder] = useState(false);
 
+  const getDeliveryListingsMissingPickup = async () => {
+    const listingIds = Array.from(
+      new Set(selectedItems.map((item) => item.listing_id)),
+    );
+    if (listingIds.length === 0) return [];
+
+    const [pickupResult, listingResult] = await Promise.all([
+      supabase
+        .from("listing_pickup_locations")
+        .select("listing_id")
+        .in("listing_id", listingIds),
+      supabase
+        .from("listings")
+        .select("id, title, pickup_address, pickup_lat, pickup_lng")
+        .in("id", listingIds),
+    ]);
+
+    if (pickupResult.error) throw pickupResult.error;
+    if (listingResult.error) throw listingResult.error;
+
+    const hasPickupLocation = new Set(
+      (pickupResult.data || []).map((row: any) => Number(row.listing_id)),
+    );
+
+    return (listingResult.data || []).filter((listing: any) => {
+      if (hasPickupLocation.has(Number(listing.id))) return false;
+      return !(
+        listing.pickup_address &&
+        listing.pickup_lat != null &&
+        listing.pickup_lng != null
+      );
+    });
+  };
+
   const handlePlaceOrder = () => {
     if (deliveryMethod === "delivery" && !selectedAddress) {
       alert("Error", "Please select a delivery address");
@@ -222,6 +256,25 @@ const Checkout: React.FC = () => {
                 alert("Error", "Please log in to place an order");
                 setPlacingOrder(false);
                 return;
+              }
+
+              if (deliveryMethod === "delivery") {
+                const listingsMissingPickup =
+                  await getDeliveryListingsMissingPickup();
+
+                if (listingsMissingPickup.length > 0) {
+                  const missingTitlePreview = listingsMissingPickup
+                    .slice(0, 3)
+                    .map((listing: any) => listing.title || "Untitled listing")
+                    .join(", ");
+                  const missingCount = listingsMissingPickup.length;
+                  alert(
+                    "Delivery unavailable for some items",
+                    `${missingTitlePreview}${missingCount > 3 ? ", ..." : ""}\n\nOne or more items are missing pickup location details, so this delivery order cannot be created yet. Remove these items or choose pickup.`,
+                  );
+                  setPlacingOrder(false);
+                  return;
+                }
               }
 
               const deliveryAddr =

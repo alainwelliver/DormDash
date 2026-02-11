@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   StatusBar,
   Platform,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,6 +27,8 @@ import {
   Trash2,
   ImageIcon,
   ArrowRight,
+  BookmarkPlus,
+  RotateCcw,
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -46,9 +50,17 @@ import {
   StickyActionBar,
   SurfaceCard,
 } from "../components";
+import {
+  addSavedCartToCart,
+  createSavedCartFromCurrentCart,
+  fetchSavedCarts,
+  summarizeBatchResults,
+} from "../lib/api/repeatBuying";
+import type { SavedCart } from "../types/repeatBuying";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
+  SavedCarts: undefined;
 }>;
 
 interface CartItem {
@@ -69,6 +81,15 @@ const Cart: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [saveRoutineVisible, setSaveRoutineVisible] = useState(false);
+  const [loadRoutineVisible, setLoadRoutineVisible] = useState(false);
+  const [routineName, setRoutineName] = useState("");
+  const [savingRoutine, setSavingRoutine] = useState(false);
+  const [loadingRoutines, setLoadingRoutines] = useState(false);
+  const [applyingRoutineId, setApplyingRoutineId] = useState<number | null>(
+    null,
+  );
+  const [savedCarts, setSavedCarts] = useState<SavedCart[]>([]);
 
   // Get user ID on mount
   useEffect(() => {
@@ -218,6 +239,81 @@ const Cart: React.FC = () => {
     });
   };
 
+  const loadSavedRoutines = async () => {
+    try {
+      setLoadingRoutines(true);
+      const rows = await fetchSavedCarts();
+      setSavedCarts(rows);
+    } catch (error) {
+      console.error("Error loading saved routines:", error);
+      alert("Error", "Couldn't load your saved routines.");
+    } finally {
+      setLoadingRoutines(false);
+    }
+  };
+
+  const handleSaveRoutine = async () => {
+    const trimmed = routineName.trim();
+    if (!trimmed) {
+      alert("Name required", "Please enter a name for this routine.");
+      return;
+    }
+
+    try {
+      setSavingRoutine(true);
+      await createSavedCartFromCurrentCart(trimmed);
+      setSaveRoutineVisible(false);
+      setRoutineName("");
+      alert("Saved", `"${trimmed}" is ready in your routines.`);
+      void loadSavedRoutines();
+    } catch (error: any) {
+      console.error("Error saving routine:", error);
+      const message =
+        typeof error?.message === "string" &&
+        error.message.toLowerCase().includes("empty cart")
+          ? "Your cart is empty. Add at least one item first."
+          : "Couldn't save routine right now.";
+      alert("Error", message);
+    } finally {
+      setSavingRoutine(false);
+    }
+  };
+
+  const handleOpenLoadRoutine = () => {
+    setLoadRoutineVisible(true);
+    void loadSavedRoutines();
+  };
+
+  const handleApplyRoutine = async (savedCart: SavedCart) => {
+    if (applyingRoutineId) return;
+
+    try {
+      setApplyingRoutineId(savedCart.id);
+      const rows = await addSavedCartToCart(savedCart.id);
+      const summary = summarizeBatchResults(rows);
+      const message =
+        summary.total === 0 || summary.skipped === summary.total
+          ? "No available items from this routine could be added."
+          : [
+              `${summary.added + summary.merged} item${summary.added + summary.merged === 1 ? "" : "s"} added to cart.`,
+              summary.skipped > 0
+                ? `${summary.skipped} unavailable item${summary.skipped === 1 ? "" : "s"} skipped.`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+      alert("Routine loaded", message);
+      setLoadRoutineVisible(false);
+      queryClient.invalidateQueries({ queryKey: ["cart", userId] });
+    } catch (error) {
+      console.error("Error applying routine:", error);
+      alert("Error", "Couldn't add this routine to cart.");
+    } finally {
+      setApplyingRoutineId(null);
+    }
+  };
+
   // Loading State
   if (loading) {
     return (
@@ -311,6 +407,22 @@ const Cart: React.FC = () => {
           <Text style={styles.selectionInsightText}>
             Items stay selected as you adjust quantities.
           </Text>
+          <View style={styles.routineRow}>
+            <TouchableOpacity
+              style={styles.routineButton}
+              onPress={() => setSaveRoutineVisible(true)}
+            >
+              <BookmarkPlus color={Colors.darkTeal} size={14} />
+              <Text style={styles.routineButtonText}>Save Routine</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.routineButton}
+              onPress={handleOpenLoadRoutine}
+            >
+              <RotateCcw color={Colors.darkTeal} size={14} />
+              <Text style={styles.routineButtonText}>Load Routine</Text>
+            </TouchableOpacity>
+          </View>
         </SurfaceCard>
 
         {cartItems.map((item) => (
@@ -431,6 +543,117 @@ const Cart: React.FC = () => {
         </View>
       </StickyActionBar>
 
+      <Modal
+        visible={saveRoutineVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSaveRoutineVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Save current cart</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Routine name (ex: Weekday Lunch)"
+              value={routineName}
+              onChangeText={setRoutineName}
+              maxLength={60}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setSaveRoutineVisible(false)}
+                disabled={savingRoutine}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalPrimaryButton}
+                onPress={() => void handleSaveRoutine()}
+                disabled={savingRoutine}
+              >
+                {savingRoutine ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.modalPrimaryText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={loadRoutineVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLoadRoutineVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Load routine</Text>
+            {loadingRoutines ? (
+              <ActivityIndicator
+                style={{ marginVertical: Spacing.md }}
+                color={Colors.primary_blue}
+              />
+            ) : savedCarts.length === 0 ? (
+              <Text style={styles.modalEmptyText}>
+                No routines yet. Save your current cart first.
+              </Text>
+            ) : (
+              <ScrollView style={styles.routineList}>
+                {savedCarts.map((savedCart) => (
+                  <TouchableOpacity
+                    key={savedCart.id}
+                    style={styles.routineListItem}
+                    onPress={() => void handleApplyRoutine(savedCart)}
+                    disabled={applyingRoutineId === savedCart.id}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.routineListName}>
+                        {savedCart.name}
+                      </Text>
+                      <Text style={styles.routineListMeta}>
+                        {savedCart.item_count} item
+                        {savedCart.item_count === 1 ? "" : "s"}
+                      </Text>
+                    </View>
+                    {applyingRoutineId === savedCart.id ? (
+                      <ActivityIndicator
+                        color={Colors.primary_blue}
+                        size="small"
+                      />
+                    ) : (
+                      <Text style={styles.routineListAction}>Add</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setLoadRoutineVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Close</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSecondaryButton}
+                onPress={() => {
+                  setLoadRoutineVisible(false);
+                  navigation.navigate("SavedCarts");
+                }}
+              >
+                <Text style={styles.modalSecondaryText}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Filler for behind the floating tab bar */}
       <View
         style={{
@@ -507,6 +730,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
+  },
+  routineRow: {
+    marginTop: Spacing.sm,
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  routineButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+  },
+  routineButtonText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.darkTeal,
+    fontWeight: "700",
   },
   webScrollContent: {
     alignSelf: "center",
@@ -662,6 +907,121 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.white,
     marginRight: Spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.lg,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: Typography.heading4.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.lightGray,
+    color: Colors.darkTeal,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontSize: 15,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: Spacing.sm,
+  },
+  modalCancelButton: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 4,
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+  },
+  modalPrimaryButton: {
+    backgroundColor: Colors.primary_blue,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 4,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 70,
+  },
+  modalPrimaryText: {
+    fontSize: 14,
+    fontFamily: Typography.buttonText.fontFamily,
+    fontWeight: "700",
+    color: Colors.white,
+  },
+  modalSecondaryButton: {
+    backgroundColor: Colors.primary_accent,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 4,
+  },
+  modalSecondaryText: {
+    fontSize: 14,
+    fontFamily: Typography.buttonText.fontFamily,
+    color: Colors.white,
+    fontWeight: "700",
+  },
+  modalEmptyText: {
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
+  routineList: {
+    maxHeight: 280,
+  },
+  routineListItem: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.lightGray,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  routineListName: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  routineListMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
+  routineListAction: {
+    fontSize: 13,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    color: Colors.primary_blue,
+    fontWeight: "700",
   },
   emptyContainer: {
     flex: 1,

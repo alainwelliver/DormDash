@@ -10,7 +10,14 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronLeft, Receipt, Ban, MapPin, Bike } from "lucide-react-native";
+import {
+  ChevronLeft,
+  Receipt,
+  Ban,
+  MapPin,
+  Bike,
+  ShoppingCart,
+} from "lucide-react-native";
 import {
   useFocusEffect,
   useNavigation,
@@ -22,6 +29,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import NativeOSMMap from "../components/NativeOSMMap";
 import { getMapTileUrlTemplate } from "../lib/osm";
+import { addOrderToCart, summarizeBatchResults } from "../lib/api/repeatBuying";
 
 type OrderDetailsNavigationProp = NativeStackNavigationProp<any>;
 
@@ -151,6 +159,7 @@ const OrderDetails: React.FC = () => {
   const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>([]);
   const [trackingLocation, setTrackingLocation] =
     useState<TrackingLocation | null>(null);
+  const [reordering, setReordering] = useState(false);
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
@@ -403,6 +412,41 @@ const OrderDetails: React.FC = () => {
         },
       ],
     );
+  };
+
+  const handleOrderAgain = async () => {
+    if (!order || reordering) return;
+
+    try {
+      setReordering(true);
+      const rows = await addOrderToCart(order.id);
+      const summary = summarizeBatchResults(rows);
+      const message =
+        summary.total === 0 || summary.skipped === summary.total
+          ? "No currently available items from this order could be added."
+          : [
+              `${summary.added + summary.merged} item${summary.added + summary.merged === 1 ? "" : "s"} added to cart.`,
+              summary.skipped > 0
+                ? `${summary.skipped} unavailable item${summary.skipped === 1 ? "" : "s"} skipped.`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+      alert("Added to cart", message, [
+        { text: "Stay here", style: "cancel" },
+        {
+          text: "Open cart",
+          onPress: () =>
+            navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
+        },
+      ]);
+    } catch (error) {
+      console.error("Order-again failed:", error);
+      alert("Error", "Couldn't add this order to your cart.");
+    } finally {
+      setReordering(false);
+    }
   };
 
   const statusColors = order ? getStatusColors(order.status) : null;
@@ -674,6 +718,23 @@ const OrderDetails: React.FC = () => {
             ))}
           </View>
 
+          {(order.order_items || []).length > 0 ? (
+            <TouchableOpacity
+              style={[styles.orderAgainButton, reordering && { opacity: 0.75 }]}
+              onPress={handleOrderAgain}
+              disabled={reordering}
+            >
+              {reordering ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <>
+                  <ShoppingCart size={18} color={Colors.white} />
+                  <Text style={styles.orderAgainButtonText}>Order Again</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : null}
+
           {canCancel ? (
             <TouchableOpacity
               style={[styles.cancelButton, cancelling && { opacity: 0.7 }]}
@@ -892,7 +953,7 @@ const styles = StyleSheet.create({
     color: Colors.darkTeal,
   },
   cancelButton: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     marginBottom: Spacing.lg,
     backgroundColor: Colors.error,
     borderRadius: BorderRadius.medium,
@@ -901,6 +962,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.xs,
     paddingVertical: Spacing.md,
+  },
+  orderAgainButton: {
+    marginTop: Spacing.lg,
+    backgroundColor: Colors.primary_blue,
+    borderRadius: BorderRadius.medium,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+  },
+  orderAgainButtonText: {
+    fontSize: 15,
+    color: Colors.white,
+    fontFamily: Typography.buttonText.fontFamily,
+    fontWeight: "700",
   },
   cancelButtonText: {
     fontSize: 15,

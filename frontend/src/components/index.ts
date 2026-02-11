@@ -10,6 +10,7 @@ export { default as LiveBadge } from "./LiveBadge";
 export { default as EmptyState } from "./EmptyState";
 export { default as SearchBar } from "./SearchBar";
 export { default as Toast } from "./Toast";
+export { default as BuyAgainRail } from "./BuyAgainRail";
 
 // Loading States
 export {

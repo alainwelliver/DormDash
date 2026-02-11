@@ -31,4 +31,16 @@ describe("map tile template", () => {
       "/styles/v1/mapbox/navigation-day-v1/tiles/256/",
     );
   });
+
+  test("falls back to OSM when mapbox token is whitespace", () => {
+    const env = {
+      EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: "   ",
+      EXPO_PUBLIC_OSM_TILE_URL_TEMPLATE:
+        "https://tiles.example.com/{z}/{x}/{y}.png",
+    };
+    expect(getMapTileUrlTemplateFromEnv(env)).toBe(
+      "https://tiles.example.com/{z}/{x}/{y}.png",
+    );
+    expect(getMapAttributionTextFromEnv(env)).toBe("OpenStreetMap");
+  });
 });

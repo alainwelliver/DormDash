@@ -15,13 +15,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus, SlidersHorizontal, Zap } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
 import FilterModal from "../components/FilterModal";
 import EmptyState from "../components/EmptyState";
 import { ListingGridSkeleton } from "../components/SkeletonLoader";
 import { useListings, useCategories, useTags } from "../lib/api/queries";
 
 import ListingCard from "../components/ListingCard";
-import { LiveBadge, SurfaceCard } from "../components";
+import { BuyAgainRail, LiveBadge, SurfaceCard } from "../components";
 import {
   Colors,
   SemanticColors,
@@ -30,6 +31,7 @@ import {
   WebLayout,
   Shadows,
 } from "../assets/styles";
+import { fetchBuyAgainListings } from "../lib/api/repeatBuying";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -90,6 +92,11 @@ const Feed: React.FC = () => {
 
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
+  const { data: buyAgainListings = [], isLoading: buyAgainLoading } = useQuery({
+    queryKey: ["buyAgainListings", "feed"],
+    queryFn: () => fetchBuyAgainListings(10),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const onRefresh = () => {
     refetch();
@@ -189,6 +196,12 @@ const Feed: React.FC = () => {
       <View
         style={[styles.listHeaderPanel, isWeb && styles.listHeaderPanelWeb]}
       >
+        <BuyAgainRail
+          title="Buy Again"
+          subtitle="Fast reorder from your recent favorites"
+          listings={buyAgainListings as any}
+          loading={buyAgainLoading}
+        />
         <View style={styles.quickChipsRow}>
           <TouchableOpacity
             style={[
@@ -251,7 +264,7 @@ const Feed: React.FC = () => {
         </SurfaceCard>
       </View>
     ),
-    [isCompactMobile, isWeb, quickMode],
+    [isCompactMobile, isWeb, quickMode, buyAgainListings, buyAgainLoading],
   );
 
   return (

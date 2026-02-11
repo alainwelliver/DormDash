@@ -21,6 +21,7 @@ import {
   CreditCard,
   ChevronRight,
   X,
+  RefreshCw,
 } from "lucide-react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -59,6 +60,7 @@ interface UserStats {
 type ProfileNavigationProp = NativeStackNavigationProp<{
   MyListings: undefined;
   PastOrders: undefined;
+  SavedCarts: undefined;
   AddressList: undefined;
   PaymentList: undefined;
 }>;
@@ -318,6 +320,12 @@ const Profile: React.FC = () => {
       IconComponent: Clock,
       route: "PastOrders",
       badge: "History",
+    },
+    {
+      title: "Saved Routines",
+      IconComponent: RefreshCw,
+      route: "SavedCarts",
+      badge: "Quick Buy",
     },
     {
       title: "Address",
