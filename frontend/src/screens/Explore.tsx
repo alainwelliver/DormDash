@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,8 +22,15 @@ import SearchBar from "../components/SearchBar";
 import EmptyState from "../components/EmptyState";
 import { ListingGridSkeleton } from "../components/SkeletonLoader";
 import {
+  LiveBadge,
+  SectionHeader,
+  StatusPill,
+  SurfaceCard,
+} from "../components";
+import {
   Colors,
   Fonts,
+  SemanticColors,
   Typography,
   Spacing,
   BorderRadius,
@@ -78,6 +85,23 @@ const Explore: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [quickMode, setQuickMode] = useState<"all" | "budget" | "fresh">("all");
+
+  const resetFilters = useCallback(() => {
+    setSelectedCategory(null);
+    setSelectedTags([]);
+    setPriceRange(null);
+    setQuickMode("all");
+  }, []);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCategory) count += 1;
+    if (selectedTags.length > 0) count += 1;
+    if (priceRange) count += 1;
+    if (quickMode !== "all") count += 1;
+    return count;
+  }, [selectedCategory, selectedTags.length, priceRange, quickMode]);
 
   const loadFilterData = async () => {
     const { data: cats } = await supabase
@@ -134,10 +158,25 @@ const Explore: React.FC = () => {
   );
 
   useEffect(() => {
+    let processed = listings;
+
+    if (quickMode === "budget") {
+      processed = processed.filter(
+        (listing) => Number(listing.price_cents) <= 1000,
+      );
+    } else if (quickMode === "fresh") {
+      const now = Date.now();
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+      processed = processed.filter((listing) => {
+        if (!listing.created_at) return false;
+        return now - new Date(listing.created_at).getTime() <= threeDaysMs;
+      });
+    }
+
     if (searchQuery.trim() === "") {
-      setFilteredListings(listings);
+      setFilteredListings(processed);
     } else {
-      const filtered = listings.filter((listing) => {
+      const filtered = processed.filter((listing) => {
         const query = searchQuery.toLowerCase();
         const titleMatch = listing.title?.toLowerCase().includes(query);
         const descriptionMatch = listing.description
@@ -147,7 +186,7 @@ const Explore: React.FC = () => {
       });
       setFilteredListings(filtered);
     }
-  }, [searchQuery, listings]);
+  }, [searchQuery, listings, quickMode]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -166,18 +205,14 @@ const Explore: React.FC = () => {
     }
 
     if (filteredListings.length === 0) {
-      if (selectedCategory || selectedTags.length > 0 || priceRange) {
+      if (activeFilterCount > 0) {
         return (
           <EmptyState
             icon="filter-off"
             title="No results found"
             subtitle="Try adjusting your filters to see more listings"
             actionLabel="Clear Filters"
-            onAction={() => {
-              setSelectedCategory(null);
-              setSelectedTags([]);
-              setPriceRange(null);
-            }}
+            onAction={resetFilters}
           />
         );
       } else if (searchQuery.trim() !== "") {
@@ -240,15 +275,25 @@ const Explore: React.FC = () => {
         ]}
       >
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
-          <Text style={styles.headerTitle}>Explore</Text>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate("CreateListing")}
-            style={[styles.newListingButton, isWeb && styles.webButton]}
-          >
-            <Plus size={20} color={Colors.white} />
-            <Text style={styles.newListingText}>new listing</Text>
-          </TouchableOpacity>
+          <SectionHeader
+            title="Explore"
+            subtitle="Fast campus discovery across listings"
+            rightSlot={<LiveBadge label="Explore live" />}
+            style={styles.heroHeader}
+          />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.newListingButton, isWeb && styles.webButton]}
+              onPress={() => navigation.navigate("CreateListing")}
+            >
+              <Plus size={18} color={Colors.white} />
+              <Text style={styles.newListingText}>Create Listing</Text>
+            </TouchableOpacity>
+            <StatusPill
+              label={`${filteredListings.length} results`}
+              tone="info"
+            />
+          </View>
         </View>
       </View>
 
@@ -268,21 +313,68 @@ const Explore: React.FC = () => {
             <SlidersHorizontal color={Colors.white} size={22} />
           </TouchableOpacity>
         </View>
-        {/* Active filters indicator */}
-        {(selectedCategory || selectedTags.length > 0 || priceRange) && (
-          <View style={styles.activeFiltersRow}>
-            <FilterX color={Colors.primary_green} size={16} />
-            <Text style={styles.activeFiltersText}>Filters active</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setSelectedCategory(null);
-                setSelectedTags([]);
-                setPriceRange(null);
-              }}
+        <View style={styles.quickFiltersRow}>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              quickMode === "all" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => setQuickMode("all")}
+          >
+            <Text
+              style={[
+                styles.quickFilterText,
+                quickMode === "all" && styles.quickFilterTextActive,
+              ]}
             >
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              quickMode === "budget" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => setQuickMode("budget")}
+          >
+            <Text
+              style={[
+                styles.quickFilterText,
+                quickMode === "budget" && styles.quickFilterTextActive,
+              ]}
+            >
+              Under $10
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              quickMode === "fresh" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => setQuickMode("fresh")}
+          >
+            <Text
+              style={[
+                styles.quickFilterText,
+                quickMode === "fresh" && styles.quickFilterTextActive,
+              ]}
+            >
+              New (3d)
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* Active filters indicator */}
+        {activeFilterCount > 0 && (
+          <SurfaceCard variant="glass" style={styles.activeFiltersRow}>
+            <FilterX color={Colors.primary_green} size={16} />
+            <Text style={styles.activeFiltersText}>
+              {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}{" "}
+              active
+            </Text>
+            <TouchableOpacity onPress={resetFilters}>
               <Text style={styles.clearFiltersText}>Clear all</Text>
             </TouchableOpacity>
-          </View>
+          </SurfaceCard>
         )}
       </View>
 
@@ -322,15 +414,22 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.lg,
   },
   headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    alignItems: "stretch",
     paddingHorizontal: Spacing.lg,
+  },
+  heroHeader: {
+    marginBottom: Spacing.sm,
   },
   webHeaderContent: {
     maxWidth: WebLayout.maxContentWidth,
     width: "100%",
     alignSelf: "center",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.md,
   },
   headerTitle: {
     color: Colors.white,
@@ -341,13 +440,16 @@ const styles = StyleSheet.create({
   newListingButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    padding: 4,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary_blue,
+    borderRadius: 999,
   },
   newListingText: {
     color: Colors.white,
     fontSize: Typography.bodySmall.fontSize,
-    fontWeight: "500",
+    fontWeight: "700",
   },
   webButton: {
     cursor: "pointer",
@@ -365,6 +467,34 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     width: "100%",
     maxWidth: WebLayout.maxContentWidth,
+  },
+  quickFiltersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
+    marginTop: Spacing.sm,
+  },
+  quickFilterChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: SemanticColors.borderSubtle,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+  },
+  quickFilterChipActive: {
+    backgroundColor: Colors.primary_green,
+    borderColor: Colors.primary_green,
+  },
+  quickFilterText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  quickFilterTextActive: {
+    color: Colors.white,
   },
   searchBar: {
     flex: 1,
@@ -387,6 +517,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: Spacing.sm,
     gap: Spacing.xs,
+    maxWidth: WebLayout.maxContentWidth,
   },
   activeFiltersText: {
     fontSize: 12,

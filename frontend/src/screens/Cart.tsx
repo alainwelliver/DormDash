@@ -314,7 +314,11 @@ const Cart: React.FC = () => {
         </SurfaceCard>
 
         {cartItems.map((item) => (
-          <SurfaceCard key={item.id} variant="default" style={styles.cartItemCard}>
+          <SurfaceCard
+            key={item.id}
+            variant="default"
+            style={styles.cartItemCard}
+          >
             {/* Checkbox */}
             <TouchableOpacity
               style={styles.checkbox}

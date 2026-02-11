@@ -5,7 +5,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   ActivityIndicator,
@@ -40,6 +39,7 @@ import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { StatusPill, StickyActionBar, SurfaceCard } from "../components";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isWeb = Platform.OS === "web";
@@ -466,14 +466,20 @@ export default function ProductDetail({
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.headerIconButton}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <ArrowLeft size={24} color={Colors.darkTeal} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
         {isOwner ? (
           <TouchableOpacity
+            style={styles.headerIconButton}
             onPress={() => setMenuVisible(true)}
             disabled={deleting}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <MoreVertical
               size={20}
@@ -481,7 +487,7 @@ export default function ProductDetail({
             />
           </TouchableOpacity>
         ) : (
-          <View style={{ width: 24 }} />
+          <View style={styles.headerIconButtonSpacer} />
         )}
       </View>
 
@@ -619,6 +625,19 @@ export default function ProductDetail({
           </View>
 
           <Text style={styles.description}>{listing.description}</Text>
+
+          {isOwner ? (
+            <View style={styles.ownerActionsRow}>
+              <TouchableOpacity
+                style={styles.ownerEditButton}
+                onPress={handleEditListing}
+                disabled={deleting}
+              >
+                <Pencil size={18} color={Colors.primary_blue} />
+                <Text style={styles.ownerEditButtonText}>Edit Listing</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </View>
 
         {/* Seller Info */}
@@ -804,6 +823,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
   },
+  headerIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerIconButtonSpacer: {
+    width: 44,
+    height: 44,
+  },
   headerTitle: {
     ...Typography.heading4,
     color: Colors.darkTeal,
@@ -894,6 +924,26 @@ const styles = StyleSheet.create({
     color: Colors.mutedGray,
     lineHeight: 22,
     marginBottom: Spacing.lg,
+  },
+  ownerActionsRow: {
+    marginTop: Spacing.xs,
+  },
+  ownerEditButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  ownerEditButtonText: {
+    ...Typography.bodySmall,
+    color: Colors.primary_blue,
+    fontWeight: "700",
   },
   sellerSection: {
     paddingHorizontal: Spacing.lg,

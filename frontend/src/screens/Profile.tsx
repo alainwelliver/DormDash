@@ -18,6 +18,7 @@ import {
   List,
   Clock,
   MapPin,
+  CreditCard,
   ChevronRight,
   X,
 } from "lucide-react-native";
@@ -30,6 +31,12 @@ import {
   BorderRadius,
   WebLayout,
 } from "../assets/styles";
+import {
+  LiveBadge,
+  SectionHeader,
+  StatusPill,
+  SurfaceCard,
+} from "../components";
 import { supabase } from "../lib/supabase";
 import {
   alert,
@@ -300,9 +307,30 @@ const Profile: React.FC = () => {
   };
 
   const menuItems = [
-    { title: "My Listings", IconComponent: List, route: "MyListings" },
-    { title: "Past Orders", IconComponent: Clock, route: "PastOrders" },
-    { title: "Address", IconComponent: MapPin, route: "AddressList" },
+    {
+      title: "My Listings",
+      IconComponent: List,
+      route: "MyListings",
+      badge: "Selling",
+    },
+    {
+      title: "Past Orders",
+      IconComponent: Clock,
+      route: "PastOrders",
+      badge: "History",
+    },
+    {
+      title: "Address",
+      IconComponent: MapPin,
+      route: "AddressList",
+      badge: "Delivery",
+    },
+    {
+      title: "Payment Methods",
+      IconComponent: CreditCard,
+      route: "PaymentList",
+      badge: "Billing",
+    },
   ];
 
   return (
@@ -315,71 +343,83 @@ const Profile: React.FC = () => {
           isWeb && styles.webScrollContent,
         ]}
       >
-        {/* Profile Header */}
-        <View style={[styles.profileHeader, isWeb && styles.webProfileHeader]}>
-          <TouchableOpacity
-            style={styles.avatarWrapper}
-            onPress={() => setIsAvatarModalVisible(true)}
-          >
-            <View style={styles.avatarContainer}>
-              <Image
-                source={
-                  avatarUrl
-                    ? { uri: avatarUrl }
-                    : { uri: "https://via.placeholder.com/120" }
-                }
-                style={styles.avatar}
-              />
-            </View>
-            <View style={styles.avatarPlusButton}>
-              <Plus color={Colors.white} size={18} />
-            </View>
-          </TouchableOpacity>
+        <View style={[styles.heroSection, isWeb && styles.webContainer]}>
+          <SectionHeader
+            title="Profile"
+            subtitle="Everything about your account and activity"
+            rightSlot={<LiveBadge label="Account live" />}
+            style={styles.profileSectionHeader}
+          />
+        </View>
 
-          <View style={styles.infoCard}>
+        {/* Profile Header */}
+        <View style={[styles.profileHeader, isWeb && styles.webContainer]}>
+          <SurfaceCard variant="glass" style={styles.infoCard}>
             <View style={styles.infoRow}>
+              <TouchableOpacity
+                style={styles.avatarWrapper}
+                onPress={() => setIsAvatarModalVisible(true)}
+              >
+                <View style={styles.avatarContainer}>
+                  <Image
+                    source={
+                      avatarUrl
+                        ? { uri: avatarUrl }
+                        : { uri: "https://via.placeholder.com/120" }
+                    }
+                    style={styles.avatar}
+                  />
+                </View>
+                <View style={styles.avatarPlusButton}>
+                  <Plus color={Colors.white} size={18} />
+                </View>
+              </TouchableOpacity>
+
               <View style={styles.infoContent}>
                 <Text style={styles.name}>
                   {loading ? "Loading..." : profile.name}
                 </Text>
                 <Text style={styles.email}>{loading ? "" : profile.email}</Text>
                 <Text style={styles.phone}>{loading ? "" : profile.phone}</Text>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleEditProfile}
+                >
+                  <Text style={styles.editButtonText}>Edit Profile</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditProfile}
-              >
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
             </View>
-          </View>
+          </SurfaceCard>
         </View>
 
         {/* Stats Section */}
-        <View
-          style={[styles.statsContainer, isWeb && styles.webStatsContainer]}
-        >
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.listingsCount}</Text>
-            <Text style={styles.statLabel}>Listings</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.ordersCount}</Text>
-            <Text style={styles.statLabel}>Orders</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.reviewsCount}</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
-          </View>
+        <View style={[styles.statsContainer, isWeb && styles.webContainer]}>
+          <SurfaceCard variant="mint" style={styles.statsCard}>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.listingsCount}</Text>
+                <Text style={styles.statLabel}>Listings</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.ordersCount}</Text>
+                <Text style={styles.statLabel}>Orders</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.reviewsCount}</Text>
+                <Text style={styles.statLabel}>Reviews</Text>
+              </View>
+            </View>
+          </SurfaceCard>
         </View>
 
         {/* Menu Items */}
-        <View style={[styles.menuContainer, isWeb && styles.webMenuContainer]}>
+        <View style={[styles.menuContainer, isWeb && styles.webContainer]}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
+            <SurfaceCard
               key={index}
+              variant="default"
               style={[styles.menuItem, isWeb && styles.webButton]}
               onPress={() => {
                 if (item.route) {
@@ -389,19 +429,29 @@ const Profile: React.FC = () => {
                 }
               }}
             >
-              <Text style={styles.menuItemText}>{item.title}</Text>
-              <ChevronRight color={Colors.mutedGray} size={24} />
-            </TouchableOpacity>
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIcon}>
+                  <item.IconComponent color={Colors.primary_blue} size={18} />
+                </View>
+                <Text style={styles.menuItemText}>{item.title}</Text>
+              </View>
+              <View style={styles.menuRight}>
+                <StatusPill label={item.badge} tone="info" />
+                <ChevronRight color={Colors.mutedGray} size={20} />
+              </View>
+            </SurfaceCard>
           ))}
         </View>
 
         {/* Sign Out Button */}
-        <TouchableOpacity
-          style={[styles.signOutButton, isWeb && styles.webButton]}
-          onPress={handleSignOut}
-        >
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
-        </TouchableOpacity>
+        <View style={[styles.signOutWrap, isWeb && styles.webContainer]}>
+          <TouchableOpacity
+            style={[styles.signOutButton, isWeb && styles.webButton]}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -522,29 +572,36 @@ const styles = StyleSheet.create({
   webScrollContent: {
     alignItems: "center",
   },
-  profileHeader: {
-    alignItems: "center",
-    paddingTop: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
+  heroSection: {
     width: "100%",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
   },
-  webProfileHeader: {
-    maxWidth: WebLayout.maxFormWidth,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    backgroundColor: Colors.lightMint,
-    marginHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.medium,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  webStatsContainer: {
+  webContainer: {
     maxWidth: WebLayout.maxFormWidth,
     width: "100%",
     alignSelf: "center",
+  },
+  profileSectionHeader: {
+    marginBottom: Spacing.sm,
+  },
+  profileHeader: {
+    alignItems: "stretch",
+    paddingHorizontal: Spacing.lg,
+    width: "100%",
+  },
+  statsContainer: {
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    width: "100%",
+  },
+  statsCard: {
+    width: "100%",
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
   },
   statItem: {
     alignItems: "center",
@@ -566,18 +623,18 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 40,
+    height: 36,
     backgroundColor: Colors.secondary,
     opacity: 0.3,
   },
   avatarWrapper: {
     position: "relative",
-    marginBottom: Spacing.lg,
+    marginRight: Spacing.lg,
   },
   avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: Colors.lightGray,
     overflow: "hidden",
   },
@@ -600,15 +657,11 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     width: "100%",
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium, // 8px
-    padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
   infoRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   infoContent: {
     flex: 1,
@@ -632,12 +685,18 @@ const styles = StyleSheet.create({
     color: Colors.mutedGray,
   },
   editButton: {
+    marginTop: Spacing.sm,
+    alignSelf: "flex-start",
     paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 999,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   editButtonText: {
-    fontSize: 16,
-    fontFamily: Typography.bodyLarge.fontFamily,
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
     fontWeight: "600",
     color: Colors.primary_blue,
   },
@@ -646,35 +705,48 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     width: "100%",
   },
-  webMenuContainer: {
-    maxWidth: WebLayout.maxFormWidth,
-  },
   menuItem: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.medium, // 8px
-    padding: Spacing.md,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: Spacing.sm,
+  },
+  menuLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  menuIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.lightMint,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.sm,
+  },
+  menuRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
   },
   webButton: {
     cursor: "pointer",
   } as any,
   menuItemText: {
-    fontSize: 18,
-    fontFamily: Typography.bodyLarge.fontFamily,
-    fontWeight: "500",
+    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
     color: Colors.darkTeal,
   },
+  signOutWrap: {
+    paddingHorizontal: Spacing.lg,
+    width: "100%",
+    marginBottom: Spacing.sm,
+  },
   signOutButton: {
-    marginHorizontal: Spacing.lg,
     backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium, // 8px
+    borderRadius: BorderRadius.large,
     paddingVertical: Spacing.md,
     alignItems: "center",
-    marginBottom: Spacing.sm,
-    width: "60%",
+    width: "100%",
     alignSelf: "center",
   },
   signOutButtonText: {

@@ -1,5 +1,11 @@
 import React from "react";
-import { Pressable, StyleSheet, View, ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import {
   BorderRadius,
   Colors,
@@ -13,8 +19,8 @@ type SurfaceVariant = "default" | "glass" | "mint" | "outlined";
 interface SurfaceCardProps {
   children: React.ReactNode;
   variant?: SurfaceVariant;
-  style?: ViewStyle;
-  contentStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
   onPress?: () => void;
   disabled?: boolean;
 }

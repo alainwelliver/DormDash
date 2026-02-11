@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Platform,
-  StyleProp,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from "react-native";
+import { Platform, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Shadows, Spacing } from "../assets/styles";
 
@@ -14,7 +8,10 @@ interface StickyActionBarProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const StickyActionBar: React.FC<StickyActionBarProps> = ({ children, style }) => {
+const StickyActionBar: React.FC<StickyActionBarProps> = ({
+  children,
+  style,
+}) => {
   const insets = useSafeAreaInsets();
 
   return (

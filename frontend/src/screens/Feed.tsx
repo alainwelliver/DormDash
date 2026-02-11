@@ -21,7 +21,7 @@ import { ListingGridSkeleton } from "../components/SkeletonLoader";
 import { useListings, useCategories, useTags } from "../lib/api/queries";
 
 import ListingCard from "../components/ListingCard";
-import { LiveBadge, SectionHeader, SurfaceCard } from "../components";
+import { LiveBadge, SurfaceCard } from "../components";
 import {
   Colors,
   SemanticColors,
@@ -44,6 +44,7 @@ const Feed: React.FC = () => {
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const isCompactMobile = !isWeb && windowWidth < 430;
 
   const getNumColumns = () => {
     if (windowWidth >= 1200) return 4; // Fewer columns for bigger cards
@@ -106,23 +107,29 @@ const Feed: React.FC = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <ListingGridSkeleton
-          numColumns={numColumns}
-          count={numColumns * 3}
-          cardWidth={cardWidth}
-        />
+        <View style={styles.loadingOrEmptyWrap}>
+          {renderListHeaderPanel()}
+          <ListingGridSkeleton
+            numColumns={numColumns}
+            count={numColumns * 3}
+            cardWidth={cardWidth}
+          />
+        </View>
       );
     }
 
     if (processedListings.length === 0) {
       return (
-        <EmptyState
-          icon="package-variant"
-          title="No listings yet"
-          subtitle="Try adjusting your filters or be the first to create a listing!"
-          actionLabel="Create Listing"
-          onAction={() => navigation.navigate("CreateListing")}
-        />
+        <View style={styles.loadingOrEmptyWrap}>
+          {renderListHeaderPanel()}
+          <EmptyState
+            icon="package-variant"
+            title="No listings yet"
+            subtitle="Try adjusting your filters or be the first to create a listing!"
+            actionLabel="Create Listing"
+            onAction={() => navigation.navigate("CreateListing")}
+          />
+        </View>
       );
     }
 
@@ -134,6 +141,7 @@ const Feed: React.FC = () => {
         numColumns={numColumns}
         key={numColumns}
         columnWrapperStyle={numColumns > 1 ? columnWrapperStyle : undefined}
+        ListHeaderComponent={renderListHeaderPanel}
         contentContainerStyle={[
           styles.listContent,
           isWeb && styles.webListContent,
@@ -176,6 +184,76 @@ const Feed: React.FC = () => {
     [isWeb],
   );
 
+  const renderListHeaderPanel = useCallback(
+    () => (
+      <View
+        style={[styles.listHeaderPanel, isWeb && styles.listHeaderPanelWeb]}
+      >
+        <View style={styles.quickChipsRow}>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "all" && styles.quickChipActive,
+              isCompactMobile && styles.quickChipCompact,
+            ]}
+            onPress={() => setQuickMode("all")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "all" && styles.quickChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "budget" && styles.quickChipActive,
+              isCompactMobile && styles.quickChipCompact,
+            ]}
+            onPress={() => setQuickMode("budget")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "budget" && styles.quickChipTextActive,
+              ]}
+            >
+              Under $15
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "new" && styles.quickChipActive,
+              isCompactMobile && styles.quickChipCompact,
+            ]}
+            onPress={() => setQuickMode("new")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "new" && styles.quickChipTextActive,
+              ]}
+            >
+              New
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <SurfaceCard variant="glass" style={styles.metaCard}>
+          <Text style={styles.metaTitle}>Discover faster</Text>
+          <Text style={styles.metaSubtitle}>
+            Tap + to add instantly. Use quick chips for rapid filtering.
+          </Text>
+        </SurfaceCard>
+      </View>
+    ),
+    [isCompactMobile, isWeb, quickMode],
+  );
+
   return (
     <View style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.lightGray} />
@@ -194,90 +272,37 @@ const Feed: React.FC = () => {
       <View
         style={[
           styles.header,
-          { paddingTop: Math.max(insets.top, Spacing.lg) + Spacing.sm },
+          {
+            paddingTop: Math.max(insets.top, Spacing.lg) + Spacing.sm,
+            paddingBottom: Spacing.sm,
+            paddingHorizontal: isCompactMobile ? Spacing.md : Spacing.lg,
+          },
           isWeb && styles.webHeader,
         ]}
       >
-        <SectionHeader
-          title="DormDash"
-          subtitle="Fast campus marketplace"
-          rightSlot={<LiveBadge label="Market live" />}
-          style={styles.heroHeader}
-        />
-
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.quickChip,
-              quickMode === "all" && styles.quickChipActive,
-            ]}
-            onPress={() => setQuickMode("all")}
-          >
-            <Text
-              style={[
-                styles.quickChipText,
-                quickMode === "all" && styles.quickChipTextActive,
-              ]}
+        <View style={styles.collapsedHeaderRow}>
+          <View style={styles.collapsedTitleWrap}>
+            <View style={styles.collapsedTitleRow}>
+              <Text style={styles.collapsedTitle}>DormDash</Text>
+              {!isCompactMobile ? <LiveBadge label="Live" /> : null}
+            </View>
+            <Text style={styles.collapsedSubtitle}>Campus market</Text>
+          </View>
+          <View style={styles.collapsedActions}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => setShowFilters(true)}
             >
-              All
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.quickChip,
-              quickMode === "budget" && styles.quickChipActive,
-            ]}
-            onPress={() => setQuickMode("budget")}
-          >
-            <Text
-              style={[
-                styles.quickChipText,
-                quickMode === "budget" && styles.quickChipTextActive,
-              ]}
+              <SlidersHorizontal size={20} color={Colors.darkTeal} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("CreateListing")}
+              style={styles.compactSellButton}
             >
-              Under $15
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.quickChip,
-              quickMode === "new" && styles.quickChipActive,
-            ]}
-            onPress={() => setQuickMode("new")}
-          >
-            <Text
-              style={[
-                styles.quickChipText,
-                quickMode === "new" && styles.quickChipTextActive,
-              ]}
-            >
-              New
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <SlidersHorizontal size={24} color={Colors.darkTeal} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate("CreateListing")}
-            style={styles.primaryButton}
-          >
-            <Plus size={20} color={Colors.white} strokeWidth={3} />
-            <Text style={styles.primaryButtonText}>Sell</Text>
-          </TouchableOpacity>
+              <Plus size={18} color={Colors.white} strokeWidth={3} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-
-      <View style={[styles.metaRow, isWeb && styles.webMetaRow]}>
-        <SurfaceCard variant="glass" style={styles.metaCard}>
-          <Text style={styles.metaTitle}>Discover faster</Text>
-          <Text style={styles.metaSubtitle}>
-            Tap + to add instantly. Use quick chips for rapid filtering.
-          </Text>
-        </SurfaceCard>
       </View>
 
       {/* Content */}
@@ -321,14 +346,41 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
+    flexDirection: "column",
+    alignItems: "stretch",
     backgroundColor: "transparent",
     zIndex: 10,
   },
-  heroHeader: {
-    marginBottom: 0,
+  collapsedHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: Spacing.sm,
+  },
+  collapsedTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  collapsedTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  collapsedTitle: {
+    ...Typography.heading4,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  collapsedSubtitle: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+  },
+  collapsedActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    flexShrink: 0,
   },
   webHeader: {
     maxWidth: WebLayout.maxContentWidth,
@@ -348,13 +400,20 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: -4,
   },
-  headerActions: {
-    flex: 1,
+  listHeaderPanel: {
+    width: "100%",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  listHeaderPanelWeb: {
+    alignItems: "center",
+  },
+  quickChipsRow: {
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    justifyContent: "flex-end",
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   quickChip: {
     backgroundColor: Colors.white,
@@ -363,6 +422,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
+  },
+  quickChipCompact: {
+    paddingHorizontal: Spacing.sm + 2,
   },
   quickChipActive: {
     backgroundColor: Colors.primary_blue,
@@ -377,32 +439,22 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   iconButton: {
-    padding: Spacing.sm,
+    width: 38,
+    height: 38,
     backgroundColor: Colors.white,
     borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
     ...Shadows.sm,
   },
-  primaryButton: {
+  compactSellButton: {
     backgroundColor: Colors.primary_accent,
-    flexDirection: "row",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    gap: 6,
-    ...Shadows.glow,
-  },
-  primaryButtonText: {
-    color: Colors.white,
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  metaRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  webMetaRow: {
-    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.sm,
   },
   metaCard: {
     width: "100%",
@@ -420,6 +472,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     // Transparent to show watermark
+  },
+  loadingOrEmptyWrap: {
+    flex: 1,
   },
   row: {
     justifyContent: "space-between",

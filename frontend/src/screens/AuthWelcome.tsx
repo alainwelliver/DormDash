@@ -1,9 +1,29 @@
 import React from "react";
-import { StyleSheet, Text, View, Image, Platform } from "react-native";
-import { Button } from "@rneui/themed";
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { WebLayout, Spacing } from "../assets/styles";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Colors,
+  SemanticColors,
+  Shadows,
+  Spacing,
+  Typography,
+  WebLayout,
+} from "../assets/styles";
+import {
+  LiveBadge,
+  SectionHeader,
+  StatusPill,
+  SurfaceCard,
+} from "../components";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -16,34 +36,56 @@ type NavProp = NativeStackNavigationProp<AuthStackParamList, "Welcome">;
 export default function AuthWelcome() {
   const navigation = useNavigation<NavProp>();
   const isWeb = Platform.OS === "web";
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.container, isWeb && styles.webContainer]}>
-      <View style={[styles.contentWrapper, isWeb && styles.webContentWrapper]}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("../../assets/logo.png")}
-            style={[styles.logo, isWeb && styles.webLogo]}
-            resizeMode="contain"
-          />
-        </View>
+      <View style={styles.backgroundOrb} />
+      <View
+        style={[
+          styles.contentWrapper,
+          isWeb && styles.webContentWrapper,
+          { paddingTop: Math.max(insets.top, Spacing.lg) },
+        ]}
+      >
+        <SectionHeader
+          title="DormDash"
+          subtitle="Your Penn marketplace, redesigned for speed"
+          rightSlot={<LiveBadge label="Campus live" />}
+          style={styles.header}
+        />
 
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Login"
-            containerStyle={styles.loginButtonContainer}
-            buttonStyle={[styles.loginButton, isWeb && styles.webButton]}
-            titleStyle={styles.buttonTitle}
-            onPress={() => navigation.navigate("Login")}
-          />
-          <Button
-            title="Register"
-            containerStyle={styles.registerButtonContainer}
-            buttonStyle={[styles.registerButton, isWeb && styles.webButton]}
-            titleStyle={styles.registerButtonTitle}
-            onPress={() => navigation.navigate("Register")}
-          />
-        </View>
+        <SurfaceCard variant="glass" style={styles.heroCard}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require("../../assets/logo.png")}
+              style={[styles.logo, isWeb && styles.webLogo]}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.heroText}>
+            Buy, sell, and get items delivered around campus in minutes.
+          </Text>
+          <View style={styles.pillsRow}>
+            <StatusPill label="Penn Only" tone="success" />
+            <StatusPill label="Fast Checkout" tone="info" />
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={styles.buttonTitle}>Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => navigation.navigate("Register")}
+            >
+              <Text style={styles.registerButtonTitle}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
+        </SurfaceCard>
       </View>
     </View>
   );
@@ -53,77 +95,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.lg,
   },
   webContainer: {
     paddingHorizontal: Spacing.xl,
+    alignItems: "center",
+  },
+  backgroundOrb: {
+    position: "absolute",
+    top: -120,
+    right: -40,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(101, 209, 162, 0.12)",
   },
   contentWrapper: {
     width: "100%",
     flex: 1,
-    justifyContent: "center",
   },
   webContentWrapper: {
-    maxWidth: WebLayout.maxFormWidth,
-    flex: 0,
-    minHeight: 400,
+    maxWidth: WebLayout.maxFormWidth + 80,
+    justifyContent: "center",
+  },
+  header: {
+    marginBottom: Spacing.md,
+  },
+  heroCard: {
+    width: "100%",
+    marginTop: Spacing.sm,
+    borderColor: SemanticColors.borderSubtle,
+    ...Shadows.md,
   },
   logoContainer: {
     alignItems: "center",
-    flex: 1,
     justifyContent: "center",
   },
   logo: {
-    width: 250,
-    height: 125,
-    marginTop: 50,
+    width: 220,
+    height: 110,
   },
   webLogo: {
     width: 300,
     height: 150,
-    marginTop: 0,
   },
-  logoText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#1a5f6b",
+  heroText: {
+    ...Typography.bodyMedium,
+    color: Colors.mutedGray,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  pillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    justifyContent: "center",
+    marginBottom: Spacing.md,
   },
   buttonContainer: {
     width: "100%",
-    marginBottom: 50,
-  },
-  loginButtonContainer: {
-    marginBottom: 12,
+    gap: Spacing.sm,
   },
   loginButton: {
-    backgroundColor: "#31A1E9",
-    paddingVertical: 16,
-    borderRadius: 6,
+    backgroundColor: Colors.primary_blue,
+    paddingVertical: Spacing.md,
+    borderRadius: 999,
+    alignItems: "center",
   },
-  webButton: {
-    cursor: "pointer",
-  } as any,
   buttonTitle: {
-    fontSize: 18,
+    ...Typography.buttonText,
+    color: Colors.white,
+    fontSize: 16,
     fontWeight: "600",
-    letterSpacing: 0.5,
-  },
-  registerButtonContainer: {
-    marginBottom: 12,
   },
   registerButton: {
-    backgroundColor: "transparent",
-    paddingVertical: 16,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#65D1A2",
+    backgroundColor: Colors.white,
+    paddingVertical: Spacing.md,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.primary_green,
+    alignItems: "center",
   },
   registerButtonTitle: {
-    fontSize: 18,
+    ...Typography.buttonText,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#65D1A2",
-    letterSpacing: 0.5,
+    color: Colors.primary_green,
   },
 });

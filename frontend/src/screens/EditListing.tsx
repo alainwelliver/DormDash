@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
   View,
   StyleSheet,
   Text,
@@ -9,24 +10,31 @@ import {
   StatusBar,
   Platform,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Input } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   Colors,
-  Fonts,
+  SemanticColors,
   Typography,
   Spacing,
   BorderRadius,
+  Shadows,
+  WebLayout,
 } from "../assets/styles";
 import { alert, pickImage, uploadImageToSupabase } from "../lib/utils/platform";
-import { LocationPicker, LocationData } from "../components";
+import {
+  LiveBadge,
+  LocationPicker,
+  LocationData,
+  SectionHeader,
+  StatusPill,
+  StickyActionBar,
+  SurfaceCard,
+} from "../components";
 
 type MainStackParamList = {
   MainTabs: undefined;
@@ -59,6 +67,9 @@ function guessMime(ext: string) {
 
 export default function EditListing({ route, navigation }: EditListingProps) {
   const { listingId } = route.params;
+  const { width: windowWidth } = useWindowDimensions();
+  const isWeb = Platform.OS === "web";
+  const isCompact = !isWeb && windowWidth < 390;
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -420,306 +431,366 @@ export default function EditListing({ route, navigation }: EditListingProps) {
   const totalImages = visibleExistingImages.length + localImages.length;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: Colors.white }]}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 40 }}
+      <KeyboardAvoidingView
+        style={styles.safe}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.headerWrap}>
-          <Text style={styles.header}>Edit Listing</Text>
-          <View style={styles.headerUnderline} />
-        </View>
-
-        <Text style={styles.sectionTitle}>Basic Info</Text>
-        <Input
-          label="Title"
-          value={title}
-          onChangeText={setTitle}
-          inputStyle={styles.inputText}
-          labelStyle={styles.inputLabel}
-          containerStyle={styles.inputContainer}
-        />
-        <Input
-          label="Description"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          placeholder="Describe what you're offering..."
-          inputStyle={styles.inputText}
-          labelStyle={styles.inputLabel}
-          containerStyle={styles.inputContainer}
-        />
-        <Input
-          label="Price (USD)"
-          value={price}
-          keyboardType="decimal-pad"
-          onChangeText={setPrice}
-          inputStyle={styles.inputText}
-          labelStyle={styles.inputLabel}
-          containerStyle={styles.inputContainer}
-        />
-
-        <Text style={styles.sectionTitle}>Type</Text>
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, type === "item" && styles.toggleActive]}
-            onPress={() => setType("item")}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                type === "item" && styles.toggleTextActive,
-              ]}
-            >
-              Item
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleBtn,
-              type === "service" && styles.toggleActive,
-            ]}
-            onPress={() => setType("service")}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                type === "service" && styles.toggleTextActive,
-              ]}
-            >
-              Service
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionTitle}>Category</Text>
-        <View style={styles.categoryList}>
-          {cats.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={[
-                styles.categoryChip,
-                cat.id === categoryId && styles.categoryActive,
-              ]}
-              onPress={() => setCategoryId(cat.id)}
-            >
-              <Text
-                style={[
-                  styles.categoryText,
-                  cat.id === categoryId && styles.categoryTextActive,
-                ]}
-              >
-                {cat.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Tags</Text>
-        <View style={styles.tagContainer}>
-          {allTags.map((t) => {
-            const active = selectedTagIds.has(t.id);
-            return (
-              <TouchableOpacity
-                key={t.id}
-                style={[styles.tagChip, active && styles.tagChipActive]}
-                onPress={() => toggleTag(t.id)}
-              >
-                <Text style={[styles.tagText, active && styles.tagTextActive]}>
-                  #{t.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Input
-          label="Add your own tag"
-          placeholder="e.g. delivery, urgent"
-          value={tagText}
-          onChangeText={setTagText}
-          onSubmitEditing={addTagFromText}
-          rightIcon={
-            <Button
-              title="Add"
-              type="clear"
-              titleStyle={styles.linkButtonTitle}
-              onPress={addTagFromText}
-            />
-          }
-          inputStyle={styles.inputText}
-          labelStyle={styles.inputLabel}
-          containerStyle={styles.inputContainer}
-        />
-        {customTags.length > 0 && (
-          <View style={styles.tagContainer}>
-            {customTags.map((name) => (
-              <TouchableOpacity
-                key={name}
-                style={[styles.tagChip, styles.customTagChip]}
-                onPress={() => removeCustomTag(name)}
-              >
-                <Text style={styles.tagText}>#{name} ✕</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        <Text style={styles.sectionTitle}>Images</Text>
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 8,
-            marginBottom: 8,
-            alignItems: "center",
-          }}
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Button
-            title="Pick images"
-            onPress={pickImages}
-            buttonStyle={styles.primaryButton}
-            titleStyle={styles.primaryButtonTitle}
-            disabledStyle={{ backgroundColor: Colors.grayDisabled }}
-            disabled={totalImages >= 5}
-          />
-          <Text style={styles.subtleText}>{totalImages}/5</Text>
-        </View>
+          <View style={[styles.pageWrap, isWeb && styles.webContainer]}>
+            <SectionHeader
+              title="Edit Listing"
+              subtitle="Update details and media before publishing changes"
+              rightSlot={<LiveBadge label="Edit live" />}
+              style={styles.pageHeader}
+            />
 
-        {/* Existing Images */}
-        {visibleExistingImages.length > 0 && (
-          <>
-            <Text style={styles.imageLabel}>
-              Current Images (tap to remove)
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-                {visibleExistingImages.map((img, idx) => (
-                  <TouchableOpacity
-                    key={img.id}
-                    onPress={() => removeExistingImage(img.id)}
+            <SurfaceCard variant="glass" style={styles.sectionCard}>
+              <SectionHeader
+                title="Basic Info"
+                subtitle="Core details shown to buyers"
+                rightSlot={
+                  <StatusPill
+                    label={type === "item" ? "Item" : "Service"}
+                    tone="info"
+                  />
+                }
+                style={styles.sectionHeader}
+              />
+              <Input
+                label="Title"
+                value={title}
+                onChangeText={setTitle}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputBox}
+                containerStyle={styles.inputContainer}
+                placeholder="What are you posting?"
+                placeholderTextColor={Colors.borderGray}
+              />
+              <Input
+                label="Description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                placeholder="Describe what you're offering..."
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={[styles.inputBox, styles.textAreaBox]}
+                containerStyle={styles.inputContainer}
+                placeholderTextColor={Colors.borderGray}
+              />
+              <Input
+                label="Price (USD)"
+                value={price}
+                keyboardType="decimal-pad"
+                onChangeText={setPrice}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputBox}
+                containerStyle={styles.inputContainer}
+                placeholder="0.00"
+                placeholderTextColor={Colors.borderGray}
+              />
+
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleBtn,
+                    type === "item" && styles.toggleActive,
+                  ]}
+                  onPress={() => setType("item")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      type === "item" && styles.toggleTextActive,
+                    ]}
                   >
-                    <Image
-                      source={{ uri: img.url }}
-                      style={{
-                        width: 140,
-                        height: 140,
-                        borderRadius: BorderRadius.medium,
-                      }}
-                    />
-                    <View style={styles.removeOverlay}>
-                      <Text style={styles.removeText}>✕</Text>
-                    </View>
+                    Item
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleBtn,
+                    type === "service" && styles.toggleActive,
+                  ]}
+                  onPress={() => setType("service")}
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      type === "service" && styles.toggleTextActive,
+                    ]}
+                  >
+                    Service
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </SurfaceCard>
+
+            <SurfaceCard variant="default" style={styles.sectionCard}>
+              <SectionHeader
+                title="Category & Tags"
+                subtitle="Tune discovery and search relevance"
+                rightSlot={
+                  <StatusPill
+                    label={`${selectedTagIds.size + customTags.length} tags`}
+                    tone="success"
+                  />
+                }
+                style={styles.sectionHeader}
+              />
+              <Text style={styles.inlineLabel}>Category</Text>
+              <View style={styles.categoryList}>
+                {cats.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryChip,
+                      cat.id === categoryId && styles.categoryActive,
+                    ]}
+                    onPress={() => setCategoryId(cat.id)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        cat.id === categoryId && styles.categoryTextActive,
+                      ]}
+                    >
+                      {cat.name}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            </ScrollView>
-          </>
-        )}
 
-        {/* Deleted Images (can restore) */}
-        {imagesToDelete.length > 0 && (
-          <>
-            <Text style={styles.imageLabel}>Removed (tap to restore)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-                {existingImages
-                  .filter((img) => imagesToDelete.includes(img.id))
-                  .map((img) => (
+              <Text style={styles.inlineLabel}>Tags</Text>
+              <View style={styles.tagContainer}>
+                {allTags.map((t) => {
+                  const active = selectedTagIds.has(t.id);
+                  return (
                     <TouchableOpacity
-                      key={img.id}
-                      onPress={() => restoreExistingImage(img.id)}
+                      key={t.id}
+                      style={[styles.tagChip, active && styles.tagChipActive]}
+                      onPress={() => toggleTag(t.id)}
                     >
-                      <Image
-                        source={{ uri: img.url }}
-                        style={{
-                          width: 140,
-                          height: 140,
-                          borderRadius: BorderRadius.medium,
-                          opacity: 0.4,
-                        }}
-                      />
-                      <View style={styles.restoreOverlay}>
-                        <Text style={styles.restoreText}>↺ Restore</Text>
-                      </View>
+                      <Text
+                        style={[styles.tagText, active && styles.tagTextActive]}
+                      >
+                        #{t.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Input
+                label="Add your own tag"
+                placeholder="e.g. delivery, urgent"
+                value={tagText}
+                onChangeText={setTagText}
+                onSubmitEditing={addTagFromText}
+                rightIcon={
+                  <Button
+                    title="Add"
+                    type="clear"
+                    titleStyle={styles.linkButtonTitle}
+                    onPress={addTagFromText}
+                  />
+                }
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputBox}
+                containerStyle={styles.inputContainer}
+                placeholderTextColor={Colors.borderGray}
+              />
+
+              {customTags.length > 0 && (
+                <View style={styles.tagContainer}>
+                  {customTags.map((name) => (
+                    <TouchableOpacity
+                      key={name}
+                      style={[styles.tagChip, styles.customTagChip]}
+                      onPress={() => removeCustomTag(name)}
+                    >
+                      <Text style={styles.tagText}>#{name} ✕</Text>
                     </TouchableOpacity>
                   ))}
+                </View>
+              )}
+            </SurfaceCard>
+
+            <SurfaceCard variant="default" style={styles.sectionCard}>
+              <SectionHeader
+                title="Images"
+                subtitle="Tap to remove, tap removed to restore"
+                rightSlot={
+                  <StatusPill label={`${totalImages}/5`} tone="warning" />
+                }
+                style={styles.sectionHeader}
+              />
+              <View style={styles.imagesTopRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.pickButton,
+                    totalImages >= 5 && styles.pickButtonDisabled,
+                  ]}
+                  onPress={pickImages}
+                  disabled={totalImages >= 5}
+                >
+                  <Text style={styles.pickButtonText}>Pick Images</Text>
+                </TouchableOpacity>
+                <Text style={styles.subtleText}>
+                  {isCompact ? "Max 5" : "Up to 5 total images"}
+                </Text>
               </View>
-            </ScrollView>
-          </>
-        )}
 
-        {/* New Local Images */}
-        {localImages.length > 0 && (
-          <>
-            <Text style={styles.imageLabel}>New Images (tap to remove)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                {localImages.map((uri, idx) => (
-                  <TouchableOpacity
-                    key={uri}
-                    onPress={() => removeLocalImage(uri)}
-                  >
-                    <Image
-                      source={{ uri }}
-                      style={{
-                        width: 140,
-                        height: 140,
-                        borderRadius: BorderRadius.medium,
-                      }}
-                    />
-                    <View style={styles.newBadge}>
-                      <Text style={styles.newBadgeText}>NEW</Text>
+              {visibleExistingImages.length > 0 && (
+                <>
+                  <Text style={styles.imageLabel}>Current Images</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.imagesRow}>
+                      {visibleExistingImages.map((img) => (
+                        <TouchableOpacity
+                          key={img.id}
+                          onPress={() => removeExistingImage(img.id)}
+                        >
+                          <Image
+                            source={{ uri: img.url }}
+                            style={styles.previewImage}
+                          />
+                          <View style={styles.removeOverlay}>
+                            <Text style={styles.removeText}>✕</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
                     </View>
-                    <View style={styles.removeOverlay}>
-                      <Text style={styles.removeText}>✕</Text>
+                  </ScrollView>
+                </>
+              )}
+
+              {imagesToDelete.length > 0 && (
+                <>
+                  <Text style={styles.imageLabel}>
+                    Removed (tap to restore)
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.imagesRow}>
+                      {existingImages
+                        .filter((img) => imagesToDelete.includes(img.id))
+                        .map((img) => (
+                          <TouchableOpacity
+                            key={img.id}
+                            onPress={() => restoreExistingImage(img.id)}
+                          >
+                            <Image
+                              source={{ uri: img.url }}
+                              style={[styles.previewImage, styles.removedImage]}
+                            />
+                            <View style={styles.restoreOverlay}>
+                              <Text style={styles.restoreText}>↺ Restore</Text>
+                            </View>
+                          </TouchableOpacity>
+                        ))}
                     </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </>
-        )}
+                  </ScrollView>
+                </>
+              )}
 
-        <Text style={styles.sectionTitle}>Pickup Location</Text>
-        {defaultPickupLocation ? (
-          <TouchableOpacity
-            style={styles.defaultLocationButton}
-            onPress={() => setPickupLocation(defaultPickupLocation)}
-          >
-            <Text style={styles.defaultLocationButtonText}>
-              Use profile default location
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-        <LocationPicker
-          value={pickupLocation}
-          onChange={setPickupLocation}
-          placeholder="Select where item can be picked up"
-          label=""
-          helperText="Required. This location is hidden from buyers and only shown to dashers for delivery orders."
-        />
+              {localImages.length > 0 && (
+                <>
+                  <Text style={styles.imageLabel}>New Images</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.imagesRow}>
+                      {localImages.map((uri) => (
+                        <TouchableOpacity
+                          key={uri}
+                          onPress={() => removeLocalImage(uri)}
+                        >
+                          <Image source={{ uri }} style={styles.previewImage} />
+                          <View style={styles.newBadge}>
+                            <Text style={styles.newBadgeText}>NEW</Text>
+                          </View>
+                          <View style={styles.removeOverlay}>
+                            <Text style={styles.removeText}>✕</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </>
+              )}
 
-        <View style={styles.buttonRow}>
-          <Button
-            title="Cancel"
-            type="outline"
-            onPress={() => navigation.goBack()}
-            containerStyle={{ flex: 1, marginRight: 8 }}
-            buttonStyle={styles.secondaryButton}
-            titleStyle={styles.secondaryButtonTitle}
-          />
-          <Button
-            title={submitting ? "Saving..." : "Save Changes"}
-            onPress={handleSubmit}
-            disabled={submitting}
-            containerStyle={{ flex: 1 }}
-            buttonStyle={styles.primaryButton}
-            titleStyle={styles.primaryButtonTitle}
-            disabledStyle={{ backgroundColor: Colors.grayDisabled }}
-          />
-        </View>
-      </ScrollView>
+              {totalImages === 0 && (
+                <View style={styles.emptyImages}>
+                  <Text style={styles.subtleText}>No images selected yet</Text>
+                </View>
+              )}
+            </SurfaceCard>
+
+            <SurfaceCard variant="mint" style={styles.sectionCard}>
+              <SectionHeader
+                title="Pickup Location"
+                subtitle="Only dashers can see this for delivery orders"
+                rightSlot={
+                  <StatusPill
+                    label={pickupLocation ? "Set" : "Required"}
+                    tone={pickupLocation ? "success" : "warning"}
+                  />
+                }
+                style={styles.sectionHeader}
+              />
+              {defaultPickupLocation ? (
+                <TouchableOpacity
+                  style={styles.defaultLocationButton}
+                  onPress={() => setPickupLocation(defaultPickupLocation)}
+                >
+                  <Text style={styles.defaultLocationButtonText}>
+                    Use profile default location
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+              <LocationPicker
+                value={pickupLocation}
+                onChange={setPickupLocation}
+                placeholder="Select where item can be picked up"
+                label=""
+                helperText="Required. This location is hidden from buyers and only shown to dashers for delivery orders."
+              />
+            </SurfaceCard>
+          </View>
+        </ScrollView>
+
+        <StickyActionBar style={styles.actionBar}>
+          <View style={[styles.buttonRow, isWeb && styles.webButtonRow]}>
+            <TouchableOpacity
+              style={styles.secondaryAction}
+              onPress={() => navigation.goBack()}
+              disabled={submitting}
+            >
+              <Text style={styles.secondaryActionText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.primaryAction,
+                submitting && styles.disabledAction,
+              ]}
+              onPress={handleSubmit}
+              disabled={submitting}
+            >
+              <Text style={styles.primaryActionText}>
+                {submitting ? "Saving..." : "Save Changes"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </StickyActionBar>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -727,58 +798,77 @@ export default function EditListing({ route, navigation }: EditListingProps) {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.base_bg,
   },
   container: {
     flex: 1,
-    padding: Spacing.lg,
   },
-
-  headerWrap: { marginBottom: Spacing.sm },
-  header: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.darkTeal,
-    fontFamily: Fonts.heading,
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: 170,
   },
-  headerUnderline: {
-    height: 6,
-    width: 72,
-    backgroundColor: Colors.secondary,
-    borderRadius: BorderRadius.medium,
-    marginTop: Spacing.sm,
+  pageWrap: {
+    width: "100%",
+    gap: Spacing.sm,
   },
-
-  sectionTitle: {
-    marginTop: Spacing.lg,
-    marginBottom: 6,
-    fontSize: 18,
-    fontWeight: "600",
-    color: Colors.darkTeal,
-    fontFamily: Fonts.heading,
+  webContainer: {
+    maxWidth: WebLayout.maxFormWidth + 120,
+    alignSelf: "center",
   },
-
-  inputContainer: { paddingHorizontal: 0 },
+  pageHeader: {
+    marginBottom: Spacing.sm,
+  },
+  sectionCard: {
+    borderColor: SemanticColors.borderSubtle,
+    ...Shadows.sm,
+  },
+  sectionHeader: {
+    marginBottom: Spacing.sm,
+  },
+  inlineLabel: {
+    ...Typography.label,
+    color: Colors.mutedGray,
+    marginBottom: Spacing.xs,
+  },
+  inputContainer: {
+    paddingHorizontal: 0,
+    marginBottom: Spacing.xs,
+  },
   inputLabel: {
     color: Colors.mutedGray,
-    fontFamily: Fonts.body,
-    fontSize: 14,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontSize: 13,
+    marginBottom: Spacing.xs,
   },
   inputText: {
     color: Colors.darkTeal,
-    fontFamily: Fonts.body,
-    fontSize: 16,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontSize: 15,
   },
-
+  inputBox: {
+    borderBottomWidth: 0,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.white,
+    minHeight: 46,
+  },
+  textAreaBox: {
+    minHeight: 92,
+    alignItems: "flex-start",
+  },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginVertical: 10,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   toggleBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: Colors.lightGray,
+    borderColor: Colors.borderLight,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginHorizontal: 4,
@@ -791,19 +881,23 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     color: Colors.mutedGray,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodyMedium.fontFamily,
     fontSize: 15,
   },
   toggleTextActive: {
     fontWeight: "700",
     color: Colors.darkTeal,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodyMedium.fontFamily,
   },
-
-  categoryList: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  categoryList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
   categoryChip: {
     borderWidth: 1,
-    borderColor: Colors.lightGray,
+    borderColor: Colors.borderLight,
     borderRadius: BorderRadius.medium,
     paddingHorizontal: 14,
     paddingVertical: Spacing.sm,
@@ -816,15 +910,18 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: Colors.mutedGray,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
   },
   categoryTextActive: {
     fontWeight: "700",
     color: Colors.darkTeal,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
   },
-
-  tagContainer: { flexDirection: "row", flexWrap: "wrap", marginVertical: 10 },
+  tagContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginVertical: Spacing.xs,
+  },
   tagChip: {
     backgroundColor: Colors.lightMint,
     borderRadius: BorderRadius.medium,
@@ -837,7 +934,7 @@ const styles = StyleSheet.create({
   },
   customTagChip: {
     backgroundColor: Colors.white,
-    borderColor: Colors.lightGray,
+    borderColor: Colors.borderLight,
   },
   tagChipActive: {
     backgroundColor: Colors.primary_blue,
@@ -846,17 +943,51 @@ const styles = StyleSheet.create({
   tagText: {
     color: Colors.secondary,
     fontSize: 14,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
   },
   tagTextActive: {
     color: Colors.white,
     fontWeight: "700",
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
   },
-
+  imagesTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  pickButton: {
+    backgroundColor: Colors.primary_blue,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  pickButtonDisabled: {
+    backgroundColor: Colors.grayDisabled,
+  },
+  pickButtonText: {
+    ...Typography.buttonText,
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
   subtleText: {
     color: Colors.mutedGray,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
+  },
+  imagesRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  previewImage: {
+    width: 130,
+    height: 130,
+    borderRadius: BorderRadius.medium,
+  },
+  removedImage: {
+    opacity: 0.4,
   },
   defaultLocationButton: {
     alignSelf: "flex-start",
@@ -870,19 +1001,17 @@ const styles = StyleSheet.create({
   },
   defaultLocationButtonText: {
     color: Colors.primary_blue,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
     fontWeight: "700",
     fontSize: 13,
   },
-
   imageLabel: {
     fontSize: 13,
     color: Colors.mutedGray,
-    fontFamily: Fonts.body,
+    fontFamily: Typography.bodySmall.fontFamily,
     marginBottom: 6,
     marginTop: 8,
   },
-
   removeOverlay: {
     position: "absolute",
     top: 8,
@@ -899,7 +1028,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
   },
-
   restoreOverlay: {
     position: "absolute",
     bottom: 0,
@@ -916,7 +1044,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textAlign: "center",
   },
-
   newBadge: {
     position: "absolute",
     top: 8,
@@ -931,39 +1058,62 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
-
-  primaryButton: {
-    backgroundColor: Colors.primary_blue,
-    borderRadius: BorderRadius.medium,
-    paddingVertical: Spacing.md,
-  },
-  primaryButtonTitle: {
-    fontFamily: Fonts.heading,
-    fontWeight: "600",
-    letterSpacing: Typography.buttonText.letterSpacing,
-    fontSize: Typography.buttonText.fontSize,
-  },
-  secondaryButton: {
-    borderColor: Colors.borderLight,
+  emptyImages: {
     borderWidth: 1,
-    backgroundColor: Colors.white,
+    borderColor: Colors.borderLight,
     borderRadius: BorderRadius.medium,
-    paddingVertical: Spacing.md,
-  },
-  secondaryButtonTitle: {
-    color: Colors.secondaryText,
-    fontFamily: Fonts.heading,
-    fontWeight: "600",
-    letterSpacing: Typography.buttonText.letterSpacing,
-    fontSize: Typography.buttonText.fontSize,
+    backgroundColor: Colors.white,
+    paddingVertical: Spacing.lg,
+    alignItems: "center",
   },
   linkButtonTitle: {
     color: Colors.primary_blue,
-    fontFamily: Fonts.heading,
-    fontWeight: "600",
+    fontFamily: Typography.buttonText.fontFamily,
+    fontWeight: "700",
     letterSpacing: Typography.buttonText.letterSpacing,
-    fontSize: Typography.buttonText.fontSize,
+    fontSize: 13,
   },
-
-  buttonRow: { flexDirection: "row", marginTop: Spacing.xl },
+  actionBar: {
+    bottom: 0,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  webButtonRow: {
+    maxWidth: WebLayout.maxFormWidth + 120,
+    width: "100%",
+    alignSelf: "center",
+  },
+  secondaryAction: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 999,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+  },
+  secondaryActionText: {
+    ...Typography.buttonText,
+    color: Colors.primary_blue,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  primaryAction: {
+    flex: 1,
+    backgroundColor: Colors.primary_blue,
+    borderRadius: 999,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+  },
+  primaryActionText: {
+    ...Typography.buttonText,
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  disabledAction: {
+    backgroundColor: Colors.grayDisabled,
+  },
 });

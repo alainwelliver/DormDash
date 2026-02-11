@@ -1,10 +1,20 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, Platform } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { supabase } from "../lib/supabase";
-import { Button, Input } from "@rneui/themed";
+import { Input } from "@rneui/themed";
 import {
   Colors,
-  CommonStyles,
+  SemanticColors,
+  Shadows,
   Typography,
   Spacing,
   WebLayout,
@@ -12,6 +22,9 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { alert } from "../lib/utils/platform";
+import { ChevronLeft } from "lucide-react-native";
+import { LiveBadge, SectionHeader, SurfaceCard } from "../components";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -67,153 +80,228 @@ export default function AuthLogin() {
   }
 
   return (
-    <View style={[styles.container, isWeb && styles.webContainer]}>
-      <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
-        {/* Back Button */}
-        <View style={styles.headerContainer}>
-          <Button
-            type="clear"
-            icon={{ name: "chevron-left", type: "feather", size: 28 }}
-            onPress={() => navigation.goBack()}
-            containerStyle={styles.backButtonContainer}
-          />
-        </View>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isWeb && styles.webScrollContent,
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
+            <View style={styles.topRow}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+              >
+                <ChevronLeft size={24} color={Colors.darkTeal} />
+              </TouchableOpacity>
+              <LiveBadge label="Secure login" />
+            </View>
 
-        {/* Title */}
-        <Text style={styles.title}>Welcome back to DormDash!</Text>
+            <SectionHeader
+              title="Welcome Back"
+              subtitle="Sign in with your Penn email"
+              style={styles.sectionHeader}
+            />
 
-        {/* Email Input */}
-        <View style={[styles.verticallySpaced, styles.mt20]}>
-          <Input
-            label="Penn Email"
-            leftIcon={{
-              type: "font-awesome",
-              name: "envelope",
-              color: Colors.mutedGray,
-            }}
-            onChangeText={(text: string) => setEmail(text)}
-            value={email}
-            placeholder="Enter your Penn email"
-            placeholderTextColor={Colors.lightGray}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-            inputStyle={{ color: Colors.darkTeal }}
-          />
-        </View>
+            <SurfaceCard variant="glass" style={styles.formCard}>
+              <Input
+                label="Penn Email"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "envelope",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                onChangeText={(text: string) => setEmail(text)}
+                value={email}
+                placeholder="Enter your Penn email"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-        {/* Password Input */}
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Password"
-            leftIcon={{
-              type: "font-awesome",
-              name: "lock",
-              color: Colors.mutedGray,
-            }}
-            rightIcon={{
-              type: "font-awesome",
-              name: showPassword ? "eye-slash" : "eye",
-              color: Colors.mutedGray,
-              onPress: () => setShowPassword(!showPassword),
-            }}
-            onChangeText={(text: string) => setPassword(text)}
-            value={password}
-            secureTextEntry={!showPassword}
-            placeholder="Enter your password"
-            placeholderTextColor={Colors.lightGray}
-            autoCapitalize="none"
-            editable={!loading}
-            inputStyle={{ color: Colors.darkTeal }}
-          />
-        </View>
+              <Input
+                label="Password"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "lock",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                rightIcon={{
+                  type: "font-awesome",
+                  name: showPassword ? "eye-slash" : "eye",
+                  color: Colors.mutedGray,
+                  onPress: () => setShowPassword(!showPassword),
+                }}
+                onChangeText={(text: string) => setPassword(text)}
+                value={password}
+                secureTextEntry={!showPassword}
+                placeholder="Enter your password"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-        {/* Forgot Password */}
-        <View style={styles.forgotPasswordContainer}>
-          <Text
-            style={styles.forgotPasswordText}
-            onPress={() => navigation.navigate("ForgotPassword")}
-          >
-            Forgot Password?
-          </Text>
-        </View>
+              <TouchableOpacity
+                style={styles.forgotPasswordContainer}
+                onPress={() => navigation.navigate("ForgotPassword")}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
 
-        {/* Login Button */}
-        <View style={[styles.verticallySpaced, styles.mt20]}>
-          <Button
-            title="Login"
-            disabled={loading}
-            loading={loading}
-            buttonStyle={[
-              styles.loginButton,
-              { backgroundColor: Colors.primary_blue },
-            ]}
-            titleStyle={styles.buttonTitle}
-            onPress={() => signInWithEmail()}
-          />
-        </View>
-      </View>
-    </View>
+              <TouchableOpacity
+                style={[
+                  styles.loginButton,
+                  loading && styles.loginButtonDisabled,
+                ]}
+                onPress={signInWithEmail}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.buttonTitle}>Login</Text>
+                )}
+              </TouchableOpacity>
+            </SurfaceCard>
+
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Need an account?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                <Text style={styles.footerLink}>Create one</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    ...CommonStyles.container,
-    paddingTop: 16,
+  flex: {
+    flex: 1,
   },
-  webContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: Colors.base_bg,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  webScrollContent: {
     alignItems: "center",
     justifyContent: "center",
+    minHeight: "100%",
   },
   formWrapper: {
     width: "100%",
   },
   webFormWrapper: {
     maxWidth: WebLayout.maxFormWidth,
-    paddingHorizontal: Spacing.xl,
+    width: "100%",
   },
-  headerContainer: {
-    marginBottom: 20,
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
   },
-  backButtonContainer: {
-    width: 50,
-    height: 50,
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.lightGray,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
   },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
+  sectionHeader: {
+    marginBottom: Spacing.sm,
+  },
+  formCard: {
+    borderColor: SemanticColors.borderSubtle,
+    ...Shadows.sm,
+  },
+  inputOuter: {
+    paddingHorizontal: 0,
+    marginBottom: Spacing.xs,
+  },
+  inputLabel: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+    marginBottom: Spacing.xs,
+  },
+  inputContainer: {
+    borderBottomWidth: 0,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.sm,
+    height: 48,
+  },
+  inputText: {
+    ...Typography.bodyMedium,
     color: Colors.darkTeal,
-    marginBottom: 30,
-    fontFamily: Typography.heading3.fontFamily,
-  },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: "stretch",
-  },
-  mt20: {
-    marginTop: 20,
   },
   forgotPasswordContainer: {
     alignItems: "flex-end",
-    marginTop: 8,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   forgotPasswordText: {
-    color: Colors.secondary,
+    color: Colors.primary_blue,
     fontSize: 14,
-    fontWeight: "500",
     fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
   },
   loginButton: {
-    paddingVertical: 12,
-    borderRadius: 6,
+    backgroundColor: Colors.primary_blue,
+    paddingVertical: Spacing.md,
+    borderRadius: 999,
+    alignItems: "center",
+    marginTop: Spacing.xs,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
   buttonTitle: {
     fontSize: 16,
+    color: Colors.white,
+  },
+  footerRow: {
+    marginTop: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  footerText: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+  },
+  footerLink: {
+    ...Typography.bodySmall,
     fontWeight: "600",
+    color: Colors.primary_green,
   },
 });

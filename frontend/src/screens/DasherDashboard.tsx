@@ -45,7 +45,12 @@ import {
   haversineDistanceMiles,
 } from "../lib/utils/distance";
 import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
-import { LiveBadge } from "../components";
+import {
+  LiveBadge,
+  SectionHeader,
+  StatusPill,
+  SurfaceCard,
+} from "../components";
 
 type DasherDashboardNavigationProp = NativeStackNavigationProp<{
   DasherRegister: undefined;
@@ -462,7 +467,7 @@ const DasherDashboard: React.FC = () => {
   };
 
   const renderAvailableDelivery = ({ item }: { item: DeliveryOrder }) => (
-    <View style={styles.deliveryCard}>
+    <SurfaceCard style={styles.deliveryCard} variant="default">
       <View style={styles.deliveryHeader}>
         <View style={styles.earningsBadge}>
           <Text style={styles.earningsText}>
@@ -523,11 +528,14 @@ const DasherDashboard: React.FC = () => {
           <Text style={styles.acceptButtonText}>Accept Delivery</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SurfaceCard>
   );
 
   const renderMyDelivery = ({ item }: { item: DeliveryOrder }) => (
-    <View style={[styles.deliveryCard, styles.myDeliveryCard]}>
+    <SurfaceCard
+      style={[styles.deliveryCard, styles.myDeliveryCard]}
+      variant="mint"
+    >
       <View style={styles.deliveryHeader}>
         <View
           style={[
@@ -614,7 +622,7 @@ const DasherDashboard: React.FC = () => {
           <Text style={styles.actionButtonText}>Mark as Delivered</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </SurfaceCard>
   );
 
   // Not registered as dasher
@@ -734,8 +742,17 @@ const DasherDashboard: React.FC = () => {
           <>
             {/* My Active Deliveries */}
             {myDeliveries.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>My Active Deliveries</Text>
+              <View style={[styles.section, isWeb && styles.sectionWeb]}>
+                <SectionHeader
+                  title="My Active Deliveries"
+                  subtitle="Current assignments in progress"
+                  rightSlot={
+                    <StatusPill
+                      label={`${myDeliveries.length} active`}
+                      tone="success"
+                    />
+                  }
+                />
                 {myDeliveries.map((delivery) => (
                   <View key={delivery.id}>
                     {renderMyDelivery({ item: delivery })}
@@ -745,12 +762,17 @@ const DasherDashboard: React.FC = () => {
             )}
 
             {/* Available Deliveries */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                Available Deliveries
-                {availableDeliveries.length > 0 &&
-                  ` (${availableDeliveries.length})`}
-              </Text>
+            <View style={[styles.section, isWeb && styles.sectionWeb]}>
+              <SectionHeader
+                title="Available Deliveries"
+                subtitle="Nearby jobs ready to accept"
+                rightSlot={
+                  <StatusPill
+                    label={`${availableDeliveries.length} open`}
+                    tone="info"
+                  />
+                }
+              />
               {dasherInfo?.status === "offline" ? (
                 <View style={styles.offlineMessage}>
                   <Info color={Colors.mutedGray} size={24} />
@@ -889,6 +911,11 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
+  },
+  sectionWeb: {
+    maxWidth: WebLayout.maxContentWidth,
+    width: "100%",
+    alignSelf: "center",
   },
   sectionTitle: {
     fontSize: 18,

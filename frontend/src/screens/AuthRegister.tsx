@@ -1,23 +1,41 @@
 import React, { useState } from "react";
 import {
-  StyleSheet,
-  Text,
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
-  KeyboardAvoidingView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-import { Button, Input } from "@rneui/themed";
+import { Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { alert } from "../lib/utils/platform";
-import { Colors, Spacing, WebLayout } from "../assets/styles";
+import {
+  Colors,
+  SemanticColors,
+  Shadows,
+  Spacing,
+  Typography,
+  WebLayout,
+} from "../assets/styles";
+import { ChevronLeft } from "lucide-react-native";
+import {
+  LiveBadge,
+  SectionHeader,
+  StatusPill,
+  SurfaceCard,
+} from "../components";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
 };
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, "Register">;
@@ -103,149 +121,214 @@ export default function AuthRegister() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.scrollContent,
-          isWeb && styles.webScrollContent,
-        ]}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
-          {/* Back Button */}
-          <View style={styles.headerContainer}>
-            <Button
-              type="clear"
-              icon={{ name: "chevron-left", type: "feather", size: 28 }}
-              onPress={() => navigation.goBack()}
-              containerStyle={styles.backButtonContainer}
-            />
-          </View>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isWeb && styles.webScrollContent,
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.formWrapper, isWeb && styles.webFormWrapper]}>
+            <View style={styles.topRow}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+              >
+                <ChevronLeft size={24} color={Colors.darkTeal} />
+              </TouchableOpacity>
+              <LiveBadge label="Penn verified" />
+            </View>
 
-          {/* Title */}
-          <Text style={styles.title}>Create New Account</Text>
-
-          {/* Full Name Input */}
-          <View style={[styles.verticallySpaced, styles.mt20]}>
-            <Input
-              label="Full Name"
-              leftIcon={{ type: "font-awesome", name: "user" }}
-              onChangeText={(text: string) => setFullName(text)}
-              value={fullName}
-              placeholder="Enter your full name"
-              autoCapitalize="words"
-              editable={!loading}
+            <SectionHeader
+              title="Create Account"
+              subtitle="Join the fastest Penn campus marketplace"
+              rightSlot={<StatusPill label="UPenn Email" tone="success" />}
+              style={styles.sectionHeader}
             />
-          </View>
 
-          {/* Username Input */}
-          <View style={styles.verticallySpaced}>
-            <Input
-              label="Username"
-              leftIcon={{ type: "font-awesome", name: "at" }}
-              onChangeText={(text: string) => setUsername(text)}
-              value={username}
-              placeholder="Choose a username"
-              autoCapitalize="none"
-              editable={!loading}
-            />
-          </View>
+            <SurfaceCard variant="glass" style={styles.formCard}>
+              <Input
+                label="Full Name"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "user",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                onChangeText={(text: string) => setFullName(text)}
+                value={fullName}
+                placeholder="Enter your full name"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="words"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-          {/* Email Input */}
-          <View style={styles.verticallySpaced}>
-            <Input
-              label="Penn Email"
-              leftIcon={{ type: "font-awesome", name: "envelope" }}
-              onChangeText={(text: string) => setEmail(text)}
-              value={email}
-              placeholder="Enter your Penn email"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!loading}
-            />
-          </View>
+              <Input
+                label="Username"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "at",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                onChangeText={(text: string) => setUsername(text)}
+                value={username}
+                placeholder="Choose a username"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-          {/* Phone Number Input */}
-          <View style={styles.verticallySpaced}>
-            <Input
-              label="Phone Number"
-              leftIcon={{ type: "font-awesome", name: "phone" }}
-              onChangeText={(text: string) => setPhone(text)}
-              value={phone}
-              placeholder="Enter your phone number"
-              keyboardType="phone-pad"
-              editable={!loading}
-            />
-          </View>
+              <Input
+                label="Penn Email"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "envelope",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                onChangeText={(text: string) => setEmail(text)}
+                value={email}
+                placeholder="Enter your Penn email"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-          {/* Password Input */}
-          <View style={styles.verticallySpaced}>
-            <Input
-              label="Password"
-              leftIcon={{ type: "font-awesome", name: "lock" }}
-              rightIcon={{
-                type: "font-awesome",
-                name: showPassword ? "eye-slash" : "eye",
-                onPress: () => setShowPassword(!showPassword),
-              }}
-              onChangeText={(text: string) => setPassword(text)}
-              value={password}
-              secureTextEntry={!showPassword}
-              placeholder="Create a password"
-              autoCapitalize="none"
-              editable={!loading}
-            />
-          </View>
+              <Input
+                label="Phone Number"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "phone",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                onChangeText={(text: string) => setPhone(text)}
+                value={phone}
+                placeholder="Enter your phone number"
+                placeholderTextColor={Colors.borderGray}
+                keyboardType="phone-pad"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-          {/* Confirm Password Input */}
-          <View style={styles.verticallySpaced}>
-            <Input
-              label="Confirm Password"
-              leftIcon={{ type: "font-awesome", name: "lock" }}
-              rightIcon={{
-                type: "font-awesome",
-                name: showConfirmPassword ? "eye-slash" : "eye",
-                onPress: () => setShowConfirmPassword(!showConfirmPassword),
-              }}
-              onChangeText={(text: string) => setConfirmPassword(text)}
-              value={confirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              placeholder="Confirm your password"
-              autoCapitalize="none"
-              editable={!loading}
-            />
-          </View>
+              <Input
+                label="Password"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "lock",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                rightIcon={{
+                  type: "font-awesome",
+                  name: showPassword ? "eye-slash" : "eye",
+                  color: Colors.mutedGray,
+                  onPress: () => setShowPassword(!showPassword),
+                }}
+                onChangeText={(text: string) => setPassword(text)}
+                value={password}
+                secureTextEntry={!showPassword}
+                placeholder="Create a password"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
 
-          {/* Register Button */}
-          <View style={[styles.verticallySpaced, styles.mt20]}>
-            <Button
-              title="Register"
-              disabled={loading}
-              loading={loading}
-              buttonStyle={styles.registerButton}
-              titleStyle={styles.buttonTitle}
-              onPress={() => signUpWithEmail()}
-            />
+              <Input
+                label="Confirm Password"
+                leftIcon={{
+                  type: "font-awesome",
+                  name: "lock",
+                  color: Colors.mutedGray,
+                  size: 18,
+                }}
+                rightIcon={{
+                  type: "font-awesome",
+                  name: showConfirmPassword ? "eye-slash" : "eye",
+                  color: Colors.mutedGray,
+                  onPress: () => setShowConfirmPassword(!showConfirmPassword),
+                }}
+                onChangeText={(text: string) => setConfirmPassword(text)}
+                value={confirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                placeholder="Confirm your password"
+                placeholderTextColor={Colors.borderGray}
+                autoCapitalize="none"
+                editable={!loading}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputContainer}
+                containerStyle={styles.inputOuter}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.registerButton,
+                  loading && styles.registerButtonDisabled,
+                ]}
+                onPress={signUpWithEmail}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.buttonTitle}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+            </SurfaceCard>
+
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Already registered?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                <Text style={styles.footerLink}>Sign in</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.base_bg,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   webScrollContent: {
     alignItems: "center",
@@ -257,40 +340,81 @@ const styles = StyleSheet.create({
   },
   webFormWrapper: {
     maxWidth: WebLayout.maxFormWidth,
-    paddingHorizontal: Spacing.xl,
+    width: "100%",
   },
-  headerContainer: {
-    marginBottom: 20,
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
   },
-  backButtonContainer: {
-    width: 50,
-    height: 50,
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.lightGray,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000000",
-    marginBottom: 30,
+  sectionHeader: {
+    marginBottom: Spacing.sm,
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: "stretch",
+  formCard: {
+    borderColor: SemanticColors.borderSubtle,
+    ...Shadows.sm,
   },
-  mt20: {
-    marginTop: 20,
+  inputOuter: {
+    paddingHorizontal: 0,
+    marginBottom: Spacing.xs,
+  },
+  inputLabel: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+    marginBottom: Spacing.xs,
+  },
+  inputContainer: {
+    borderBottomWidth: 0,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.sm,
+    height: 48,
+  },
+  inputText: {
+    ...Typography.bodyMedium,
+    color: Colors.darkTeal,
   },
   registerButton: {
-    backgroundColor: "#31A1E9",
-    paddingVertical: 12,
-    borderRadius: 6,
+    backgroundColor: Colors.primary_blue,
+    paddingVertical: Spacing.md,
+    borderRadius: 999,
+    alignItems: "center",
+    marginTop: Spacing.sm,
+  },
+  registerButtonDisabled: {
+    opacity: 0.7,
   },
   buttonTitle: {
-    fontSize: 18,
+    ...Typography.buttonText,
+    fontSize: 16,
     fontWeight: "600",
-    letterSpacing: 0.5,
+    color: Colors.white,
+  },
+  footerRow: {
+    marginTop: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  footerText: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+  },
+  footerLink: {
+    ...Typography.bodySmall,
+    fontWeight: "700",
+    color: Colors.primary_green,
   },
 });
