@@ -21,8 +21,10 @@ import { ListingGridSkeleton } from "../components/SkeletonLoader";
 import { useListings, useCategories, useTags } from "../lib/api/queries";
 
 import ListingCard from "../components/ListingCard";
+import { LiveBadge, SectionHeader, SurfaceCard } from "../components";
 import {
   Colors,
+  SemanticColors,
   Typography,
   Spacing,
   WebLayout,
@@ -65,6 +67,14 @@ const Feed: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [quickMode, setQuickMode] = useState<"all" | "budget" | "new">("all");
+
+  const effectivePriceRange = useMemo(() => {
+    if (quickMode === "budget") {
+      return [0, 1500] as [number, number];
+    }
+    return priceRange;
+  }, [priceRange, quickMode]);
 
   const {
     data: listings = [],
@@ -74,7 +84,7 @@ const Feed: React.FC = () => {
   } = useListings({
     category: selectedCategory,
     tags: selectedTags,
-    priceRange,
+    priceRange: effectivePriceRange,
   });
 
   const { data: categories = [] } = useCategories();
@@ -83,6 +93,15 @@ const Feed: React.FC = () => {
   const onRefresh = () => {
     refetch();
   };
+
+  const processedListings = useMemo(() => {
+    if (quickMode !== "new") return listings;
+    return [...listings].sort((a, b) => {
+      const left = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const right = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return right - left;
+    });
+  }, [listings, quickMode]);
 
   const renderContent = () => {
     if (loading) {
@@ -95,7 +114,7 @@ const Feed: React.FC = () => {
       );
     }
 
-    if (listings.length === 0) {
+    if (processedListings.length === 0) {
       return (
         <EmptyState
           icon="package-variant"
@@ -109,7 +128,7 @@ const Feed: React.FC = () => {
 
     return (
       <FlatList
-        data={listings}
+        data={processedListings}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         numColumns={numColumns}
@@ -179,12 +198,62 @@ const Feed: React.FC = () => {
           isWeb && styles.webHeader,
         ]}
       >
-        <View>
-          <Text style={styles.headerTitle}>DormDash</Text>
-          <Text style={styles.headerSubtitle}>Discover & Trade</Text>
-        </View>
+        <SectionHeader
+          title="DormDash"
+          subtitle="Fast campus marketplace"
+          rightSlot={<LiveBadge label="Market live" />}
+          style={styles.heroHeader}
+        />
 
         <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "all" && styles.quickChipActive,
+            ]}
+            onPress={() => setQuickMode("all")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "all" && styles.quickChipTextActive,
+              ]}
+            >
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "budget" && styles.quickChipActive,
+            ]}
+            onPress={() => setQuickMode("budget")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "budget" && styles.quickChipTextActive,
+              ]}
+            >
+              Under $15
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickChip,
+              quickMode === "new" && styles.quickChipActive,
+            ]}
+            onPress={() => setQuickMode("new")}
+          >
+            <Text
+              style={[
+                styles.quickChipText,
+                quickMode === "new" && styles.quickChipTextActive,
+              ]}
+            >
+              New
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setShowFilters(true)}
@@ -200,6 +269,15 @@ const Feed: React.FC = () => {
             <Text style={styles.primaryButtonText}>Sell</Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      <View style={[styles.metaRow, isWeb && styles.webMetaRow]}>
+        <SurfaceCard variant="glass" style={styles.metaCard}>
+          <Text style={styles.metaTitle}>Discover faster</Text>
+          <Text style={styles.metaSubtitle}>
+            Tap + to add instantly. Use quick chips for rapid filtering.
+          </Text>
+        </SurfaceCard>
       </View>
 
       {/* Content */}
@@ -245,9 +323,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: "transparent",
     zIndex: 10,
+  },
+  heroHeader: {
+    marginBottom: 0,
   },
   webHeader: {
     maxWidth: WebLayout.maxContentWidth,
@@ -268,9 +349,32 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   headerActions: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
     gap: Spacing.md,
+  },
+  quickChip: {
+    backgroundColor: Colors.white,
+    borderColor: SemanticColors.borderSubtle,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+  },
+  quickChipActive: {
+    backgroundColor: Colors.primary_blue,
+    borderColor: Colors.primary_blue,
+  },
+  quickChipText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  quickChipTextActive: {
+    color: Colors.white,
   },
   iconButton: {
     padding: Spacing.sm,
@@ -292,6 +396,26 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: "700",
     fontSize: 16,
+  },
+  metaRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  webMetaRow: {
+    alignItems: "center",
+  },
+  metaCard: {
+    width: "100%",
+    maxWidth: WebLayout.maxContentWidth,
+    alignSelf: "center",
+  },
+  metaTitle: {
+    ...Typography.bodySemibold,
+    color: Colors.darkTeal,
+  },
+  metaSubtitle: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
   },
   content: {
     flex: 1,

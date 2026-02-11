@@ -39,6 +39,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
+import { StatusPill, StickyActionBar, SurfaceCard } from "../components";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isWeb = Platform.OS === "web";
@@ -610,11 +611,12 @@ export default function ProductDetail({
           <Text style={styles.title}>{listing.title}</Text>
           <Text style={styles.price}>{price}</Text>
 
-          {listing.categories?.name && (
-            <Text style={styles.category}>
-              Category: {listing.categories.name}
-            </Text>
-          )}
+          <View style={styles.metaPillsRow}>
+            {listing.categories?.name ? (
+              <StatusPill label={listing.categories.name} tone="info" />
+            ) : null}
+            <StatusPill label="Campus Pickup" tone="success" />
+          </View>
 
           <Text style={styles.description}>{listing.description}</Text>
         </View>
@@ -623,7 +625,7 @@ export default function ProductDetail({
         {seller && (
           <View style={styles.sellerSection}>
             <Text style={styles.sectionTitle}>Seller</Text>
-            <View style={styles.sellerCard}>
+            <SurfaceCard variant="glass" style={styles.sellerCard}>
               {seller.avatar_url ? (
                 <Image
                   source={{ uri: seller.avatar_url }}
@@ -649,7 +651,7 @@ export default function ProductDetail({
                   <Text style={styles.ratingText}>No reviews yet</Text>
                 )}
               </View>
-            </View>
+            </SurfaceCard>
           </View>
         )}
 
@@ -725,7 +727,7 @@ export default function ProductDetail({
 
             {reviews.map((review) => (
               <React.Fragment key={review.id}>
-                <View style={styles.reviewCard}>
+                <SurfaceCard variant="outlined" style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
                     <Text style={styles.reviewerName}>
                       {review.reviewer_name || "Anonymous"}
@@ -738,7 +740,7 @@ export default function ProductDetail({
                   <Text style={styles.reviewDate}>
                     {new Date(review.created_at).toLocaleDateString()}
                   </Text>
-                </View>
+                </SurfaceCard>
               </React.Fragment>
             ))}
           </View>
@@ -755,7 +757,7 @@ export default function ProductDetail({
       </ScrollView>
 
       {/* Add to Cart Button */}
-      <View style={styles.buyButtonContainer}>
+      <StickyActionBar style={styles.buyButtonContainer}>
         <Animated.View
           style={{ transform: [{ scale: addToCartScale }], width: "100%" }}
         >
@@ -779,7 +781,7 @@ export default function ProductDetail({
             )}
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </StickyActionBar>
     </SafeAreaView>
   );
 }
@@ -869,6 +871,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     backgroundColor: Colors.white,
   },
+  metaPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
   title: {
     ...Typography.heading3,
     color: Colors.darkTeal,
@@ -880,14 +888,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6B7280", // medium gray
     marginBottom: Spacing.md,
-  },
-  category: {
-    ...Typography.bodySmall,
-    color: Colors.primary_green,
-    fontWeight: "600",
-    marginBottom: Spacing.lg,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   description: {
     ...Typography.bodyMedium,
@@ -909,11 +909,7 @@ const styles = StyleSheet.create({
   sellerCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.large,
     padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   sellerAvatar: {
     width: 70,
@@ -980,12 +976,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   reviewCard: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: BorderRadius.medium,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.primary_green,
   },
   reviewHeader: {
     flexDirection: "row",
@@ -1024,20 +1016,7 @@ const styles = StyleSheet.create({
 
   // Buy Button
   buyButtonContainer: {
-    position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    backgroundColor: Colors.white,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: -2 },
   },
   buyButton: {
     backgroundColor: Colors.primary_blue,

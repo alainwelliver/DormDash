@@ -45,6 +45,7 @@ import {
   haversineDistanceMiles,
 } from "../lib/utils/distance";
 import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
+import { LiveBadge } from "../components";
 
 type DasherDashboardNavigationProp = NativeStackNavigationProp<{
   DasherRegister: undefined;
@@ -674,6 +675,9 @@ const DasherDashboard: React.FC = () => {
             <Text style={styles.statLabel}>Earned</Text>
           </View>
         </View>
+        <View style={styles.liveBadgeRow}>
+          <LiveBadge label="Dispatch live" />
+        </View>
 
         {/* Online Toggle */}
         <TouchableOpacity
@@ -817,6 +821,10 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  liveBadgeRow: {
     alignItems: "center",
     marginBottom: Spacing.md,
   },

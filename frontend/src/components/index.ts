@@ -2,6 +2,11 @@
 export { default as Button } from "./Button";
 export { default as Badge } from "./Badge";
 export { default as Card } from "./Card";
+export { default as SurfaceCard } from "./SurfaceCard";
+export { default as SectionHeader } from "./SectionHeader";
+export { default as StickyActionBar } from "./StickyActionBar";
+export { default as StatusPill } from "./StatusPill";
+export { default as LiveBadge } from "./LiveBadge";
 export { default as EmptyState } from "./EmptyState";
 export { default as SearchBar } from "./SearchBar";
 export { default as Toast } from "./Toast";
@@ -18,11 +23,6 @@ export {
 // App Components
 export { default as ListingCard } from "./ListingCard";
 export { default as FilterModal } from "./FilterModal";
-export { default as RatingStars } from "./RatingStars";
-export { default as TextField } from "./TextField";
-export { default as TagInput } from "./TagInput";
-export { default as CategorySelect } from "./CategorySelect";
-export { default as ImagePickerGrid } from "./ImagePickerGrid";
 export { default as Loading } from "./Loading";
 export { default as ErrorState } from "./ErrorState";
 export { default as LocationPicker } from "./LocationPicker";

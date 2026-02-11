@@ -4,6 +4,7 @@
  * - Spacing / typography / border radius utilities
  *
  */
+import { Platform } from "react-native";
 
 // Color tokens (from DORMDASH_STYLE_GUIDE.md)
 export const Colors = {
@@ -39,9 +40,30 @@ export const Colors = {
   success: "#65D1A2",
   warning: "#F39C12",
   info: "#31A1E9",
+  mastercardRed: "#EB001B",
+  mastercardOrange: "#F79E1B",
 
   overlay: "rgba(0, 0, 0, 0.3)",
   overlayDark: "rgba(0, 0, 0, 0.5)",
+};
+
+export const SemanticColors = {
+  surfaceBase: Colors.base_bg,
+  surfaceCard: Colors.white,
+  surfaceGlass: Colors.glass_bg,
+  surfaceMuted: Colors.lightGray,
+  textPrimary: Colors.darkTeal,
+  textSecondary: Colors.mutedGray,
+  textInverse: Colors.white,
+  borderSubtle: Colors.borderLight,
+  borderStrong: Colors.borderGray,
+  accentPrimary: Colors.primary_blue,
+  accentSecondary: Colors.primary_green,
+  accentTertiary: Colors.primary_accent,
+  statusSuccess: Colors.success,
+  statusWarning: Colors.warning,
+  statusError: Colors.error,
+  statusInfo: Colors.info,
 };
 
 export const Shadows = {
@@ -70,60 +92,96 @@ export const Shadows = {
 
 // Fonts - System Fallbacks for reliability
 export const Fonts = {
-  heading: "System",
-  body: "System",
+  heading: Platform.select({
+    ios: "Avenir Next",
+    android: "sans-serif-medium",
+    default: "Avenir, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+  }) as string,
+  body: Platform.select({
+    ios: "System",
+    android: "sans-serif",
+    default:
+      "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+  }) as string,
+  mono: Platform.select({
+    ios: "Menlo",
+    android: "monospace",
+    default: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
+  }) as string,
 };
 
 export const Typography = {
   heading1: {
     fontSize: 48,
+    fontFamily: Fonts.heading,
     fontWeight: "800" as const, // Extra Bold for impact
     color: Colors.darkTeal,
   },
   heading2: {
     fontSize: 36,
+    fontFamily: Fonts.heading,
     fontWeight: "700" as const,
     color: Colors.darkTeal,
   },
   heading3: {
     fontSize: 28,
+    fontFamily: Fonts.heading,
     fontWeight: "700" as const,
     color: Colors.darkTeal,
   },
   heading4: {
     fontSize: 22,
+    fontFamily: Fonts.heading,
     fontWeight: "600" as const,
     color: Colors.darkTeal,
   },
   bodyLarge: {
     fontSize: 18,
+    fontFamily: Fonts.body,
     fontWeight: "400" as const,
     color: Colors.darkTeal,
   },
   bodyMedium: {
     fontSize: 16,
+    fontFamily: Fonts.body,
     fontWeight: "500" as const,
     color: Colors.mutedGray,
   },
   bodySemibold: {
     fontSize: 16,
+    fontFamily: Fonts.body,
     fontWeight: "600" as const,
     color: Colors.darkTeal,
   },
   bodySmall: {
     fontSize: 13,
+    fontFamily: Fonts.body,
     fontWeight: "500" as const,
     color: Colors.mutedGray,
   },
   buttonText: {
     fontSize: 15,
+    fontFamily: Fonts.heading,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
   },
   label: {
     fontSize: 14,
+    fontFamily: Fonts.body,
     fontWeight: "600" as const,
     color: Colors.mutedGray,
+  },
+};
+
+export const Motion = {
+  durations: {
+    fast: 120,
+    normal: 180,
+    slow: 260,
+  },
+  scales: {
+    pressIn: 0.97,
+    pressOut: 1,
   },
 };
 

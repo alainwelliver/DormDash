@@ -13,15 +13,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ArrowLeft,
-  Truck,
   Footprints,
   Bike,
   CheckCircle,
-  MapPin,
   PlusCircle,
   ChevronRight,
-  Receipt,
-  Calculator,
   ArrowRight,
   X,
   Plus,
@@ -35,6 +31,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { supabase } from "../lib/supabase";
+import {
+  SectionHeader,
+  StatusPill,
+  StickyActionBar,
+  SurfaceCard,
+} from "../components";
 
 interface OrderData {
   deliveryMethod: "pickup" | "delivery";
@@ -106,6 +108,12 @@ const Checkout: React.FC = () => {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const steps = ["Method", "Address", "Payment"];
+
+  const getCurrentStep = () => {
+    if (deliveryMethod === "pickup") return 3;
+    return selectedAddress ? 3 : 2;
+  };
 
   const fetchAddresses = async () => {
     setLoadingAddresses(true);
@@ -378,16 +386,38 @@ const Checkout: React.FC = () => {
         <View style={styles.placeholder} />
       </View>
 
+      <View style={styles.stepperContainer}>
+        {steps.map((step, index) => (
+          <View key={step} style={styles.stepItem}>
+            <View
+              style={[
+                styles.stepDot,
+                index + 1 <= getCurrentStep() && styles.stepDotActive,
+              ]}
+            />
+            <Text
+              style={[
+                styles.stepText,
+                index + 1 <= getCurrentStep() && styles.stepTextActive,
+              ]}
+            >
+              {step}
+            </Text>
+          </View>
+        ))}
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Delivery Method Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Truck color={Colors.primary_blue} size={24} />
-            <Text style={styles.sectionTitle}>Delivery Method</Text>
-          </View>
+          <SectionHeader
+            title="Delivery Method"
+            subtitle="Choose how you want to receive your order"
+            rightSlot={<StatusPill label="Step 1" tone="info" />}
+          />
           <View style={styles.deliveryMethodContainer}>
             <TouchableOpacity
               style={[
@@ -459,10 +489,11 @@ const Checkout: React.FC = () => {
         {/* Delivery Address Section - Only show when delivery selected */}
         {deliveryMethod === "delivery" && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MapPin color={Colors.primary_blue} size={24} />
-              <Text style={styles.sectionTitle}>Delivery Address</Text>
-            </View>
+            <SectionHeader
+              title="Delivery Address"
+              subtitle="Confirm where your order should go"
+              rightSlot={<StatusPill label="Step 2" tone="warning" />}
+            />
             {loadingAddresses ? (
               <ActivityIndicator
                 size="small"
@@ -478,7 +509,8 @@ const Checkout: React.FC = () => {
                 <Text style={styles.addAddressText}>Add delivery address</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity
+              <SurfaceCard
+                variant="default"
                 style={styles.selectionCard}
                 onPress={() => setShowAddressModal(true)}
               >
@@ -495,18 +527,18 @@ const Checkout: React.FC = () => {
                   </Text>
                 </View>
                 <ChevronRight color={Colors.mutedGray} size={24} />
-              </TouchableOpacity>
+              </SurfaceCard>
             )}
           </View>
         )}
 
         {/* Order Summary Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Receipt color={Colors.primary_blue} size={24} />
-            <Text style={styles.sectionTitle}>Order Summary</Text>
-          </View>
-          <View style={styles.summaryCard}>
+          <SectionHeader
+            title="Order Summary"
+            subtitle="Items included in this purchase"
+          />
+          <SurfaceCard variant="default" style={styles.summaryCard}>
             {selectedItems.map((item) => (
               <View key={item.id} style={styles.orderItem}>
                 <View style={styles.orderItemInfo}>
@@ -522,16 +554,17 @@ const Checkout: React.FC = () => {
                 </Text>
               </View>
             ))}
-          </View>
+          </SurfaceCard>
         </View>
 
         {/* Price Breakdown Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Calculator color={Colors.primary_blue} size={24} />
-            <Text style={styles.sectionTitle}>Price Details</Text>
-          </View>
-          <View style={styles.priceCard}>
+          <SectionHeader
+            title="Price Details"
+            subtitle="Transparent totals before payment"
+            rightSlot={<StatusPill label="Step 3" tone="success" />}
+          />
+          <SurfaceCard variant="mint" style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>
                 Subtotal ({selectedItems.length} items)
@@ -561,12 +594,12 @@ const Checkout: React.FC = () => {
                 {formatPrice(calculateTotal())}
               </Text>
             </View>
-          </View>
+          </SurfaceCard>
         </View>
       </ScrollView>
 
       {/* Place Order Button */}
-      <View style={styles.bottomContainer}>
+      <StickyActionBar style={styles.bottomContainer}>
         <View style={styles.bottomSummary}>
           <Text style={styles.bottomLabel}>Total Amount</Text>
           <Text style={styles.bottomTotal}>
@@ -580,7 +613,7 @@ const Checkout: React.FC = () => {
           <Text style={styles.placeOrderButtonText}>Place Order</Text>
           <ArrowRight color={Colors.white} size={20} />
         </TouchableOpacity>
-      </View>
+      </StickyActionBar>
 
       {/* Address Selection Modal */}
       <Modal
@@ -656,6 +689,36 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 200,
   },
+  stepperContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
+  stepItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  stepDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.borderGray,
+    marginBottom: 4,
+  },
+  stepDotActive: {
+    backgroundColor: Colors.primary_blue,
+  },
+  stepText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    fontWeight: "600",
+  },
+  stepTextActive: {
+    color: Colors.primary_blue,
+  },
   section: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
@@ -673,8 +736,6 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   selectionCard: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -696,8 +757,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   summaryCard: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.large,
     padding: Spacing.lg,
   },
   orderItem: {
@@ -729,8 +788,6 @@ const styles = StyleSheet.create({
     color: Colors.primary_blue,
   },
   priceCard: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.large,
     padding: Spacing.lg,
   },
   priceRow: {
@@ -768,20 +825,9 @@ const styles = StyleSheet.create({
     color: Colors.primary_blue,
   },
   bottomContainer: {
-    position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.white,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.lightGray,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: -4 },
   },
   bottomSummary: {
     flexDirection: "row",

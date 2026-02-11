@@ -304,26 +304,29 @@ export default function AppNavigator() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data: { session }, error }) => {
+    const loadSession = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
         if (error) {
           // Handle invalid refresh token by signing out locally
           console.error("Session error:", error.message);
-          supabase.auth.signOut({ scope: "local" });
+          await supabase.auth.signOut({ scope: "local" });
           setSession(null);
-        } else {
-          setSession(session);
+          return;
         }
-      })
-      .catch((error) => {
+        setSession(session);
+      } catch (error) {
         console.error("Failed to get session:", error);
-        supabase.auth.signOut({ scope: "local" });
+        await supabase.auth.signOut({ scope: "local" });
         setSession(null);
-      })
-      .finally(() => {
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+    void loadSession();
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {

@@ -40,6 +40,12 @@ import {
 import { alert } from "../lib/utils/platform";
 import EmptyState from "../components/EmptyState";
 import { CartItemSkeleton } from "../components/SkeletonLoader";
+import {
+  SectionHeader,
+  StatusPill,
+  StickyActionBar,
+  SurfaceCard,
+} from "../components";
 
 type CartNavigationProp = NativeStackNavigationProp<{
   Checkout: { selectedItems: CartItem[] };
@@ -279,10 +285,16 @@ const Cart: React.FC = () => {
         ]}
       >
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
-          <Text style={styles.headerTitle}>Shopping Cart</Text>
-          <Text style={styles.itemCount}>
-            {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
-          </Text>
+          <SectionHeader
+            title="Shopping Cart"
+            subtitle={`${cartItems.length} item${cartItems.length !== 1 ? "s" : ""}`}
+            rightSlot={
+              <StatusPill
+                label={`${selectedItems.length} selected`}
+                tone="info"
+              />
+            }
+          />
         </View>
       </View>
 
@@ -294,8 +306,15 @@ const Cart: React.FC = () => {
           isWeb && styles.webScrollContent,
         ]}
       >
+        <SurfaceCard variant="glass" style={styles.selectionInsightCard}>
+          <Text style={styles.selectionInsightTitle}>Ready to checkout</Text>
+          <Text style={styles.selectionInsightText}>
+            Items stay selected as you adjust quantities.
+          </Text>
+        </SurfaceCard>
+
         {cartItems.map((item) => (
-          <View key={item.id} style={styles.cartItemCard}>
+          <SurfaceCard key={item.id} variant="default" style={styles.cartItemCard}>
             {/* Checkbox */}
             <TouchableOpacity
               style={styles.checkbox}
@@ -353,7 +372,7 @@ const Cart: React.FC = () => {
             >
               <Trash2 color={Colors.error} size={24} />
             </TouchableOpacity>
-          </View>
+          </SurfaceCard>
         ))}
 
         {/* Breakdown moved to ScrollView for better space efficiency */}
@@ -378,7 +397,7 @@ const Cart: React.FC = () => {
       </ScrollView>
 
       {/* Checkout Summary (Compact Fixed Footer) */}
-      <View
+      <StickyActionBar
         style={[styles.checkoutContainer, isWeb && styles.webCheckoutContainer]}
       >
         <View
@@ -406,7 +425,7 @@ const Cart: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </StickyActionBar>
 
       {/* Filler for behind the floating tab bar */}
       <View
@@ -471,6 +490,20 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: 200, // Reduced padding since footer is smaller
   },
+  selectionInsightCard: {
+    marginBottom: Spacing.md,
+  },
+  selectionInsightTitle: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
+  selectionInsightText: {
+    fontSize: 13,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
   webScrollContent: {
     alignSelf: "center",
     width: "100%",
@@ -478,8 +511,6 @@ const styles = StyleSheet.create({
   },
   cartItemCard: {
     flexDirection: "row",
-    backgroundColor: Colors.lightGray,
-    borderRadius: BorderRadius.large,
     padding: Spacing.xs,
     marginBottom: Spacing.md,
     alignItems: "center",
@@ -559,21 +590,8 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.lightGray,
   },
   checkoutContainer: {
-    position: "absolute",
     bottom: 90, // Raised to sit above floating tab bar
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.white,
-    paddingVertical: Spacing.md, // Reduced padding
-    borderTopWidth: 1,
-    borderTopColor: Colors.lightGray,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: -4 },
-    borderBottomLeftRadius: 24, // Rounded bottom corners for style
-    borderBottomRightRadius: 24,
+    paddingVertical: Spacing.md,
   },
   webCheckoutContainer: {
     alignItems: "center",
