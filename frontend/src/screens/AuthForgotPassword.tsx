@@ -36,6 +36,7 @@ type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, "ForgotPassword">;
@@ -53,11 +54,14 @@ export default function AuthForgotPassword() {
     }
 
     setLoading(true);
+    const redirectTo =
+      Platform.OS === "web"
+        ? `${window.location.origin}/reset-password`
+        : "dormdash://reset-password";
+
     // This sends a password reset email to the user
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      // In a real app, you would set up a deep link here (e.g., dormdash://reset-password)
-      // to redirect the user back to a "Update Password" screen in your app.
-      // For now, this will send a standard Supabase recovery email.
+      redirectTo,
     });
 
     setLoading(false);

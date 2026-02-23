@@ -2,6 +2,7 @@
   "expo": {
     "name": "DormDash",
     "slug": "dormdash",
+    "scheme": "dormdash",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/dormdash-logo.png",

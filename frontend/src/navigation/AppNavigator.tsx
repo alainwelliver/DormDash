@@ -26,6 +26,7 @@ import {
 // Linking configuration for web URL routing
 const linking: LinkingOptions<any> = {
   prefixes: [
+    "dormdash://",
     "https://dormdash.pages.dev",
     "http://localhost:8081",
     "https://www.dormdash.xyz",
@@ -52,6 +53,7 @@ const linking: LinkingOptions<any> = {
       Login: "login",
       Register: "register",
       ForgotPassword: "forgot-password",
+      ResetPassword: "reset-password",
       // Main stack screens
       MainTabs: {
         screens: {
@@ -88,6 +90,7 @@ import AuthWelcome from "../screens/AuthWelcome";
 import AuthLogin from "../screens/AuthLogin";
 import AuthRegister from "../screens/AuthRegister";
 import AuthForgotPassword from "../screens/AuthForgotPassword";
+import AuthResetPassword from "../screens/AuthResetPassword";
 
 // Main screens
 import Feed from "../screens/Feed";
@@ -118,6 +121,7 @@ type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 type MainTabParamList = {
@@ -176,6 +180,7 @@ type MainStackParamList = {
   PaymentFailed: undefined;
   DasherRegister: undefined;
   DeliveryDetail: { deliveryOrderId: number };
+  ResetPassword: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -380,6 +385,10 @@ export default function AppNavigator() {
             name="ForgotPassword"
             component={AuthForgotPassword}
           />
+          <AuthStack.Screen
+            name="ResetPassword"
+            component={AuthResetPassword}
+          />
         </AuthStack.Navigator>
       ) : (
         <MainStack.Navigator screenOptions={{ headerShown: false }}>
@@ -431,6 +440,11 @@ export default function AppNavigator() {
           <MainStack.Screen
             name="DeliveryDetail"
             component={DeliveryDetail}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="ResetPassword"
+            component={AuthResetPassword}
             options={{ headerShown: false }}
           />
         </MainStack.Navigator>
