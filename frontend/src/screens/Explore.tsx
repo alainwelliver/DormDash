@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   buyAgainWrap: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xs,
+    paddingBottom: 0,
   },
   webSearchWrapper: {
     alignItems: "center",

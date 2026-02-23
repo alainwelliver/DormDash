@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
-import { Plus, Check } from "lucide-react-native";
+import { Plus, Check, ChevronRight, ChevronsUpDown } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +36,8 @@ interface BuyAgainRailProps {
   subtitle?: string;
   listings: RailListing[];
   loading?: boolean;
+  defaultCollapsed?: boolean;
+  compactItemLimit?: number;
 }
 
 const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
@@ -43,6 +45,8 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
   subtitle = "Reorder your frequent picks in one tap",
   listings,
   loading = false,
+  defaultCollapsed = true,
+  compactItemLimit = 8,
 }) => {
   const navigation =
     useNavigation<NativeStackNavigationProp<MainStackParamList>>();
@@ -50,19 +54,40 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
   const { width } = useWindowDimensions();
   const [addingListingId, setAddingListingId] = useState<number | null>(null);
   const [addedListingId, setAddedListingId] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cardWidth = useMemo(() => {
-    if (Platform.OS === "web") return 220;
-    if (width >= 430) return 180;
-    return 164;
+  const expandedCardWidth = useMemo(() => {
+    if (Platform.OS === "web") return 188;
+    if (width >= 430) return 168;
+    return 154;
   }, [width]);
+
+  const compactListings = useMemo(() => {
+    if (!collapsed) return listings;
+    return listings.slice(0, compactItemLimit);
+  }, [collapsed, listings, compactItemLimit]);
+
+  const shouldShowExpandToggle = listings.length > compactItemLimit || !collapsed;
+
+  const formatPrice = (priceCents: number) => {
+    return (priceCents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
+  };
 
   const cleanupTimer = () => {
     if (feedbackTimerRef.current) {
       clearTimeout(feedbackTimerRef.current);
       feedbackTimerRef.current = null;
     }
+  };
+
+  useEffect(() => cleanupTimer, []);
+
+  const handleGoToDetails = (listingId: number) => {
+    navigation.navigate("ProductDetail", { listingId });
   };
 
   const handleAddToCart = async (listingId: number) => {
@@ -98,24 +123,42 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{title}</Text>
-        {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <View style={styles.headerRow} testID="buy-again-header">
+        <View style={styles.headerTextWrap}>
+          <Text style={styles.title}>{title}</Text>
+          {!collapsed && !!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        </View>
+
+        {!loading && shouldShowExpandToggle && (
+          <TouchableOpacity
+            style={styles.expandButton}
+            onPress={() => setCollapsed((current) => !current)}
+            accessibilityRole="button"
+            accessibilityLabel={collapsed ? "Expand buy again" : "Collapse buy again"}
+            testID="buy-again-toggle"
+          >
+            <Text style={styles.expandButtonText}>
+              {collapsed ? "See all" : "Collapse"}
+            </Text>
+            <ChevronsUpDown color={Colors.primary_blue} size={14} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
+        contentContainerStyle={collapsed ? styles.compactRow : styles.expandedRow}
+        testID={collapsed ? "buy-again-collapsed-row" : "buy-again-expanded-row"}
       >
         {loading
-          ? [0, 1, 2].map((key) => (
+          ? [0, 1, 2, 3].map((key) => (
               <View
                 key={key}
-                style={[styles.skeletonCard, { width: cardWidth }]}
+                style={collapsed ? styles.compactSkeleton : styles.expandedSkeleton}
               />
             ))
-          : listings.map((listing) => {
+          : compactListings.map((listing) => {
               const sorted = [...(listing.listing_images || [])].sort(
                 (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
               );
@@ -124,66 +167,96 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
               const isAdded = addedListingId === listing.id;
 
               return (
-                <TouchableOpacity
+                <View
                   key={listing.id}
-                  style={[styles.card, { width: cardWidth }]}
-                  onPress={() =>
-                    navigation.navigate("ProductDetail", {
-                      listingId: listing.id,
-                    })
+                  style={
+                    collapsed
+                      ? styles.compactChip
+                      : [styles.expandedCard, { width: expandedCardWidth }]
                   }
-                  activeOpacity={0.9}
                 >
-                  <OptimizedImage
-                    uri={imageUri}
-                    fallback={require("../../assets/icon.png")}
-                    style={styles.image}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.cardBody}>
-                    {!!listing.categories?.name && (
-                      <Text style={styles.category} numberOfLines={1}>
-                        {listing.categories.name}
-                      </Text>
-                    )}
-                    <Text style={styles.name} numberOfLines={2}>
-                      {listing.title}
-                    </Text>
-                    <View style={styles.bottomRow}>
-                      <Text style={styles.price}>
-                        {(listing.price_cents / 100).toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        })}
-                      </Text>
-                      <TouchableOpacity
-                        style={[
-                          styles.addButton,
-                          isAdded && styles.addButtonAdded,
-                        ]}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          void handleAddToCart(listing.id);
-                        }}
-                        disabled={isAdding}
-                      >
+                  {collapsed ? (
+                    <TouchableOpacity
+                      style={styles.compactMain}
+                      onPress={() => void handleAddToCart(listing.id)}
+                      activeOpacity={0.9}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Quick add ${listing.title}`}
+                      disabled={isAdding}
+                    >
+                      <View style={styles.compactTextWrap}>
+                        <Text style={styles.compactTitle} numberOfLines={1}>
+                          {listing.title}
+                        </Text>
+                        <Text style={styles.compactPrice}>{formatPrice(listing.price_cents)}</Text>
+                      </View>
+                      <View style={[styles.statusBubble, isAdded && styles.statusBubbleAdded]}>
                         {isAdding ? (
-                          <ActivityIndicator
-                            color={Colors.white}
-                            size="small"
-                          />
+                          <ActivityIndicator color={Colors.white} size="small" />
                         ) : isAdded ? (
-                          <Check color={Colors.white} size={16} />
+                          <Check color={Colors.white} size={14} />
                         ) : (
-                          <Plus color={Colors.white} size={16} />
+                          <Plus color={Colors.white} size={14} />
                         )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.expandedMain}
+                      onPress={() => void handleAddToCart(listing.id)}
+                      activeOpacity={0.9}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Quick add ${listing.title}`}
+                      disabled={isAdding}
+                    >
+                      <OptimizedImage
+                        uri={imageUri}
+                        fallback={require("../../assets/icon.png")}
+                        style={styles.expandedImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.expandedTextWrap}>
+                        {!!listing.categories?.name && (
+                          <Text style={styles.category} numberOfLines={1}>
+                            {listing.categories.name}
+                          </Text>
+                        )}
+                        <Text style={styles.expandedTitle} numberOfLines={1}>
+                          {listing.title}
+                        </Text>
+                        <Text style={styles.compactPrice}>{formatPrice(listing.price_cents)}</Text>
+                      </View>
+                      <View style={[styles.statusBubble, isAdded && styles.statusBubbleAdded]}>
+                        {isAdding ? (
+                          <ActivityIndicator color={Colors.white} size="small" />
+                        ) : isAdded ? (
+                          <Check color={Colors.white} size={14} />
+                        ) : (
+                          <Plus color={Colors.white} size={14} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={collapsed ? styles.compactDetail : styles.expandedDetail}
+                    onPress={() => handleGoToDetails(listing.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View details for ${listing.title}`}
+                  >
+                    <ChevronRight color={Colors.darkTeal} size={14} />
+                    {!collapsed && <Text style={styles.expandedDetailText}>Details</Text>}
+                  </TouchableOpacity>
+                </View>
               );
             })}
       </ScrollView>
+
+      {collapsed && !loading && listings.length > compactItemLimit && (
+        <Text style={styles.moreHint} numberOfLines={1}>
+          {listings.length - compactItemLimit} more items available
+        </Text>
+      )}
     </View>
   );
 };
@@ -191,10 +264,17 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   headerRow: {
-    gap: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.sm,
+  },
+  headerTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   title: {
     ...Typography.bodySemibold,
@@ -203,64 +283,149 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.bodySmall,
     color: Colors.mutedGray,
+    marginTop: 2,
   },
-  row: {
-    paddingVertical: Spacing.xs,
+  expandButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    backgroundColor: Colors.white,
+  },
+  expandButtonText: {
+    ...Typography.bodySmall,
+    color: Colors.primary_blue,
+    fontWeight: "700",
+  },
+  compactRow: {
+    gap: Spacing.xs,
+    paddingVertical: 2,
+  },
+  expandedRow: {
     gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
-  skeletonCard: {
-    height: 168,
+  compactSkeleton: {
+    width: 160,
+    height: 46,
+    borderRadius: 999,
+    backgroundColor: Colors.white,
+    opacity: 0.55,
+  },
+  expandedSkeleton: {
+    width: 168,
+    height: 110,
     borderRadius: BorderRadius.medium,
     backgroundColor: Colors.white,
     opacity: 0.55,
   },
-  card: {
-    borderRadius: BorderRadius.medium,
-    overflow: "hidden",
+  compactChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 46,
     backgroundColor: Colors.white,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    overflow: "hidden",
   },
-  image: {
-    width: "100%",
-    height: 84,
+  compactMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingLeft: Spacing.md,
+    paddingRight: Spacing.sm,
+    minHeight: 46,
+    minWidth: Platform.OS === "web" ? 192 : 180,
   },
-  cardBody: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    minHeight: 82,
+  compactTextWrap: {
+    minWidth: 0,
+    flexShrink: 1,
   },
-  category: {
-    ...Typography.bodySmall,
-    color: Colors.primary_accent,
-    marginBottom: 2,
-  },
-  name: {
+  compactTitle: {
     ...Typography.bodySmall,
     color: Colors.darkTeal,
     fontWeight: "700",
-    minHeight: 34,
   },
-  bottomRow: {
-    marginTop: Spacing.xs,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  price: {
-    ...Typography.bodySemibold,
+  compactPrice: {
+    ...Typography.bodySmall,
     color: Colors.primary_blue,
+    fontWeight: "700",
   },
-  addButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  compactDetail: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 42,
+    minHeight: 46,
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.borderLight,
+    backgroundColor: Colors.lightGray,
+  },
+  statusBubble: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.primary_blue,
   },
-  addButtonAdded: {
+  statusBubbleAdded: {
     backgroundColor: Colors.primary_green,
+  },
+  expandedCard: {
+    borderRadius: BorderRadius.medium,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    overflow: "hidden",
+  },
+  expandedMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.sm,
+  },
+  expandedImage: {
+    width: 52,
+    height: 52,
+    borderRadius: BorderRadius.medium,
+  },
+  expandedTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  category: {
+    ...Typography.bodySmall,
+    color: Colors.primary_accent,
+    marginBottom: 1,
+  },
+  expandedTitle: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  expandedDetail: {
+    minHeight: 36,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    backgroundColor: Colors.lightGray,
+  },
+  expandedDetailText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  moreHint: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
   },
 });
 

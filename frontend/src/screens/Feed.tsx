@@ -419,8 +419,8 @@ const styles = StyleSheet.create({
   listHeaderPanel: {
     width: "100%",
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.sm,
+    paddingBottom: 2,
+    gap: Spacing.xs,
   },
   listHeaderPanelWeb: {
     alignItems: "center",
