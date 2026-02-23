@@ -182,7 +182,10 @@ export default function AuthResetPassword() {
 
   const submitNewPassword = async () => {
     if (!recoveryReady) {
-      alert("Recovery session missing", "Please open the reset link from email.");
+      alert(
+        "Recovery session missing",
+        "Please open the reset link from email.",
+      );
       return;
     }
 
@@ -192,7 +195,10 @@ export default function AuthResetPassword() {
     }
 
     if (password.trim().length < PASSWORD_MIN_LENGTH) {
-      alert("Error", `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`);
+      alert(
+        "Error",
+        `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+      );
       return;
     }
 
@@ -262,7 +268,9 @@ export default function AuthResetPassword() {
               {preparing ? (
                 <View style={styles.stateContainer}>
                   <ActivityIndicator color={Colors.primary_blue} size="small" />
-                  <Text style={styles.stateText}>Preparing secure reset...</Text>
+                  <Text style={styles.stateText}>
+                    Preparing secure reset...
+                  </Text>
                 </View>
               ) : recoveryError ? (
                 <View style={styles.stateContainer}>

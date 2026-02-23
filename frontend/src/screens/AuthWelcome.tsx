@@ -238,20 +238,26 @@ export default function AuthWelcome() {
               },
             ]}
           >
-            <View style={[styles.heroContent, isLargeWeb && styles.heroContentWeb]}>
-              <View style={[styles.heroPrimary, isWeb && styles.heroPrimaryWeb]}>
+            <View
+              style={[styles.heroContent, isLargeWeb && styles.heroContentWeb]}
+            >
+              <View
+                style={[styles.heroPrimary, isWeb && styles.heroPrimaryWeb]}
+              >
                 <View style={styles.badgesTopRow}>
                   <LiveBadge label="Campus live" />
                   <StatusPill label="Penn-only" tone="success" />
                 </View>
 
                 <Text style={styles.heroKicker}>DORMDASH MARKETPLACE</Text>
-                <Text style={[styles.heroTitle, isLargeWeb && styles.heroTitleWeb]}>
+                <Text
+                  style={[styles.heroTitle, isLargeWeb && styles.heroTitleWeb]}
+                >
                   Buy it. Sell it. Get it fast across Penn.
                 </Text>
                 <Text style={styles.heroSubtitle}>
-                  A student-first marketplace that keeps listings local, checkout
-                  simple, and delivery flexible for campus life.
+                  A student-first marketplace that keeps listings local,
+                  checkout simple, and delivery flexible for campus life.
                 </Text>
 
                 <View style={styles.highlightRow}>
@@ -268,7 +274,9 @@ export default function AuthWelcome() {
                     style={[styles.ctaButton, styles.ctaButtonPrimary]}
                     onPress={() => navigation.navigate("Register")}
                   >
-                    <Text style={styles.ctaButtonPrimaryText}>Create Account</Text>
+                    <Text style={styles.ctaButtonPrimaryText}>
+                      Create Account
+                    </Text>
                     <ArrowRight size={18} color={Colors.white} />
                   </TouchableOpacity>
 
@@ -292,7 +300,8 @@ export default function AuthWelcome() {
                   <View style={styles.heroPanelRow}>
                     <Clock3 size={18} color={Colors.primary_blue} />
                     <Text style={styles.heroPanelText}>
-                      Quick listing flow for books, gadgets, and dorm essentials.
+                      Quick listing flow for books, gadgets, and dorm
+                      essentials.
                     </Text>
                   </View>
                   <View style={styles.heroPanelRow}>
@@ -304,7 +313,8 @@ export default function AuthWelcome() {
                   <View style={styles.heroPanelRow}>
                     <ShieldCheck size={18} color={Colors.darkTeal} />
                     <Text style={styles.heroPanelText}>
-                      Penn-focused community experience with clear status updates.
+                      Penn-focused community experience with clear status
+                      updates.
                     </Text>
                   </View>
                 </View>
@@ -321,7 +331,9 @@ export default function AuthWelcome() {
               subtitle="Everything needed to transact confidently on campus."
               rightSlot={<StatusPill label="Feature-first" tone="neutral" />}
             />
-            <View style={[styles.featureGrid, isLargeWeb && styles.featureGridWeb]}>
+            <View
+              style={[styles.featureGrid, isLargeWeb && styles.featureGridWeb]}
+            >
               {SELLING_POINTS.map((point) => (
                 <View key={point.title} style={styles.featureItem}>
                   <View style={styles.featureIconWrap}>
@@ -329,14 +341,19 @@ export default function AuthWelcome() {
                   </View>
                   <View style={styles.featureTextWrap}>
                     <Text style={styles.featureTitle}>{point.title}</Text>
-                    <Text style={styles.featureDescription}>{point.description}</Text>
+                    <Text style={styles.featureDescription}>
+                      {point.description}
+                    </Text>
                   </View>
                 </View>
               ))}
             </View>
           </SurfaceCard>
 
-          <SurfaceCard variant="mint" style={[styles.sectionCard, styles.sectionGap]}>
+          <SurfaceCard
+            variant="mint"
+            style={[styles.sectionCard, styles.sectionGap]}
+          >
             <SectionHeader
               title="How it works"
               subtitle="Three simple steps from listing to completed order."

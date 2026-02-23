@@ -259,9 +259,7 @@ export default function AuthRegister() {
                 leftIcon={<Lock size={18} color={Colors.mutedGray} />}
                 rightIcon={
                   <TouchableOpacity
-                    onPress={() =>
-                      setShowConfirmPassword(!showConfirmPassword)
-                    }
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                     accessibilityRole="button"
                     accessibilityLabel={
                       showConfirmPassword ? "Hide password" : "Show password"
