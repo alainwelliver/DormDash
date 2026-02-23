@@ -42,6 +42,8 @@ interface Order {
   order_items: OrderItem[];
 }
 
+const PAST_ORDERS_PAGE_SIZE = 100;
+
 const PastOrders: React.FC = () => {
   const navigation = useNavigation<PastOrdersNavigationProp>();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -84,7 +86,8 @@ const PastOrders: React.FC = () => {
         )
         .eq("user_id", user.id)
         .in("status", ["paid", "cancelled"])
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(PAST_ORDERS_PAGE_SIZE);
 
       if (error) {
         console.error("Error fetching orders:", error);

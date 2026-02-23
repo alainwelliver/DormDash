@@ -264,9 +264,12 @@ describe("repeatBuying API", () => {
       });
 
       const rows = await addSavedCartToCart(88);
-      expect(mockedSupabase.rpc).toHaveBeenCalledWith("add_saved_cart_to_cart", {
-        p_saved_cart_id: 88,
-      });
+      expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+        "add_saved_cart_to_cart",
+        {
+          p_saved_cart_id: 88,
+        },
+      );
       expect(rows).toEqual([{ listing_id: 1, action: "merged" }]);
     });
   });

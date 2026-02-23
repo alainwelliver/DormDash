@@ -3,11 +3,17 @@ import { supabase } from "../supabase";
 
 // ============ Query Keys ============
 export const queryKeys = {
-  listings: (filters?: {
-    category?: number | null;
-    tags?: number[];
-    priceRange?: [number, number] | null;
-  }) => ["listings", filters] as const,
+  listings: (
+    filters?: {
+      category?: number | null;
+      tags?: number[];
+      priceRange?: [number, number] | null;
+    },
+    options?: {
+      page?: number;
+      pageSize?: number;
+    },
+  ) => ["listings", filters, options] as const,
   listing: (id: number) => ["listing", id] as const,
   categories: ["categories"] as const,
   tags: ["tags"] as const,
@@ -23,11 +29,33 @@ interface ListingFilters {
   priceRange?: [number, number] | null;
 }
 
-export const fetchListings = async (filters: ListingFilters = {}) => {
+interface ListingQueryOptions {
+  page?: number;
+  pageSize?: number;
+}
+
+const DEFAULT_LISTINGS_PAGE_SIZE = 40;
+const MAX_LISTINGS_PAGE_SIZE = 100;
+const LISTING_CARD_SELECT =
+  "id, title, price_cents, created_at, listing_images(url, sort_order), categories(name)";
+
+export const fetchListings = async (
+  filters: ListingFilters = {},
+  options: ListingQueryOptions = {},
+) => {
+  const page = Math.max(0, options.page ?? 0);
+  const pageSize = Math.min(
+    Math.max(1, options.pageSize ?? DEFAULT_LISTINGS_PAGE_SIZE),
+    MAX_LISTINGS_PAGE_SIZE,
+  );
+  const rangeStart = page * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
+
   let query = supabase
     .from("listings")
-    .select("*, listing_images(url, sort_order), categories(name)")
-    .order("created_at", { ascending: false });
+    .select(LISTING_CARD_SELECT)
+    .order("created_at", { ascending: false })
+    .range(rangeStart, rangeEnd);
 
   if (filters.category) {
     query = query.eq("category_id", filters.category);
@@ -49,10 +77,21 @@ export const fetchListings = async (filters: ListingFilters = {}) => {
   return data || [];
 };
 
-export const useListings = (filters: ListingFilters = {}) => {
+export const useListings = (
+  filters: ListingFilters = {},
+  options: ListingQueryOptions = {},
+) => {
+  const normalizedOptions: ListingQueryOptions = {
+    page: Math.max(0, options.page ?? 0),
+    pageSize: Math.min(
+      Math.max(1, options.pageSize ?? DEFAULT_LISTINGS_PAGE_SIZE),
+      MAX_LISTINGS_PAGE_SIZE,
+    ),
+  };
+
   return useQuery({
-    queryKey: queryKeys.listings(filters),
-    queryFn: () => fetchListings(filters),
+    queryKey: queryKeys.listings(filters, normalizedOptions),
+    queryFn: () => fetchListings(filters, normalizedOptions),
   });
 };
 
@@ -80,7 +119,7 @@ export const useListing = (id: number) => {
 export const fetchCategories = async () => {
   const { data, error } = await supabase
     .from("categories")
-    .select("*")
+    .select("id, name")
     .order("name");
 
   if (error) throw error;
@@ -96,7 +135,10 @@ export const useCategories = () => {
 
 // ============ Tags ============
 export const fetchTags = async () => {
-  const { data, error } = await supabase.from("tags").select("*").order("name");
+  const { data, error } = await supabase
+    .from("tags")
+    .select("id, name")
+    .order("name");
 
   if (error) throw error;
   return data || [];
@@ -113,7 +155,7 @@ export const useTags = () => {
 export const fetchSeller = async (userId: string) => {
   const { data, error } = await supabase
     .from("seller_profiles")
-    .select("*")
+    .select("id, display_name, avatar_url, avg_rating, total_reviews")
     .eq("id", userId)
     .single();
 
@@ -142,7 +184,7 @@ export const useSeller = (userId: string | null) => {
 export const fetchReviews = async (listingId: number) => {
   const { data, error } = await supabase
     .from("reviews")
-    .select("*")
+    .select("id, listing_id, reviewer_id, rating, comment, created_at")
     .eq("listing_id", listingId)
     .order("created_at", { ascending: false });
 

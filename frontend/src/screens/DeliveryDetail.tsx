@@ -257,8 +257,9 @@ const DeliveryDetail: React.FC = () => {
     const loadLatestTracking = async () => {
       const { data } = await supabase
         .from("delivery_tracking")
-        .select("*")
+        .select("lat, lng, updated_at")
         .eq("delivery_order_id", deliveryOrder.id)
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 

@@ -176,8 +176,9 @@ const OrderDetails: React.FC = () => {
     async (deliveryOrderId: number) => {
       const { data } = await supabase
         .from("delivery_tracking")
-        .select("*")
+        .select("lat, lng, updated_at")
         .eq("delivery_order_id", deliveryOrderId)
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -250,10 +251,13 @@ const OrderDetails: React.FC = () => {
       if (orderData?.delivery_method === "delivery") {
         const { data: deliveries, error: deliveriesError } = await supabase
           .from("delivery_orders")
-          .select("*")
+          .select(
+            "id, status, delivery_address, delivery_lat, delivery_lng, dasher_id, created_at",
+          )
           .eq("order_id", orderId)
           .eq("buyer_id", user.id)
-          .order("created_at", { ascending: true });
+          .order("created_at", { ascending: true })
+          .limit(50);
 
         if (!deliveriesError) {
           const rows = (deliveries || []) as DeliveryOrder[];

@@ -88,6 +88,9 @@ const Feed: React.FC = () => {
     category: selectedCategory,
     tags: selectedTags,
     priceRange: effectivePriceRange,
+  }, {
+    page: 0,
+    pageSize: 60,
   });
 
   const { data: categories = [] } = useCategories();

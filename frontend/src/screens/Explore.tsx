@@ -48,6 +48,10 @@ type MainStackNavigationProp = NativeStackNavigationProp<
   "Explore"
 >;
 
+const LISTINGS_PAGE_SIZE = 80;
+const EXPLORE_LISTING_SELECT =
+  "id, title, description, price_cents, created_at, listing_images(url, sort_order), categories(name)";
+
 const Explore: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
   const { width: windowWidth } = useWindowDimensions();
@@ -114,9 +118,12 @@ const Explore: React.FC = () => {
   const loadFilterData = async () => {
     const { data: cats } = await supabase
       .from("categories")
-      .select("*")
+      .select("id, name")
       .order("name");
-    const { data: tgs } = await supabase.from("tags").select("*").order("name");
+    const { data: tgs } = await supabase
+      .from("tags")
+      .select("id, name")
+      .order("name");
 
     setCategories(cats || []);
     setTags(tgs || []);
@@ -125,8 +132,9 @@ const Explore: React.FC = () => {
   const fetchListings = async () => {
     let query = supabase
       .from("listings")
-      .select("*, listing_images(url, sort_order), categories(name)")
-      .order("created_at", { ascending: false });
+      .select(EXPLORE_LISTING_SELECT)
+      .order("created_at", { ascending: false })
+      .range(0, LISTINGS_PAGE_SIZE - 1);
 
     if (selectedCategory) {
       query = query.eq("category_id", selectedCategory);
