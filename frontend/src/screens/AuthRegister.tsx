@@ -22,7 +22,16 @@ import {
   Typography,
   WebLayout,
 } from "../assets/styles";
-import { ChevronLeft } from "lucide-react-native";
+import {
+  AtSign,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Phone,
+  User,
+} from "lucide-react-native";
 import {
   LiveBadge,
   SectionHeader,
@@ -155,12 +164,7 @@ export default function AuthRegister() {
             <SurfaceCard variant="glass" style={styles.formCard}>
               <Input
                 label="Full Name"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "user",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
+                leftIcon={<User size={18} color={Colors.mutedGray} />}
                 onChangeText={(text: string) => setFullName(text)}
                 value={fullName}
                 placeholder="Enter your full name"
@@ -175,12 +179,7 @@ export default function AuthRegister() {
 
               <Input
                 label="Username"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "at",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
+                leftIcon={<AtSign size={18} color={Colors.mutedGray} />}
                 onChangeText={(text: string) => setUsername(text)}
                 value={username}
                 placeholder="Choose a username"
@@ -195,12 +194,7 @@ export default function AuthRegister() {
 
               <Input
                 label="Penn Email"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "envelope",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
+                leftIcon={<Mail size={18} color={Colors.mutedGray} />}
                 onChangeText={(text: string) => setEmail(text)}
                 value={email}
                 placeholder="Enter your Penn email"
@@ -216,12 +210,7 @@ export default function AuthRegister() {
 
               <Input
                 label="Phone Number"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "phone",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
+                leftIcon={<Phone size={18} color={Colors.mutedGray} />}
                 onChangeText={(text: string) => setPhone(text)}
                 value={phone}
                 placeholder="Enter your phone number"
@@ -236,18 +225,22 @@ export default function AuthRegister() {
 
               <Input
                 label="Password"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "lock",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
-                rightIcon={{
-                  type: "font-awesome",
-                  name: showPassword ? "eye-slash" : "eye",
-                  color: Colors.mutedGray,
-                  onPress: () => setShowPassword(!showPassword),
-                }}
+                leftIcon={<Lock size={18} color={Colors.mutedGray} />}
+                rightIcon={
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} color={Colors.mutedGray} />
+                    ) : (
+                      <Eye size={18} color={Colors.mutedGray} />
+                    )}
+                  </TouchableOpacity>
+                }
                 onChangeText={(text: string) => setPassword(text)}
                 value={password}
                 secureTextEntry={!showPassword}
@@ -263,18 +256,24 @@ export default function AuthRegister() {
 
               <Input
                 label="Confirm Password"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "lock",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
-                rightIcon={{
-                  type: "font-awesome",
-                  name: showConfirmPassword ? "eye-slash" : "eye",
-                  color: Colors.mutedGray,
-                  onPress: () => setShowConfirmPassword(!showConfirmPassword),
-                }}
+                leftIcon={<Lock size={18} color={Colors.mutedGray} />}
+                rightIcon={
+                  <TouchableOpacity
+                    onPress={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showConfirmPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} color={Colors.mutedGray} />
+                    ) : (
+                      <Eye size={18} color={Colors.mutedGray} />
+                    )}
+                  </TouchableOpacity>
+                }
                 onChangeText={(text: string) => setConfirmPassword(text)}
                 value={confirmPassword}
                 secureTextEntry={!showConfirmPassword}

@@ -22,7 +22,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { alert } from "../lib/utils/platform";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import { LiveBadge, SectionHeader, SurfaceCard } from "../components";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -113,12 +113,7 @@ export default function AuthLogin() {
             <SurfaceCard variant="glass" style={styles.formCard}>
               <Input
                 label="Penn Email"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "envelope",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
+                leftIcon={<Mail size={18} color={Colors.mutedGray} />}
                 onChangeText={(text: string) => setEmail(text)}
                 value={email}
                 placeholder="Enter your Penn email"
@@ -134,18 +129,22 @@ export default function AuthLogin() {
 
               <Input
                 label="Password"
-                leftIcon={{
-                  type: "font-awesome",
-                  name: "lock",
-                  color: Colors.mutedGray,
-                  size: 18,
-                }}
-                rightIcon={{
-                  type: "font-awesome",
-                  name: showPassword ? "eye-slash" : "eye",
-                  color: Colors.mutedGray,
-                  onPress: () => setShowPassword(!showPassword),
-                }}
+                leftIcon={<Lock size={18} color={Colors.mutedGray} />}
+                rightIcon={
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} color={Colors.mutedGray} />
+                    ) : (
+                      <Eye size={18} color={Colors.mutedGray} />
+                    )}
+                  </TouchableOpacity>
+                }
                 onChangeText={(text: string) => setPassword(text)}
                 value={password}
                 secureTextEntry={!showPassword}
