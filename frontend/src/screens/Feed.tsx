@@ -84,14 +84,17 @@ const Feed: React.FC = () => {
     isLoading: loading,
     isRefetching: refreshing,
     refetch,
-  } = useListings({
-    category: selectedCategory,
-    tags: selectedTags,
-    priceRange: effectivePriceRange,
-  }, {
-    page: 0,
-    pageSize: 60,
-  });
+  } = useListings(
+    {
+      category: selectedCategory,
+      tags: selectedTags,
+      priceRange: effectivePriceRange,
+    },
+    {
+      page: 0,
+      pageSize: 60,
+    },
+  );
 
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();

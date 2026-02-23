@@ -68,7 +68,8 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
     return listings.slice(0, compactItemLimit);
   }, [collapsed, listings, compactItemLimit]);
 
-  const shouldShowExpandToggle = listings.length > compactItemLimit || !collapsed;
+  const shouldShowExpandToggle =
+    listings.length > compactItemLimit || !collapsed;
 
   const formatPrice = (priceCents: number) => {
     return (priceCents / 100).toLocaleString("en-US", {
@@ -126,7 +127,9 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
       <View style={styles.headerRow} testID="buy-again-header">
         <View style={styles.headerTextWrap}>
           <Text style={styles.title}>{title}</Text>
-          {!collapsed && !!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {!collapsed && !!subtitle && (
+            <Text style={styles.subtitle}>{subtitle}</Text>
+          )}
         </View>
 
         {!loading && shouldShowExpandToggle && (
@@ -134,7 +137,9 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
             style={styles.expandButton}
             onPress={() => setCollapsed((current) => !current)}
             accessibilityRole="button"
-            accessibilityLabel={collapsed ? "Expand buy again" : "Collapse buy again"}
+            accessibilityLabel={
+              collapsed ? "Expand buy again" : "Collapse buy again"
+            }
             testID="buy-again-toggle"
           >
             <Text style={styles.expandButtonText}>
@@ -148,14 +153,20 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={collapsed ? styles.compactRow : styles.expandedRow}
-        testID={collapsed ? "buy-again-collapsed-row" : "buy-again-expanded-row"}
+        contentContainerStyle={
+          collapsed ? styles.compactRow : styles.expandedRow
+        }
+        testID={
+          collapsed ? "buy-again-collapsed-row" : "buy-again-expanded-row"
+        }
       >
         {loading
           ? [0, 1, 2, 3].map((key) => (
               <View
                 key={key}
-                style={collapsed ? styles.compactSkeleton : styles.expandedSkeleton}
+                style={
+                  collapsed ? styles.compactSkeleton : styles.expandedSkeleton
+                }
               />
             ))
           : compactListings.map((listing) => {
@@ -188,11 +199,21 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
                         <Text style={styles.compactTitle} numberOfLines={1}>
                           {listing.title}
                         </Text>
-                        <Text style={styles.compactPrice}>{formatPrice(listing.price_cents)}</Text>
+                        <Text style={styles.compactPrice}>
+                          {formatPrice(listing.price_cents)}
+                        </Text>
                       </View>
-                      <View style={[styles.statusBubble, isAdded && styles.statusBubbleAdded]}>
+                      <View
+                        style={[
+                          styles.statusBubble,
+                          isAdded && styles.statusBubbleAdded,
+                        ]}
+                      >
                         {isAdding ? (
-                          <ActivityIndicator color={Colors.white} size="small" />
+                          <ActivityIndicator
+                            color={Colors.white}
+                            size="small"
+                          />
                         ) : isAdded ? (
                           <Check color={Colors.white} size={14} />
                         ) : (
@@ -224,11 +245,21 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
                         <Text style={styles.expandedTitle} numberOfLines={1}>
                           {listing.title}
                         </Text>
-                        <Text style={styles.compactPrice}>{formatPrice(listing.price_cents)}</Text>
+                        <Text style={styles.compactPrice}>
+                          {formatPrice(listing.price_cents)}
+                        </Text>
                       </View>
-                      <View style={[styles.statusBubble, isAdded && styles.statusBubbleAdded]}>
+                      <View
+                        style={[
+                          styles.statusBubble,
+                          isAdded && styles.statusBubbleAdded,
+                        ]}
+                      >
                         {isAdding ? (
-                          <ActivityIndicator color={Colors.white} size="small" />
+                          <ActivityIndicator
+                            color={Colors.white}
+                            size="small"
+                          />
                         ) : isAdded ? (
                           <Check color={Colors.white} size={14} />
                         ) : (
@@ -239,13 +270,17 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
                   )}
 
                   <TouchableOpacity
-                    style={collapsed ? styles.compactDetail : styles.expandedDetail}
+                    style={
+                      collapsed ? styles.compactDetail : styles.expandedDetail
+                    }
                     onPress={() => handleGoToDetails(listing.id)}
                     accessibilityRole="button"
                     accessibilityLabel={`View details for ${listing.title}`}
                   >
                     <ChevronRight color={Colors.darkTeal} size={14} />
-                    {!collapsed && <Text style={styles.expandedDetailText}>Details</Text>}
+                    {!collapsed && (
+                      <Text style={styles.expandedDetailText}>Details</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               );
