@@ -8,6 +8,7 @@ import {
   StatusBar,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -18,6 +19,7 @@ import {
   Bike,
   ShoppingCart,
   MessageCircle,
+  Navigation,
 } from "lucide-react-native";
 import {
   useFocusEffect,
@@ -32,6 +34,7 @@ import NativeOSMMap from "../components/NativeOSMMap";
 import { getMapTileUrlTemplate } from "../lib/osm";
 import { addOrderToCart, summarizeBatchResults } from "../lib/api/repeatBuying";
 import { getOrCreateConversation } from "../lib/api/messages";
+import { buildOpenInMapsUrl } from "../lib/mapsLinking";
 
 type OrderDetailsNavigationProp = NativeStackNavigationProp<any>;
 
@@ -77,6 +80,13 @@ interface TrackingLocation {
   lat: number;
   lng: number;
   updatedAt: string | null;
+}
+
+interface PickupLocation {
+  pickup_address: string;
+  pickup_building_name?: string | null;
+  pickup_lat: number;
+  pickup_lng: number;
 }
 
 const formatPrice = (cents: number) =>
@@ -165,6 +175,7 @@ const OrderDetails: React.FC = () => {
   const [reordering, setReordering] = useState(false);
   const [openingConversationForListing, setOpeningConversationForListing] =
     useState<number | null>(null);
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
@@ -200,6 +211,25 @@ const OrderDetails: React.FC = () => {
     },
     [],
   );
+
+  const openPickupInMaps = useCallback(async (loc: PickupLocation) => {
+    const platform =
+      Platform.OS === "ios"
+        ? "ios"
+        : Platform.OS === "android"
+          ? "android"
+          : "web";
+    const url = buildOpenInMapsUrl({
+      platform,
+      address: loc.pickup_address,
+      coordinate: { latitude: loc.pickup_lat, longitude: loc.pickup_lng },
+    });
+    try {
+      await Linking.openURL(url);
+    } catch {
+      alert("Error", "Could not open maps.");
+    }
+  }, []);
 
   const fetchOrder = useCallback(async () => {
     setErrorMsg(null);
@@ -274,6 +304,14 @@ const OrderDetails: React.FC = () => {
             setTrackingLocation(null);
           }
         }
+      } else if (orderData?.delivery_method === "pickup") {
+        setDeliveryOrders([]);
+        setTrackingLocation(null);
+        const { data: pickupData } = await supabase.rpc(
+          "get_pickup_locations_for_order",
+          { p_order_id: orderId },
+        );
+        setPickupLocations((pickupData as PickupLocation[]) || []);
       } else {
         setDeliveryOrders([]);
         setTrackingLocation(null);
@@ -615,6 +653,38 @@ const OrderDetails: React.FC = () => {
                   {order.delivery_address}
                 </Text>
               </View>
+            ) : null}
+
+            {order.delivery_method === "pickup" &&
+            pickupLocations.length > 0 ? (
+              <>
+                {pickupLocations.map((loc, i) => (
+                  <View key={i}>
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaLabel}>Pickup Location</Text>
+                      <Text
+                        style={[
+                          styles.metaValue,
+                          { flex: 1, textAlign: "right" },
+                        ]}
+                      >
+                        {loc.pickup_building_name
+                          ? `${loc.pickup_building_name}\n${loc.pickup_address}`
+                          : loc.pickup_address}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.mapsButton}
+                      onPress={() => openPickupInMaps(loc)}
+                    >
+                      <Navigation size={18} color={Colors.primary_blue} />
+                      <Text style={styles.mapsButtonText}>
+                        Open in Google Maps
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
             ) : null}
           </View>
 
@@ -1029,6 +1099,24 @@ const styles = StyleSheet.create({
   summaryBold: {
     fontWeight: "700",
     color: Colors.darkTeal,
+  },
+  mapsButton: {
+    marginTop: Spacing.xs,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+    backgroundColor: Colors.white,
+  },
+  mapsButtonText: {
+    color: Colors.primary_blue,
+    fontSize: 15,
+    fontWeight: "600",
+    fontFamily: Typography.buttonText.fontFamily,
   },
   cancelButton: {
     marginTop: Spacing.md,
