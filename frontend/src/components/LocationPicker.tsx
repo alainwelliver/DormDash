@@ -95,7 +95,7 @@ export default function LocationPicker({
   onChange,
   placeholder = "Select pickup location",
   label = "Pickup Location",
-  helperText = "This location is hidden from buyers and only shown to dashers.",
+  helperText = "This location is hidden from buyers and only shown to dashers, unless the  buyer self-pickup.",
 }: LocationPickerProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

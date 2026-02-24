@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CheckCircle, Mail, Home, Receipt } from "lucide-react-native";
+import { CheckCircle, Mail, Home, Receipt, MapPin } from "lucide-react-native";
 import type { NavigationProp, RouteProp } from "@react-navigation/native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
@@ -24,6 +24,8 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
   const [processingWarning, setProcessingWarning] = useState<string | null>(
     null,
   );
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [isPickupOrder, setIsPickupOrder] = useState(false);
   const hasFinalizedRef = useRef(false);
 
   useEffect(() => {
@@ -93,6 +95,10 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           }
         }
 
+        if (orderId && !Number.isNaN(orderId)) {
+          setOrderId(orderId);
+        }
+
         if (!orderId || Number.isNaN(orderId)) {
           console.warn("No orderId found in URL, route params, or storage");
           setProcessingWarning(
@@ -153,6 +159,8 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           setProcessingOrder(false);
           return;
         }
+
+        setIsPickupOrder(orderData.delivery_method === "pickup");
 
         const { data: items, error: orderItemsError } = await supabase
           .from("order_items")
@@ -241,6 +249,17 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
+  const handleViewPickupLocation = () => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        { name: "MainTabs" },
+        { name: "PastOrders" },
+        { name: "OrderDetails", params: { orderId } },
+      ],
+    });
+  };
+
   if (processingOrder) {
     return (
       <SafeAreaView style={styles.container}>
@@ -305,6 +324,20 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
             />
             <Text style={styles.secondaryButtonText}>View Orders</Text>
           </TouchableOpacity>
+
+          {isPickupOrder && orderId ? (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleViewPickupLocation}
+            >
+              <MapPin
+                size={20}
+                color={Colors.primary_blue}
+                style={{ marginRight: Spacing.sm }}
+              />
+              <Text style={styles.secondaryButtonText}>View Pickup Location</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
     </SafeAreaView>
