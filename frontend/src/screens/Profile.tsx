@@ -22,6 +22,7 @@ import {
   ChevronRight,
   X,
   RefreshCw,
+  MessageCircle,
 } from "lucide-react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -39,6 +40,7 @@ import {
   SurfaceCard,
 } from "../components";
 import { supabase } from "../lib/supabase";
+import { useUnreadConversationCount } from "../lib/api/messages";
 import {
   alert,
   pickSingleImage,
@@ -60,6 +62,7 @@ interface UserStats {
 type ProfileNavigationProp = NativeStackNavigationProp<{
   MyListings: undefined;
   PastOrders: undefined;
+  Inbox: undefined;
   SavedCarts: undefined;
   AddressList: undefined;
   PaymentList: undefined;
@@ -86,6 +89,7 @@ const Profile: React.FC = () => {
     ordersCount: 0,
     reviewsCount: 0,
   });
+  const { data: unreadMessagesCount = 0 } = useUnreadConversationCount();
 
   const formatPhoneNumber = (text: string) => {
     // Remove all non-numeric characters
@@ -322,6 +326,12 @@ const Profile: React.FC = () => {
       badge: "History",
     },
     {
+      title: "Messages",
+      IconComponent: MessageCircle,
+      route: "Inbox",
+      badge: "Inbox",
+    },
+    {
       title: "Saved Routines",
       IconComponent: RefreshCw,
       route: "SavedCarts",
@@ -444,7 +454,19 @@ const Profile: React.FC = () => {
                 <Text style={styles.menuItemText}>{item.title}</Text>
               </View>
               <View style={styles.menuRight}>
-                <StatusPill label={item.badge} tone="info" />
+                {item.route === "Inbox" ? (
+                  unreadMessagesCount > 0 ? (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadBadgeText}>
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </Text>
+                    </View>
+                  ) : (
+                    <StatusPill label={item.badge} tone="info" />
+                  )
+                ) : (
+                  <StatusPill label={item.badge} tone="info" />
+                )}
                 <ChevronRight color={Colors.mutedGray} size={20} />
               </View>
             </SurfaceCard>
@@ -734,6 +756,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+  },
+  unreadBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    backgroundColor: Colors.primary_blue,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unreadBadgeText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "700",
+    color: Colors.white,
   },
   webButton: {
     cursor: "pointer",

@@ -72,6 +72,8 @@ const linking: LinkingOptions<any> = {
       PastOrders: "past-orders",
       SavedCarts: "saved-carts",
       OrderDetails: "order/:orderId",
+      Inbox: "messages",
+      Conversation: "messages/:conversationId",
       AddressList: "addresses",
       AddAddress: "add-address",
       PaymentList: "payments",
@@ -105,6 +107,8 @@ import MyListings from "../screens/ProfileMyListings";
 import PastOrders from "../screens/ProfilePastOrders";
 import SavedCarts from "../screens/ProfileSavedCarts";
 import OrderDetails from "../screens/OrderDetails";
+import Inbox from "../screens/Inbox";
+import Conversation from "../screens/Conversation";
 import AddressList from "../screens/ProfileAddressList";
 import AddAddress from "../screens/ProfileAddAddress";
 import PaymentList from "../screens/ProfilePaymentList";
@@ -170,6 +174,8 @@ type MainStackParamList = {
   PastOrders: undefined;
   SavedCarts: undefined;
   OrderDetails: { orderId: number };
+  Inbox: undefined;
+  Conversation: { conversationId: number; listingId?: number };
   AddressList: undefined;
   AddAddress: { addressId?: number } | undefined;
   PaymentList: undefined;
@@ -398,6 +404,12 @@ export default function AppNavigator() {
           <MainStack.Screen name="PastOrders" component={PastOrders} />
           <MainStack.Screen name="SavedCarts" component={SavedCarts} />
           <MainStack.Screen name="OrderDetails" component={OrderDetails} />
+          <MainStack.Screen name="Inbox" component={Inbox} />
+          <MainStack.Screen
+            name="Conversation"
+            component={Conversation}
+            options={{ headerShown: false }}
+          />
           <MainStack.Screen name="AddressList" component={AddressList} />
           <MainStack.Screen name="AddAddress" component={AddAddress} />
           <MainStack.Screen name="PaymentList" component={PaymentList} />

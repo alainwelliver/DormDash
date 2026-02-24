@@ -17,6 +17,7 @@ import {
   MapPin,
   Bike,
   ShoppingCart,
+  MessageCircle,
 } from "lucide-react-native";
 import {
   useFocusEffect,
@@ -30,6 +31,7 @@ import { alert } from "../lib/utils/platform";
 import NativeOSMMap from "../components/NativeOSMMap";
 import { getMapTileUrlTemplate } from "../lib/osm";
 import { addOrderToCart, summarizeBatchResults } from "../lib/api/repeatBuying";
+import { getOrCreateConversation } from "../lib/api/messages";
 
 type OrderDetailsNavigationProp = NativeStackNavigationProp<any>;
 
@@ -39,6 +41,7 @@ type RouteParams = {
 
 interface OrderItem {
   id: number;
+  listing_id: number;
   title: string;
   price_cents: number;
   quantity: number;
@@ -160,6 +163,8 @@ const OrderDetails: React.FC = () => {
   const [trackingLocation, setTrackingLocation] =
     useState<TrackingLocation | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [openingConversationForListing, setOpeningConversationForListing] =
+    useState<number | null>(null);
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
@@ -209,9 +214,9 @@ const OrderDetails: React.FC = () => {
       }
 
       const withCoordsSelect =
-        "id, status, delivery_method, delivery_address, delivery_lat, delivery_lng, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, title, price_cents, quantity)";
+        "id, status, delivery_method, delivery_address, delivery_lat, delivery_lng, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, listing_id, title, price_cents, quantity)";
       const withoutCoordsSelect =
-        "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, title, price_cents, quantity)";
+        "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, listing_id, title, price_cents, quantity)";
 
       let orderData: any = null;
       let orderError: any = null;
@@ -450,6 +455,27 @@ const OrderDetails: React.FC = () => {
       alert("Error", "Couldn't add this order to your cart.");
     } finally {
       setReordering(false);
+    }
+  };
+
+  const handleMessageSeller = async (listingId: number) => {
+    if (!listingId || openingConversationForListing) return;
+    setOpeningConversationForListing(listingId);
+
+    try {
+      const conversation = await getOrCreateConversation(listingId);
+      navigation.navigate("Conversation", {
+        conversationId: Number(conversation.id),
+        listingId,
+      });
+    } catch (error: any) {
+      console.error("Unable to open seller chat:", error);
+      alert(
+        "Unable to start chat",
+        error?.message || "Please try again in a moment.",
+      );
+    } finally {
+      setOpeningConversationForListing(null);
     }
   };
 
@@ -695,6 +721,37 @@ const OrderDetails: React.FC = () => {
                     <Text style={styles.lineItemMeta}>
                       {formatPrice(item.price_cents)} · Qty {item.quantity}
                     </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.messageSellerButton,
+                        openingConversationForListing === item.listing_id && {
+                          opacity: 0.75,
+                        },
+                      ]}
+                      onPress={() =>
+                        handleMessageSeller(Number(item.listing_id))
+                      }
+                      disabled={
+                        openingConversationForListing === item.listing_id
+                      }
+                    >
+                      {openingConversationForListing === item.listing_id ? (
+                        <ActivityIndicator
+                          color={Colors.primary_blue}
+                          size="small"
+                        />
+                      ) : (
+                        <>
+                          <MessageCircle
+                            color={Colors.primary_blue}
+                            size={14}
+                          />
+                          <Text style={styles.messageSellerButtonText}>
+                            Message Seller
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
                   </View>
                   <Text style={styles.lineItemTotal}>
                     {formatPrice(item.price_cents * item.quantity)}
@@ -925,6 +982,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
+  },
+  messageSellerButton: {
+    marginTop: Spacing.sm,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.lightMint,
+  },
+  messageSellerButtonText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "700",
+    color: Colors.primary_blue,
   },
   lineItemTotal: {
     fontSize: 14,

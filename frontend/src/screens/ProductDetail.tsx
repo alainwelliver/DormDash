@@ -28,6 +28,7 @@ import {
   ChevronRight,
   User,
   ShoppingCart,
+  MessageCircle,
 } from "lucide-react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type {
@@ -40,6 +41,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { StatusPill, StickyActionBar, SurfaceCard } from "../components";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getOrCreateConversation } from "../lib/api/messages";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isWeb = Platform.OS === "web";
@@ -49,6 +51,7 @@ type MainStackParamList = {
   ProductDetail: { listingId: number };
   EditListing: { listingId: number };
   PaymentPortal: { priceCents: number; listingTitle: string };
+  Conversation: { conversationId: number; listingId?: number };
 };
 
 type ProductDetailProps = NativeStackScreenProps<
@@ -99,6 +102,7 @@ export default function ProductDetail({
   const [isOwner, setIsOwner] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [openingConversation, setOpeningConversation] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const imageScrollRef = useRef<ScrollView>(null);
@@ -340,6 +344,37 @@ export default function ProductDetail({
       alert("Error", "Failed to submit review. Please try again.");
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleMessageSeller = async () => {
+    if (!listing) return;
+    if (isOwner || openingConversation) return;
+
+    try {
+      setOpeningConversation(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        alert("Login Required", "Please log in to message the seller.");
+        return;
+      }
+
+      const conversation = await getOrCreateConversation(Number(listing.id));
+      navigation.navigate("Conversation", {
+        conversationId: Number(conversation.id),
+        listingId: Number(listing.id),
+      });
+    } catch (error: any) {
+      console.error("Unable to open conversation:", error);
+      alert(
+        "Unable to start chat",
+        error?.message || "Please try again in a moment.",
+      );
+    } finally {
+      setOpeningConversation(false);
     }
   };
 
@@ -671,6 +706,27 @@ export default function ProductDetail({
                 )}
               </View>
             </SurfaceCard>
+            {!isOwner ? (
+              <TouchableOpacity
+                style={[
+                  styles.messageSellerButton,
+                  openingConversation && styles.messageSellerButtonDisabled,
+                ]}
+                onPress={handleMessageSeller}
+                disabled={openingConversation}
+              >
+                {openingConversation ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <>
+                    <MessageCircle color={Colors.white} size={18} />
+                    <Text style={styles.messageSellerButtonText}>
+                      Message Seller
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
 
@@ -978,6 +1034,25 @@ const styles = StyleSheet.create({
   },
   sellerInfo: {
     flex: 1,
+  },
+  messageSellerButton: {
+    marginTop: Spacing.sm,
+    backgroundColor: Colors.primary_blue,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: Spacing.xs,
+  },
+  messageSellerButtonDisabled: {
+    opacity: 0.7,
+  },
+  messageSellerButtonText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
   },
   sellerName: {
     ...Typography.bodyLarge,

@@ -242,7 +242,10 @@ export default function AuthWelcome() {
               style={[styles.heroContent, isLargeWeb && styles.heroContentWeb]}
             >
               <View
-                style={[styles.heroPrimary, isLargeWeb && styles.heroPrimaryWeb]}
+                style={[
+                  styles.heroPrimary,
+                  isLargeWeb && styles.heroPrimaryWeb,
+                ]}
               >
                 <View style={styles.badgesTopRow}>
                   <LiveBadge label="Campus live" />
