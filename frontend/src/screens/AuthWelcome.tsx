@@ -242,7 +242,7 @@ export default function AuthWelcome() {
               style={[styles.heroContent, isLargeWeb && styles.heroContentWeb]}
             >
               <View
-                style={[styles.heroPrimary, isWeb && styles.heroPrimaryWeb]}
+                style={[styles.heroPrimary, isLargeWeb && styles.heroPrimaryWeb]}
               >
                 <View style={styles.badgesTopRow}>
                   <LiveBadge label="Campus live" />
@@ -271,7 +271,11 @@ export default function AuthWelcome() {
 
                 <View style={[styles.ctaRow, isLargeWeb && styles.ctaRowWeb]}>
                   <TouchableOpacity
-                    style={[styles.ctaButton, styles.ctaButtonPrimary]}
+                    style={[
+                      styles.ctaButton,
+                      styles.ctaButtonPrimary,
+                      isLargeWeb && styles.ctaButtonWeb,
+                    ]}
                     onPress={() => navigation.navigate("Register")}
                   >
                     <Text style={styles.ctaButtonPrimaryText}>
@@ -281,7 +285,11 @@ export default function AuthWelcome() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.ctaButton, styles.ctaButtonSecondary]}
+                    style={[
+                      styles.ctaButton,
+                      styles.ctaButtonSecondary,
+                      isLargeWeb && styles.ctaButtonWeb,
+                    ]}
                     onPress={() => navigation.navigate("Login")}
                   >
                     <Text style={styles.ctaButtonSecondaryText}>Login</Text>
@@ -290,7 +298,10 @@ export default function AuthWelcome() {
                 </View>
               </View>
 
-              <SurfaceCard variant="glass" style={styles.heroPanel}>
+              <SurfaceCard
+                variant="glass"
+                style={[styles.heroPanel, isLargeWeb && styles.heroPanelWeb]}
+              >
                 <SectionHeader
                   title="Why students choose DormDash"
                   subtitle="Designed around campus speed and trust."
@@ -413,7 +424,11 @@ export default function AuthWelcome() {
             </View>
             <View style={[styles.ctaRow, isLargeWeb && styles.ctaRowWeb]}>
               <TouchableOpacity
-                style={[styles.ctaButton, styles.ctaButtonPrimary]}
+                style={[
+                  styles.ctaButton,
+                  styles.ctaButtonPrimary,
+                  isLargeWeb && styles.ctaButtonWeb,
+                ]}
                 onPress={() => navigation.navigate("Register")}
               >
                 <Text style={styles.ctaButtonPrimaryText}>Create Account</Text>
@@ -421,7 +436,11 @@ export default function AuthWelcome() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.ctaButton, styles.ctaButtonSecondary]}
+                style={[
+                  styles.ctaButton,
+                  styles.ctaButtonSecondary,
+                  isLargeWeb && styles.ctaButtonWeb,
+                ]}
                 onPress={() => navigation.navigate("Login")}
               >
                 <Text style={styles.ctaButtonSecondaryText}>Login</Text>
@@ -504,10 +523,10 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   heroPrimary: {
-    flex: 1.35,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   heroPrimaryWeb: {
+    flex: 1.35,
     justifyContent: "flex-start",
   },
   badgesTopRow: {
@@ -579,6 +598,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.sm,
     minHeight: 56,
+  },
+  ctaButtonWeb: {
     flex: 1,
   },
   ctaButtonPrimary: {
@@ -601,12 +622,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   heroPanel: {
-    flex: 1,
-    minWidth: 280,
     justifyContent: "center",
-    alignSelf: "stretch",
+    alignSelf: "auto",
     borderColor: SemanticColors.borderSubtle,
     ...Shadows.md,
+  },
+  heroPanelWeb: {
+    flex: 1,
+    minWidth: 280,
+    alignSelf: "stretch",
   },
   heroPanelRows: {
     gap: Spacing.md,
