@@ -308,7 +308,7 @@ const DeliveryDetail: React.FC = () => {
 
     const interval = setInterval(() => {
       void refreshCurrentLocation();
-    }, 12000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [deliveryOrder, refreshCurrentLocation]);

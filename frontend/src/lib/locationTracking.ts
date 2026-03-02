@@ -1,13 +1,11 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
-import { haversineDistanceMiles } from "./utils/distance";
 
 type TrackingSource = "foreground" | "background" | "manual";
 
 const BACKGROUND_LOCATION_TASK = "dormdash-delivery-location-task";
-const MIN_SEND_INTERVAL_MS = 5000;
-const MIN_MOVE_MILES = 0.01;
+const MIN_SEND_INTERVAL_MS = 10000;
 
 const TRACKING_DELIVERY_KEY = "activeTrackingDeliveryOrderId";
 const TRACKING_DASHER_KEY = "activeTrackingDasherId";
@@ -20,8 +18,6 @@ type LocationSubscription = { remove: () => void };
 let activeDeliveryOrderId: number | null = null;
 let activeDasherId: string | null = null;
 let lastSentAtMs = 0;
-let lastSentLat: number | null = null;
-let lastSentLng: number | null = null;
 let foregroundSubscription: LocationSubscription | null = null;
 let warnedAboutTrackingTable = false;
 
@@ -41,25 +37,14 @@ const loadTaskManagerModule = (): TaskManagerModule | null => {
   }
 };
 
-const shouldSendLocation = (lat: number, lng: number) => {
-  const now = Date.now();
-  const elapsed = now - lastSentAtMs;
-
-  if (lastSentLat == null || lastSentLng == null) return true;
-
-  const movedMiles = haversineDistanceMiles(
-    { lat: lastSentLat, lng: lastSentLng },
-    { lat, lng },
-  );
-
-  if (elapsed >= MIN_SEND_INTERVAL_MS) return true;
-  return movedMiles >= MIN_MOVE_MILES;
+const shouldSendLocation = () => {
+  if (lastSentAtMs === 0) return true;
+  const elapsed = Date.now() - lastSentAtMs;
+  return elapsed >= MIN_SEND_INTERVAL_MS;
 };
 
-const rememberLastSentLocation = (lat: number, lng: number) => {
+const rememberLastSentLocation = () => {
   lastSentAtMs = Date.now();
-  lastSentLat = lat;
-  lastSentLng = lng;
 };
 
 const persistTrackingIdentity = async (
@@ -129,7 +114,7 @@ const upsertTrackingRow = async (
     return false;
   }
 
-  rememberLastSentLocation(latitude, longitude);
+  rememberLastSentLocation();
   return true;
 };
 
@@ -137,8 +122,7 @@ const processLocation = async (
   location: LocationObject,
   source: TrackingSource,
 ) => {
-  const { latitude, longitude } = location.coords;
-  if (!shouldSendLocation(latitude, longitude)) return false;
+  if (source !== "manual" && !shouldSendLocation()) return false;
   return upsertTrackingRow(location, source);
 };
 
@@ -253,8 +237,8 @@ export const startDeliveryTracking = async (
   foregroundSubscription = await Location.watchPositionAsync(
     {
       accuracy: Location.Accuracy.Highest,
-      timeInterval: 5000,
-      distanceInterval: 10,
+      timeInterval: 10000,
+      distanceInterval: 0,
     },
     (location: LocationObject) => {
       void processLocation(location, "foreground");
@@ -266,9 +250,9 @@ export const startDeliveryTracking = async (
   if (backgroundPermission.granted) {
     await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
       accuracy: Location.Accuracy.Balanced,
-      deferredUpdatesDistance: 20,
+      deferredUpdatesDistance: 0,
       deferredUpdatesInterval: 10000,
-      distanceInterval: 20,
+      distanceInterval: 0,
       timeInterval: 10000,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
@@ -308,12 +292,34 @@ export const stopDeliveryTracking = async () => {
   activeDeliveryOrderId = null;
   activeDasherId = null;
   lastSentAtMs = 0;
-  lastSentLat = null;
-  lastSentLng = null;
   await clearPersistedTrackingIdentity();
 };
 
-export const getActiveTrackingDeliveryOrderId = async () => {
+const ensurePersistedTrackingIdentityStillActive = async () => {
   await hydrateTrackingIdentity();
+  if (!activeDeliveryOrderId || !activeDasherId) return;
+
+  const { data, error } = await supabase
+    .from("delivery_orders")
+    .select("status, dasher_id")
+    .eq("id", activeDeliveryOrderId)
+    .maybeSingle();
+
+  if (error) {
+    // Keep existing local session if network/auth is temporarily unavailable.
+    return;
+  }
+
+  const isOwnedByDasher = data?.dasher_id === activeDasherId;
+  const isTrackableStatus =
+    data?.status === "accepted" || data?.status === "picked_up";
+
+  if (!data || !isOwnedByDasher || !isTrackableStatus) {
+    await stopDeliveryTracking();
+  }
+};
+
+export const getActiveTrackingDeliveryOrderId = async () => {
+  await ensurePersistedTrackingIdentityStillActive();
   return activeDeliveryOrderId;
 };

@@ -159,6 +159,10 @@ const pickActiveDelivery = (deliveries: DeliveryOrder[]) => {
   );
 };
 
+const canBuyerViewTracking = (status?: string | null) => {
+  return status === "picked_up" || status === "delivered";
+};
+
 const OrderDetails: React.FC = () => {
   const navigation = useNavigation<OrderDetailsNavigationProp>();
   const route = useRoute();
@@ -176,6 +180,7 @@ const OrderDetails: React.FC = () => {
   const [openingConversationForListing, setOpeningConversationForListing] =
     useState<number | null>(null);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
+  const [trackingNowMs, setTrackingNowMs] = useState(() => Date.now());
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
 
   const canCancel = useMemo(() => {
@@ -187,9 +192,15 @@ const OrderDetails: React.FC = () => {
     () => pickActiveDelivery(deliveryOrders),
     [deliveryOrders],
   );
+  const canShowTrackingMap = canBuyerViewTracking(activeDelivery?.status);
 
   const loadTrackingForDelivery = useCallback(
-    async (deliveryOrderId: number) => {
+    async (deliveryOrderId: number, deliveryStatus?: string | null) => {
+      if (!canBuyerViewTracking(deliveryStatus)) {
+        setTrackingLocation(null);
+        return;
+      }
+
       const { data } = await supabase
         .from("delivery_tracking")
         .select("lat, lng, updated_at")
@@ -299,7 +310,7 @@ const OrderDetails: React.FC = () => {
           setDeliveryOrders(rows);
           const selected = pickActiveDelivery(rows);
           if (selected) {
-            await loadTrackingForDelivery(selected.id);
+            await loadTrackingForDelivery(selected.id, selected.status);
           } else {
             setTrackingLocation(null);
           }
@@ -365,10 +376,32 @@ const OrderDetails: React.FC = () => {
   }, [orderId, order]);
 
   useEffect(() => {
-    if (!activeDelivery?.id) return;
+    const interval = setInterval(() => {
+      setTrackingNowMs(Date.now());
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!activeDelivery?.id) {
+      setTrackingLocation(null);
+      return;
+    }
+
+    if (!canBuyerViewTracking(activeDelivery.status)) {
+      setTrackingLocation(null);
+      return;
+    }
 
     let didCancel = false;
-    void loadTrackingForDelivery(activeDelivery.id);
+    void loadTrackingForDelivery(activeDelivery.id, activeDelivery.status);
+
+    if (activeDelivery.status !== "picked_up") {
+      return () => {
+        didCancel = true;
+      };
+    }
 
     const channel = supabase
       .channel(`order-tracking-${activeDelivery.id}`)
@@ -396,7 +429,7 @@ const OrderDetails: React.FC = () => {
       didCancel = true;
       void supabase.removeChannel(channel);
     };
-  }, [activeDelivery?.id, loadTrackingForDelivery]);
+  }, [activeDelivery?.id, activeDelivery?.status, loadTrackingForDelivery]);
 
   const handleCancel = async () => {
     if (!order || !canCancel || cancelling) return;
@@ -566,6 +599,16 @@ const OrderDetails: React.FC = () => {
     }
     return [];
   }, [trackingLocation, dropoffLat, dropoffLng]);
+  const trackingAgeMs = useMemo(() => {
+    if (!trackingLocation?.updatedAt) return null;
+    const updatedAtMs = Date.parse(trackingLocation.updatedAt);
+    if (!Number.isFinite(updatedAtMs)) return null;
+    return trackingNowMs - updatedAtMs;
+  }, [trackingLocation?.updatedAt, trackingNowMs]);
+  const isTrackingStale =
+    activeDelivery?.status === "picked_up" &&
+    trackingAgeMs != null &&
+    trackingAgeMs > 45000;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -705,8 +748,21 @@ const OrderDetails: React.FC = () => {
                     Updated {formatDateTime(trackingLocation.updatedAt)}
                   </Text>
                 ) : null}
+                {isTrackingStale ? (
+                  <Text style={styles.trackingStaleText}>
+                    Location signal is delayed. Waiting for the dasher's latest
+                    update.
+                  </Text>
+                ) : null}
 
-                {mapCenter ? (
+                {!canShowTrackingMap ? (
+                  <View style={styles.mapFallback}>
+                    <MapPin size={16} color={Colors.primary_blue} />
+                    <Text style={styles.mapFallbackText}>
+                      Live tracking starts after the dasher picks up your order.
+                    </Text>
+                  </View>
+                ) : mapCenter ? (
                   <View style={styles.mapContainer}>
                     <NativeOSMMap
                       initialRegion={{
@@ -716,6 +772,7 @@ const OrderDetails: React.FC = () => {
                         longitudeDelta: 0.02,
                       }}
                       tileUrlTemplate={mapTileUrlTemplate}
+                      showsUserLocation
                       dropoff={
                         dropoffLat != null && dropoffLng != null
                           ? {
@@ -984,6 +1041,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
+  },
+  trackingStaleText: {
+    marginTop: Spacing.xs,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.warning,
   },
   mapContainer: {
     marginTop: Spacing.md,
