@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 export type MapCoordinate = {
   latitude: number;
@@ -170,9 +171,20 @@ const NativeOSMMap: React.FC<NativeOSMMapProps> = ({
     const onUserInteractStart = () => {
       isUserInteractingRef.current = true;
     };
+    const resizeMap = () => {
+      map.resize();
+    };
+    const onMapLoad = () => {
+      setMapLoadError(null);
+      resizeMap();
+      if (typeof window !== "undefined" && window.requestAnimationFrame) {
+        window.requestAnimationFrame(resizeMap);
+      }
+    };
     map.on("dragstart", onUserInteractStart);
     map.on("zoomstart", onUserInteractStart);
     map.on("rotatestart", onUserInteractStart);
+    map.on("load", onMapLoad);
     map.on("error", (event: any) => {
       const errorMessage =
         event?.error?.message ||
@@ -183,15 +195,30 @@ const NativeOSMMap: React.FC<NativeOSMMapProps> = ({
           : "Mapbox failed to load map tiles. Check your Mapbox token and style.",
       );
     });
-    map.on("load", () => {
-      setMapLoadError(null);
-    });
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", resizeMap);
+    }
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        resizeMap();
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
 
     return () => {
       map.off("dragstart", onUserInteractStart);
       map.off("zoomstart", onUserInteractStart);
       map.off("rotatestart", onUserInteractStart);
+      map.off("load", onMapLoad);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", resizeMap);
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
       markerRefs.current.forEach((marker) => marker.remove());
       markerRefs.current = [];
       if (userMarkerRef.current) {
@@ -429,7 +456,13 @@ const NativeOSMMap: React.FC<NativeOSMMapProps> = ({
     <View style={styles.container}>
       <div
         ref={mapContainerRef}
-        style={{ width: "100%", height: "100%", minHeight: 260 }}
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          height: "100%",
+          minHeight: 260,
+          display: "block",
+        }}
       />
       {mapLoadError ? (
         <View style={styles.geoWarning}>
@@ -448,7 +481,9 @@ const NativeOSMMap: React.FC<NativeOSMMapProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: "100%",
     minHeight: 260,
+    overflow: "hidden",
   },
   warningContainer: {
     minHeight: 180,
