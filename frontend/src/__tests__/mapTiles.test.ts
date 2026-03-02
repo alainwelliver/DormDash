@@ -1,14 +1,18 @@
 import {
+  getMapTileConfigFromEnv,
   getMapAttributionTextFromEnv,
   getMapTileUrlTemplateFromEnv,
 } from "../lib/mapTiles";
 
 describe("map tile template", () => {
-  test("falls back to default OSM template when no mapbox token", () => {
-    expect(getMapTileUrlTemplateFromEnv({})).toBe(
-      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    );
-    expect(getMapAttributionTextFromEnv({})).toBe("OpenStreetMap");
+  test("does not provide tile URL when no mapbox token", () => {
+    expect(getMapTileUrlTemplateFromEnv({})).toBeUndefined();
+    expect(getMapAttributionTextFromEnv({})).toBe("Native map data");
+    expect(getMapTileConfigFromEnv({})).toEqual({
+      provider: "none",
+      attribution: "Native map data",
+      hasToken: false,
+    });
   });
 
   test("uses mapbox default style when token exists", () => {
@@ -32,15 +36,9 @@ describe("map tile template", () => {
     );
   });
 
-  test("falls back to OSM when mapbox token is whitespace", () => {
-    const env = {
-      EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: "   ",
-      EXPO_PUBLIC_OSM_TILE_URL_TEMPLATE:
-        "https://tiles.example.com/{z}/{x}/{y}.png",
-    };
-    expect(getMapTileUrlTemplateFromEnv(env)).toBe(
-      "https://tiles.example.com/{z}/{x}/{y}.png",
-    );
-    expect(getMapAttributionTextFromEnv(env)).toBe("OpenStreetMap");
+  test("treats whitespace token as missing", () => {
+    const env = { EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN: "   " };
+    expect(getMapTileUrlTemplateFromEnv(env)).toBeUndefined();
+    expect(getMapAttributionTextFromEnv(env)).toBe("Native map data");
   });
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import MapView, { Marker, Polyline, UrlTile } from "react-native-maps";
 
 export type MapCoordinate = {
@@ -21,7 +21,7 @@ type MarkerInfo = {
 
 type NativeOSMMapProps = {
   initialRegion: MapRegion;
-  tileUrlTemplate: string;
+  tileUrlTemplate?: string;
   pickup?: MarkerInfo;
   dropoff?: MarkerInfo;
   dasher?: MarkerInfo;
@@ -44,15 +44,13 @@ const NativeOSMMap: React.FC<NativeOSMMapProps> = ({
     <MapView
       style={styles.map}
       initialRegion={initialRegion}
-      mapType={Platform.OS === "android" ? "none" : "standard"}
+      mapType="standard"
       showsUserLocation={showsUserLocation}
       showsMyLocationButton={showsMyLocationButton}
     >
-      <UrlTile
-        urlTemplate={tileUrlTemplate}
-        maximumZ={19}
-        shouldReplaceMapContent={Platform.OS === "android"}
-      />
+      {tileUrlTemplate ? (
+        <UrlTile urlTemplate={tileUrlTemplate} maximumZ={19} />
+      ) : null}
       {pickup ? (
         <Marker
           coordinate={pickup.coordinate}

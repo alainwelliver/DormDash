@@ -706,7 +706,7 @@ const OrderDetails: React.FC = () => {
                   </Text>
                 ) : null}
 
-                {Platform.OS !== "web" && mapCenter ? (
+                {mapCenter ? (
                   <View style={styles.mapContainer}>
                     <NativeOSMMap
                       initialRegion={{
@@ -750,8 +750,8 @@ const OrderDetails: React.FC = () => {
                   <View style={styles.mapFallback}>
                     <MapPin size={16} color={Colors.primary_blue} />
                     <Text style={styles.mapFallbackText}>
-                      Tracking map appears on iOS/Android using in-app map
-                      tiles.
+                      Tracking map is unavailable until delivery coordinates are
+                      available.
                     </Text>
                   </View>
                 )}

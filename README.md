@@ -24,9 +24,9 @@ Deploy and Build script: Run "pnpm deploy"
    - `backend/supabase/migrations/20260210_dasher_tracking.sql`
    - `backend/supabase/migrations/20260211_private_pickup_locations.sql`
    - `backend/supabase/migrations/20260212_split_delivery_orders_by_pickup_location.sql`
-3. Configure map tiles (optional):
-   - `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` (recommended for Mapbox tiles)
+3. Configure map tiles:
+   - `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN` (required for Mapbox tiles and web map rendering)
    - `EXPO_PUBLIC_MAPBOX_STYLE` (optional, default: `mapbox/streets-v12`)
-   - Fallback if no token: `EXPO_PUBLIC_OSM_TILE_URL_TEMPLATE`
+   - Without token, mobile falls back to native base maps and web shows a map configuration warning.
 4. Run in Expo Go for map testing:
    - `cd frontend && pnpm run start`

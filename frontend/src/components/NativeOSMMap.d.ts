@@ -19,7 +19,7 @@ type MarkerInfo = {
 
 type NativeOSMMapProps = {
   initialRegion: MapRegion;
-  tileUrlTemplate: string;
+  tileUrlTemplate?: string;
   pickup?: MarkerInfo;
   dropoff?: MarkerInfo;
   dasher?: MarkerInfo;

@@ -335,7 +335,9 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
                 color={Colors.primary_blue}
                 style={{ marginRight: Spacing.sm }}
               />
-              <Text style={styles.secondaryButtonText}>View Pickup Location</Text>
+              <Text style={styles.secondaryButtonText}>
+                View Pickup Location
+              </Text>
             </TouchableOpacity>
           ) : null}
         </View>

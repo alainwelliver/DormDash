@@ -560,7 +560,7 @@ const DeliveryDetail: React.FC = () => {
         </View>
       </View>
 
-      {Platform.OS !== "web" && initialRegion ? (
+      {initialRegion ? (
         <View style={styles.mapWrapper}>
           <NativeOSMMap
             initialRegion={initialRegion}
@@ -604,7 +604,7 @@ const DeliveryDetail: React.FC = () => {
         <View style={styles.mapFallback}>
           <MapPin size={20} color={Colors.primary_blue} />
           <Text style={styles.mapFallbackText}>
-            Live map is available on iOS/Android and uses in-app map tiles.
+            Live map is unavailable until delivery coordinates are available.
           </Text>
         </View>
       )}
