@@ -58,7 +58,7 @@ const createBuilder = (
 
 describe("repeatBuying API", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe("summarizeBatchResults", () => {
@@ -247,12 +247,12 @@ describe("repeatBuying API", () => {
         error: null,
       });
 
-      await createSavedCartFromCurrentCart("Study Snacks", "🍪");
+      await createSavedCartFromCurrentCart("Study Snacks", "cookie");
       expect(mockedSupabase.rpc).toHaveBeenCalledWith(
         "create_saved_cart_from_current_cart",
         {
           p_name: "Study Snacks",
-          p_icon: "🍪",
+          p_icon: "cookie",
         },
       );
     });
@@ -282,15 +282,14 @@ describe("repeatBuying API", () => {
 
       const rows = await fetchSavedCarts();
       expect(rows).toEqual([]);
-      expect(mockedSupabase.from).not.toHaveBeenCalled();
+      expect(mockedSupabase.rpc).not.toHaveBeenCalled();
     });
 
     test("builds saved cart previews and item counts", async () => {
       mockedSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-1" } },
       });
-
-      const savedCartsBuilder = createBuilder({
+      mockedSupabase.rpc.mockResolvedValue({
         data: [
           {
             id: 10,
@@ -299,47 +298,28 @@ describe("repeatBuying API", () => {
             created_at: "2026-02-11T10:00:00Z",
             updated_at: "2026-02-11T10:00:00Z",
             last_used_at: null,
+            item_count: 3,
+            preview_titles: ["Pizza", "Listing", "Soda"],
           },
           {
             id: 20,
             name: "Game Day",
-            icon: "🏀",
+            icon: "basketball",
             created_at: "2026-02-10T10:00:00Z",
             updated_at: "2026-02-10T11:00:00Z",
             last_used_at: "2026-02-11T09:00:00Z",
+            item_count: 1,
+            preview_titles: ["Listing"],
           },
         ],
         error: null,
       });
 
-      const savedCartItemsBuilder = createBuilder({
-        data: [
-          { saved_cart_id: 10, listing_id: 1, quantity: 1 },
-          { saved_cart_id: 10, listing_id: 999, quantity: 2 },
-          { saved_cart_id: 10, listing_id: 2, quantity: 1 },
-          { saved_cart_id: 20, listing_id: 3, quantity: 1 },
-        ],
-        error: null,
-      });
-
-      const listingsBuilder = createBuilder({
-        data: [
-          { id: 1, title: "Pizza" },
-          { id: 2, title: "Soda" },
-          { id: 3, title: "" },
-        ],
-        error: null,
-      });
-
-      mockedSupabase.from.mockImplementation((table: string) => {
-        if (table === "saved_carts") return savedCartsBuilder;
-        if (table === "saved_cart_items") return savedCartItemsBuilder;
-        if (table === "listings") return listingsBuilder;
-        throw new Error(`Unexpected table ${table}`);
-      });
-
       const rows = await fetchSavedCarts();
 
+      expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+        "get_saved_cart_summaries",
+      );
       expect(rows).toEqual([
         {
           id: 10,
@@ -354,7 +334,7 @@ describe("repeatBuying API", () => {
         {
           id: 20,
           name: "Game Day",
-          icon: "🏀",
+          icon: "basketball",
           created_at: "2026-02-10T10:00:00Z",
           updated_at: "2026-02-10T11:00:00Z",
           last_used_at: "2026-02-11T09:00:00Z",
@@ -368,14 +348,9 @@ describe("repeatBuying API", () => {
       mockedSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-1" } },
       });
-      mockedSupabase.from.mockImplementation((table: string) => {
-        if (table === "saved_carts") {
-          return createBuilder({
-            data: null,
-            error: new Error("saved carts failed"),
-          });
-        }
-        return createBuilder({ data: [], error: null });
+      mockedSupabase.rpc.mockResolvedValue({
+        data: null,
+        error: new Error("saved carts failed"),
       });
 
       await expect(fetchSavedCarts()).rejects.toThrow("saved carts failed");
@@ -413,85 +388,77 @@ describe("repeatBuying API", () => {
       mockedSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-1" } },
       });
-
-      const ordersBuilder = createBuilder({ data: [], error: null });
-      mockedSupabase.from.mockImplementation((table: string) => {
-        if (table === "orders") return ordersBuilder;
-        return createBuilder({ data: [], error: null });
+      mockedSupabase.rpc.mockResolvedValue({
+        data: [],
+        error: null,
       });
 
       const rows = await fetchBuyAgainListings(5);
       expect(rows).toEqual([]);
+      expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+        "get_buy_again_listing_cards",
+        { p_limit: 5 },
+      );
     });
 
     test("ranks listings by recency then quantity", async () => {
       mockedSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-1" } },
       });
-
-      const ordersBuilder = createBuilder({
+      mockedSupabase.rpc.mockResolvedValue({
         data: [
-          { id: 100, created_at: "2026-02-11T09:00:00Z" },
-          { id: 200, created_at: "2026-02-10T09:00:00Z" },
+          {
+            id: 2,
+            user_id: "seller-2",
+            title: "Bagel",
+            description: "Fresh",
+            price_cents: 250,
+            created_at: "2026-02-11T09:00:00Z",
+            available_quantity: 5,
+            condition: "good",
+            condition_rank: 3,
+            status: "active",
+            category_id: 1,
+            listing_tags: [2],
+            category_name: "Food",
+            primary_image_url: "https://example.com/bagel.png",
+            primary_image_sort_order: 0,
+          },
+          {
+            id: 1,
+            user_id: "seller-1",
+            title: "Apples",
+            description: "Crisp",
+            price_cents: 400,
+            created_at: "2026-02-10T09:00:00Z",
+            available_quantity: 2,
+            condition: "like_new",
+            condition_rank: 4,
+            status: "active",
+            category_id: 1,
+            listing_tags: [1],
+            category_name: "Food",
+            primary_image_url: "https://example.com/apples.png",
+            primary_image_sort_order: 0,
+          },
         ],
         error: null,
-      });
-
-      const orderItemsBuilder = createBuilder({
-        data: [
-          { order_id: 100, listing_id: 1, quantity: 2 },
-          { order_id: 100, listing_id: 2, quantity: 4 },
-          { order_id: 200, listing_id: 1, quantity: 1 },
-          { order_id: 200, listing_id: 3, quantity: 10 },
-        ],
-        error: null,
-      });
-
-      const listingsBuilder = createBuilder({
-        data: [
-          { id: 1, title: "Apples", price_cents: 400 },
-          { id: 2, title: "Bagel", price_cents: 250 },
-          { id: 3, title: "Cookies", price_cents: 500 },
-        ],
-        error: null,
-      });
-
-      mockedSupabase.from.mockImplementation((table: string) => {
-        if (table === "orders") return ordersBuilder;
-        if (table === "order_items") return orderItemsBuilder;
-        if (table === "listings") return listingsBuilder;
-        throw new Error(`Unexpected table ${table}`);
       });
 
       const rows = await fetchBuyAgainListings(2);
       expect(rows.map((row) => row.id)).toEqual([2, 1]);
+      expect(rows[0].listing_images?.[0]?.url).toBe(
+        "https://example.com/bagel.png",
+      );
     });
 
     test("throws when listing query fails", async () => {
       mockedSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: "user-1" } },
       });
-
-      mockedSupabase.from.mockImplementation((table: string) => {
-        if (table === "orders") {
-          return createBuilder({
-            data: [{ id: 1, created_at: "2026-02-11T09:00:00Z" }],
-            error: null,
-          });
-        }
-        if (table === "order_items") {
-          return createBuilder({
-            data: [{ order_id: 1, listing_id: 1, quantity: 1 }],
-            error: null,
-          });
-        }
-        if (table === "listings") {
-          return createBuilder({
-            data: null,
-            error: new Error("listing query failed"),
-          });
-        }
-        return createBuilder({ data: [], error: null });
+      mockedSupabase.rpc.mockResolvedValue({
+        data: null,
+        error: new Error("listing query failed"),
       });
 
       await expect(fetchBuyAgainListings()).rejects.toThrow(

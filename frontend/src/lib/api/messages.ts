@@ -60,19 +60,6 @@ const getCurrentUserId = async () => {
   return user?.id ?? null;
 };
 
-const getListingImageUrl = (
-  listingImages:
-    | Array<{ url?: string; sort_order?: number }>
-    | null
-    | undefined,
-) => {
-  if (!listingImages || listingImages.length === 0) return null;
-  const sorted = [...listingImages].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  );
-  return sorted[0]?.url || null;
-};
-
 const getSignedImageUrlMap = async (paths: string[]) => {
   if (paths.length === 0) return new Map<string, string | null>();
 
@@ -126,125 +113,21 @@ export const fetchInbox = async (
   if (!userId) return [];
 
   const { data, error } = await supabase
-    .from("conversation_participants")
-    .select(
-      `
-      conversation_id,
-      unread_count,
-      conversations!inner(
-        id,
-        listing_id,
-        buyer_id,
-        seller_id,
-        last_message_at,
-        last_message_preview,
-        updated_at,
-        listings(title, listing_images(url, sort_order))
-      )
-    `,
-    )
-    .eq("user_id", userId)
-    .limit(limit);
+    .rpc("get_inbox_threads", { p_limit: limit });
 
   if (error) throw error;
-
-  const participantRows = (data || []) as any[];
-  if (participantRows.length === 0) return [];
-
-  const normalized = participantRows
-    .map((row) => {
-      const conversation = Array.isArray(row.conversations)
-        ? row.conversations[0]
-        : row.conversations;
-      if (!conversation) return null;
-      const counterpartId =
-        conversation.buyer_id === userId
-          ? conversation.seller_id
-          : conversation.buyer_id;
-
-      return {
-        conversationId: Number(conversation.id),
-        listingId: Number(conversation.listing_id),
-        listingTitle: conversation.listings?.title || "Listing",
-        listingImageUrl: getListingImageUrl(
-          conversation.listings?.listing_images,
-        ),
-        counterpartId,
-        lastMessagePreview: conversation.last_message_preview || null,
-        lastMessageAt: conversation.last_message_at || null,
-        updatedAt: conversation.updated_at || null,
-        unreadCount: Number(row.unread_count || 0),
-      };
-    })
-    .filter(Boolean) as Array<{
-    conversationId: number;
-    listingId: number;
-    listingTitle: string;
-    listingImageUrl: string | null;
-    counterpartId: string;
-    lastMessagePreview: string | null;
-    lastMessageAt: string | null;
-    updatedAt: string | null;
-    unreadCount: number;
-  }>;
-
-  const counterpartIds = Array.from(
-    new Set(normalized.map((item) => item.counterpartId).filter(Boolean)),
-  );
-
-  let profileMap = new Map<
-    string,
-    { display_name: string | null; avatar_url: string | null }
-  >();
-  if (counterpartIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from("seller_profiles")
-      .select("id, display_name, avatar_url")
-      .in("id", counterpartIds);
-
-    if (profilesError) {
-      console.error(
-        "Unable to load message counterpart profiles:",
-        profilesError,
-      );
-    } else {
-      profileMap = new Map(
-        (profiles || []).map((row: any) => [
-          row.id,
-          {
-            display_name: row.display_name || null,
-            avatar_url: row.avatar_url || null,
-          },
-        ]),
-      );
-    }
-  }
-
-  return normalized
-    .map((item) => {
-      const profile = profileMap.get(item.counterpartId);
-      return {
-        id: item.conversationId,
-        listing_id: item.listingId,
-        listing_title: item.listingTitle,
-        listing_image_url: item.listingImageUrl,
-        counterpart_id: item.counterpartId,
-        counterpart_name: profile?.display_name || "DormDash user",
-        counterpart_avatar_url: profile?.avatar_url || null,
-        last_message_preview: item.lastMessagePreview,
-        last_message_at: item.lastMessageAt,
-        unread_count: item.unreadCount,
-      };
-    })
-    .sort((a, b) => {
-      const aTime = a.last_message_at
-        ? new Date(a.last_message_at).getTime()
-        : Number.MIN_SAFE_INTEGER;
-      const bTime = b.last_message_at
-        ? new Date(b.last_message_at).getTime()
-        : Number.MIN_SAFE_INTEGER;
-      return bTime - aTime;
-    });
+  return (data || []).map((row: any) => ({
+    id: Number(row.id),
+    listing_id: Number(row.listing_id),
+    listing_title: row.listing_title || "Listing",
+    listing_image_url: row.listing_image_url || null,
+    counterpart_id: row.counterpart_id,
+    counterpart_name: row.counterpart_name || "DormDash user",
+    counterpart_avatar_url: row.counterpart_avatar_url || null,
+    last_message_preview: row.last_message_preview || null,
+    last_message_at: row.last_message_at || null,
+    unread_count: Number(row.unread_count || 0),
+  }));
 };
 
 export const fetchUnreadConversationCount = async (): Promise<number> => {
@@ -269,40 +152,22 @@ export const fetchConversationHeader = async (
   if (!userId) throw new Error("Not authenticated");
 
   const { data, error } = await supabase
-    .from("conversations")
-    .select(
-      `
-      id,
-      listing_id,
-      buyer_id,
-      seller_id,
-      listings(title, listing_images(url, sort_order))
-    `,
-    )
-    .eq("id", conversationId)
-    .single();
+    .rpc("get_conversation_header_details", {
+      p_conversation_id: conversationId,
+    });
 
   if (error) throw error;
-
-  const counterpartId =
-    data.buyer_id === userId ? data.seller_id : data.buyer_id;
-  const listingRelation = Array.isArray((data as any).listings)
-    ? (data as any).listings[0]
-    : (data as any).listings;
-  const { data: profileData } = await supabase
-    .from("seller_profiles")
-    .select("id, display_name, avatar_url")
-    .eq("id", counterpartId)
-    .maybeSingle();
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("Conversation not found");
 
   return {
-    id: Number(data.id),
-    listing_id: Number(data.listing_id),
-    listing_title: listingRelation?.title || "Listing",
-    listing_image_url: getListingImageUrl(listingRelation?.listing_images),
-    counterpart_id: counterpartId,
-    counterpart_name: profileData?.display_name || "DormDash user",
-    counterpart_avatar_url: profileData?.avatar_url || null,
+    id: Number(row.id),
+    listing_id: Number(row.listing_id),
+    listing_title: row.listing_title || "Listing",
+    listing_image_url: row.listing_image_url || null,
+    counterpart_id: row.counterpart_id,
+    counterpart_name: row.counterpart_name || "DormDash user",
+    counterpart_avatar_url: row.counterpart_avatar_url || null,
   };
 };
 

@@ -11,12 +11,34 @@ export type ListingSortOption =
 export interface ListingSummary {
   id: number;
   title: string;
+  description?: string | null;
   price_cents: number;
   created_at?: string | null;
   available_quantity?: number | null;
   condition?: ListingCondition | null;
   status?: ListingStatus | null;
 }
+
+export interface ListingCardRow {
+  id: number;
+  user_id?: string | null;
+  title: string;
+  description?: string | null;
+  price_cents: number;
+  created_at?: string | null;
+  available_quantity?: number | null;
+  condition?: ListingCondition | null;
+  condition_rank?: number | null;
+  status?: ListingStatus | null;
+  category_id?: number | null;
+  listing_tags?: number[] | null;
+  category_name?: string | null;
+  primary_image_url?: string | null;
+  primary_image_sort_order?: number | null;
+}
+
+export const LISTING_CARD_VIEW_SELECT =
+  "id, user_id, title, description, price_cents, created_at, available_quantity, condition, condition_rank, status, category_id, listing_tags, category_name, primary_image_url, primary_image_sort_order";
 
 const CONDITION_LABELS: Record<ListingCondition, string> = {
   new: "New",
@@ -79,6 +101,32 @@ export const getListingStatusLabel = (status?: ListingStatus | null) => {
 export const getConditionRank = (condition?: ListingCondition | null) => {
   if (!condition) return CONDITION_RANKS.good;
   return CONDITION_RANKS[condition] || CONDITION_RANKS.good;
+};
+
+export const mapListingCardRow = <T extends ListingCardRow>(row: T) => {
+  const primaryImageUrl = row.primary_image_url || null;
+  const primaryImageSortOrder = Number(row.primary_image_sort_order ?? 0);
+
+  return {
+    id: Number(row.id),
+    user_id: row.user_id ?? undefined,
+    title: row.title,
+    description: row.description ?? null,
+    price_cents: Number(row.price_cents ?? 0),
+    created_at: row.created_at ?? null,
+    available_quantity: Number(row.available_quantity ?? 0),
+    condition: row.condition ?? null,
+    status: row.status ?? null,
+    category_id:
+      row.category_id == null ? null : Number(row.category_id),
+    listing_tags: Array.isArray(row.listing_tags)
+      ? row.listing_tags.map((tagId) => Number(tagId))
+      : [],
+    categories: row.category_name ? { name: row.category_name } : null,
+    listing_images: primaryImageUrl
+      ? [{ url: primaryImageUrl, sort_order: primaryImageSortOrder }]
+      : [],
+  };
 };
 
 export const isListingAvailable = (listing: {

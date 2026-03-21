@@ -156,23 +156,11 @@ export default function ProductDetail({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("seller_profiles")
-        .select("id, display_name, username, avatar_url, avg_rating, total_reviews")
+        .select(
+          "id, display_name, username, avatar_url, avg_rating, total_reviews, active_listings_count, member_since",
+        )
         .eq("id", listing!.user_id)
         .single();
-
-      const { count: activeListingsCount } = await supabase
-        .from("listings")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", listing!.user_id)
-        .eq("status", "active");
-
-      const { data: oldestListing } = await supabase
-        .from("listings")
-        .select("created_at")
-        .eq("user_id", listing!.user_id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
 
       if (error) {
         return {
@@ -181,15 +169,11 @@ export default function ProductDetail({
           avatar_url: null,
           avg_rating: 0,
           total_reviews: 0,
-          active_listings_count: activeListingsCount || 0,
-          member_since: oldestListing?.created_at || null,
+          active_listings_count: 0,
+          member_since: null,
         };
       }
-      return {
-        ...data,
-        active_listings_count: activeListingsCount || 0,
-        member_since: oldestListing?.created_at || null,
-      };
+      return data;
     },
     enabled: !!listing?.user_id,
     select: (data) => ({

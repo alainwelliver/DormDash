@@ -40,6 +40,9 @@ import {
 } from "../assets/styles";
 import { fetchBuyAgainListings } from "../lib/api/repeatBuying";
 import {
+  getConditionRank,
+  LISTING_CARD_VIEW_SELECT,
+  mapListingCardRow,
   SORT_OPTIONS,
   matchesConditionFilter,
   sortListings,
@@ -56,9 +59,6 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 >;
 
 const LISTINGS_PAGE_SIZE = 80;
-const EXPLORE_LISTING_SELECT =
-  "id, title, description, price_cents, created_at, available_quantity, condition, status, listing_images(url, sort_order), categories(name)";
-
 const Explore: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
   const { width: windowWidth } = useWindowDimensions();
@@ -149,8 +149,10 @@ const Explore: React.FC = () => {
 
   const fetchListings = async () => {
     let query = supabase
-      .from("listings")
-      .select(EXPLORE_LISTING_SELECT)
+      .from("listing_cards")
+      .select(LISTING_CARD_VIEW_SELECT)
+      .eq("status", "active")
+      .gt("available_quantity", 0)
       .order("created_at", { ascending: false })
       .range(0, LISTINGS_PAGE_SIZE - 1);
 
@@ -168,15 +170,17 @@ const Explore: React.FC = () => {
         .lte("price_cents", priceRange[1]);
     }
 
+    if (minimumCondition) {
+      query = query.gte("condition_rank", getConditionRank(minimumCondition));
+    }
+
     const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching listings:", error.message);
     } else {
-      const activeListings = (data || []).filter(
-        (listing: any) =>
-          listing.status === "active" &&
-          Number(listing.available_quantity || 0) > 0,
+      const activeListings = (data || []).map((listing: any) =>
+        mapListingCardRow(listing),
       );
       setListings(activeListings);
       setFilteredListings(activeListings);

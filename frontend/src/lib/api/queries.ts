@@ -5,8 +5,9 @@ import type {
   ListingSortOption,
 } from "../utils/listings";
 import {
-  matchesConditionFilter,
-  sortListings,
+  getConditionRank,
+  LISTING_CARD_VIEW_SELECT,
+  mapListingCardRow,
 } from "../utils/listings";
 
 // ============ Query Keys ============
@@ -16,6 +17,7 @@ export const queryKeys = {
       category?: number | null;
       tags?: number[];
       priceRange?: [number, number] | null;
+      minimumCondition?: ListingCondition | null;
     },
     options?: {
       page?: number;
@@ -45,8 +47,6 @@ interface ListingQueryOptions {
 
 const DEFAULT_LISTINGS_PAGE_SIZE = 40;
 const MAX_LISTINGS_PAGE_SIZE = 100;
-const LISTING_CARD_SELECT =
-  "id, title, price_cents, created_at, available_quantity, condition, status, listing_images(url, sort_order), categories(name)";
 
 export const fetchListings = async (
   filters: ListingFilters = {},
@@ -62,12 +62,33 @@ export const fetchListings = async (
   const rangeEnd = rangeStart + pageSize - 1;
 
   let query = supabase
-    .from("listings")
-    .select(LISTING_CARD_SELECT)
-    .order("created_at", { ascending: false })
+    .from("listing_cards")
+    .select(LISTING_CARD_VIEW_SELECT)
     .eq("status", "active")
     .gt("available_quantity", 0)
     .range(rangeStart, rangeEnd);
+
+  switch (sort) {
+    case "price_low":
+      query = query
+        .order("price_cents", { ascending: true })
+        .order("created_at", { ascending: false });
+      break;
+    case "price_high":
+      query = query
+        .order("price_cents", { ascending: false })
+        .order("created_at", { ascending: false });
+      break;
+    case "condition":
+      query = query
+        .order("condition_rank", { ascending: false })
+        .order("created_at", { ascending: false });
+      break;
+    case "newest":
+    default:
+      query = query.order("created_at", { ascending: false });
+      break;
+  }
 
   if (filters.category) {
     query = query.eq("category_id", filters.category);
@@ -83,13 +104,17 @@ export const fetchListings = async (
       .lte("price_cents", filters.priceRange[1]);
   }
 
+  if (filters.minimumCondition) {
+    query = query.gte(
+      "condition_rank",
+      getConditionRank(filters.minimumCondition),
+    );
+  }
+
   const { data, error } = await query;
 
   if (error) throw error;
-  const filtered = (data || []).filter((listing: any) =>
-    matchesConditionFilter(listing, filters.minimumCondition || null),
-  );
-  return sortListings(filtered, sort);
+  return (data || []).map((listing: any) => mapListingCardRow(listing));
 };
 
 export const useListings = (
