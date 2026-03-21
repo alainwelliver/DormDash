@@ -34,6 +34,7 @@ const StickyActionBar: React.FC<StickyActionBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
     backgroundColor: Colors.white,
     borderTopColor: Colors.borderLight,
     borderTopWidth: 1,

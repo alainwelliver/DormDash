@@ -23,7 +23,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     flexDirection: "row",
+    flexShrink: 1,
     gap: Spacing.xs,
+    maxWidth: "100%",
     paddingHorizontal: Spacing.sm,
     paddingVertical: 5,
   },
@@ -36,9 +38,11 @@ const styles = StyleSheet.create({
   text: {
     ...Typography.bodySmall,
     color: Colors.primary_green,
+    flexShrink: 1,
     fontWeight: "700",
-    textTransform: "uppercase",
     letterSpacing: 0.5,
+    lineHeight: 16,
+    textTransform: "uppercase",
   },
 });
 

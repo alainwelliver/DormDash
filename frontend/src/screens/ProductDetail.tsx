@@ -16,6 +16,7 @@ import {
   Platform,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  useWindowDimensions,
 } from "react-native";
 import {
   Star,
@@ -38,7 +39,13 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
-import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  WebLayout,
+} from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { StatusPill, StickyActionBar, SurfaceCard } from "../components";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -116,6 +123,9 @@ export default function ProductDetail({
 }: ProductDetailProps) {
   const { listingId } = route.params;
   const queryClient = useQueryClient();
+  const { width: windowWidth } = useWindowDimensions();
+  const isPhoneWeb = isWeb && windowWidth < WebLayout.breakpoints.sm;
+  const isWideWeb = isWeb && windowWidth >= WebLayout.breakpoints.lg;
 
   const [imageIndex, setImageIndex] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
@@ -678,7 +688,7 @@ export default function ProductDetail({
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isWeb && styles.headerWeb]}>
         <TouchableOpacity
           style={styles.headerIconButton}
           onPress={() => navigation.goBack()}
@@ -747,13 +757,30 @@ export default function ProductDetail({
         </Pressable>
       </Modal>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          isWeb && styles.scrollContentWeb,
+        ]}
+      >
         {/* Image Carousel */}
         {listing.listing_images && listing.listing_images.length > 0 ? (
-          <View style={styles.imageCarouselContainer}>
+          <View
+            style={[
+              styles.imageCarouselContainer,
+              isWeb && styles.imageCarouselContainerWeb,
+              isWideWeb && styles.imageCarouselContainerWide,
+            ]}
+          >
             {isWeb ? (
               // Web: Show single image, switch with arrows/indicators
-              <View style={styles.imageWrapper}>
+              <View
+                style={[
+                  styles.imageWrapper,
+                  styles.imageWrapperWeb,
+                  isWideWeb && styles.imageWrapperWebWide,
+                ]}
+              >
                 <Image
                   source={{ uri: listing.listing_images[imageIndex]?.url }}
                   style={styles.productImage}
@@ -826,7 +853,13 @@ export default function ProductDetail({
             )}
           </View>
         ) : (
-          <View style={styles.imageWrapper}>
+          <View
+            style={[
+              styles.imageWrapper,
+              isWeb && styles.imageWrapperWeb,
+              isWideWeb && styles.imageWrapperWebWide,
+            ]}
+          >
             <Image
               source={require("../../assets/icon.png")}
               style={styles.productImage}
@@ -836,7 +869,13 @@ export default function ProductDetail({
         )}
 
         {/* Product Info */}
-        <View style={styles.infoSection}>
+        <View
+          style={[
+            styles.infoSection,
+            isWeb && styles.sectionShellWeb,
+            isWideWeb && styles.sectionShellWide,
+          ]}
+        >
           <Text style={styles.title}>{listing.title}</Text>
           <Text style={styles.price}>{price}</Text>
 
@@ -916,9 +955,18 @@ export default function ProductDetail({
 
         {/* Seller Info */}
         {seller && (
-          <View style={styles.sellerSection}>
+          <View
+            style={[
+              styles.sellerSection,
+              isWeb && styles.sectionShellWeb,
+              isWideWeb && styles.sectionShellWide,
+            ]}
+          >
             <Text style={styles.sectionTitle}>Seller</Text>
-            <SurfaceCard variant="glass" style={styles.sellerCard}>
+            <SurfaceCard
+              variant="glass"
+              style={[styles.sellerCard, isPhoneWeb && styles.sellerCardPhoneWeb]}
+            >
               {seller.avatar_url ? (
                 <Image
                   source={{ uri: seller.avatar_url }}
@@ -985,7 +1033,13 @@ export default function ProductDetail({
         )}
 
         {/* Leave a Review Section */}
-        <View style={styles.leaveReviewSection}>
+        <View
+          style={[
+            styles.leaveReviewSection,
+            isWeb && styles.sectionShellWeb,
+            isWideWeb && styles.sectionShellWide,
+          ]}
+        >
           <Text style={styles.sectionTitle}>Leave a Review</Text>
 
           {/* Rating Selector */}
@@ -1040,7 +1094,13 @@ export default function ProductDetail({
 
         {/* Reviews Section */}
         {reviews.length > 0 && (
-          <View style={styles.reviewsSection}>
+          <View
+            style={[
+              styles.reviewsSection,
+              isWeb && styles.sectionShellWeb,
+              isWideWeb && styles.sectionShellWide,
+            ]}
+          >
             <Text style={styles.sectionTitle}>Reviews</Text>
             <View style={styles.ratingOverview}>
               <View style={styles.ratingScore}>
@@ -1077,7 +1137,13 @@ export default function ProductDetail({
 
         {/* Empty Reviews State */}
         {reviews.length === 0 && (
-          <View style={styles.noReviewsSection}>
+          <View
+            style={[
+              styles.noReviewsSection,
+              isWeb && styles.sectionShellWeb,
+              isWideWeb && styles.sectionShellWide,
+            ]}
+          >
             <Text style={styles.noReviewsText}>
               No reviews yet. Be the first to review!
             </Text>
@@ -1152,8 +1218,19 @@ export default function ProductDetail({
 
       {/* Add to Cart Button */}
       <StickyActionBar style={styles.buyButtonContainer}>
-        <Animated.View style={{ transform: [{ scale: addToCartScale }] }}>
-          <View style={styles.purchaseControls}>
+        <Animated.View
+          style={[
+            styles.buyActionInner,
+            isWeb && styles.buyActionInnerWeb,
+            { transform: [{ scale: addToCartScale }] },
+          ]}
+        >
+          <View
+            style={[
+              styles.purchaseControls,
+              isWeb && styles.purchaseControlsWeb,
+            ]}
+          >
             <View style={styles.quantityPicker}>
               <TouchableOpacity
                 style={styles.quantityPickerButton}
@@ -1222,6 +1299,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
   },
+  headerWeb: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
+    paddingHorizontal: Spacing.xl,
+  },
   headerIconButton: {
     width: 44,
     height: 44,
@@ -1241,10 +1324,27 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
+  scrollContentWeb: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: 148,
+  },
   imageCarouselContainer: {
     position: "relative",
     alignItems: "center",
     backgroundColor: Colors.lightMint,
+  },
+  imageCarouselContainerWeb: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    marginTop: Spacing.md,
+  },
+  imageCarouselContainerWide: {
+    marginTop: Spacing.lg,
   },
   imageWrapper: {
     width: "100%",
@@ -1254,6 +1354,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.lightMint,
     alignSelf: "center",
+  },
+  imageWrapperWeb: {
+    maxWidth: undefined,
+    height: 500,
+  },
+  imageWrapperWebWide: {
+    height: 560,
   },
   productImage: {
     width: "100%",
@@ -1299,6 +1406,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xl,
     backgroundColor: Colors.white,
+  },
+  sectionShellWeb: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 24,
+    marginTop: Spacing.lg,
+    overflow: "hidden",
+  },
+  sectionShellWide: {
+    paddingHorizontal: Spacing.xl,
   },
   metaPillsRow: {
     flexDirection: "row",
@@ -1386,6 +1506,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.lg,
+  },
+  sellerCardPhoneWeb: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   sellerAvatar: {
     width: 70,
@@ -1523,11 +1647,31 @@ const styles = StyleSheet.create({
   // Buy Button
   buyButtonContainer: {
     bottom: 0,
+    ...(isWeb
+      ? {
+          width: "100%",
+          maxWidth: 1180,
+          alignSelf: "center",
+          paddingHorizontal: Spacing.lg,
+          bottom: 12,
+        }
+      : null),
+  },
+  buyActionInner: {
+    width: "100%",
+  },
+  buyActionInnerWeb: {
+    alignSelf: "center",
+    maxWidth: 560,
   },
   purchaseControls: {
     marginBottom: Spacing.sm,
     alignItems: "center",
     gap: Spacing.xs,
+    width: "100%",
+  },
+  purchaseControlsWeb: {
+    alignItems: "center",
   },
   quantityPicker: {
     flexDirection: "row",
@@ -1556,6 +1700,7 @@ const styles = StyleSheet.create({
   },
   buyButton: {
     backgroundColor: Colors.primary_blue,
+    width: "100%",
     paddingVertical: Spacing.lg,
     borderRadius: BorderRadius.medium,
     alignItems: "center",

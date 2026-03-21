@@ -53,25 +53,33 @@ const Feed: React.FC = () => {
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const isPhoneWeb = isWeb && windowWidth < 520;
+  const isWideWeb = isWeb && windowWidth >= 1120;
   const isCompactMobile = !isWeb && windowWidth < 430;
 
   const getNumColumns = () => {
-    if (windowWidth >= 1200) return 4; // Fewer columns for bigger cards
-    if (windowWidth >= 900) return 3;
-    return 2; // Default to 2 columns for mobile
+    if (isPhoneWeb) return 1;
+    if (windowWidth >= 1400) return 4;
+    if (windowWidth >= 980) return 3;
+    return 2;
   };
 
   const numColumns = getNumColumns();
 
   const getCardWidth = () => {
-    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const containerWidth = isWeb
+      ? Math.min(windowWidth - (isPhoneWeb ? 24 : 48), 1360)
+      : Math.min(windowWidth, WebLayout.maxContentWidth);
     const totalGap = (numColumns - 1) * Spacing.lg;
-    const horizontalPadding = Spacing.lg * 2;
+    const horizontalPadding = isWeb ? 0 : Spacing.lg * 2;
     const availableWidth = containerWidth - horizontalPadding - totalGap;
     return Math.floor(availableWidth / numColumns);
   };
 
   const cardWidth = getCardWidth();
+  const headerPanelWidth = isWeb
+    ? Math.min(windowWidth - (isPhoneWeb ? 24 : 48), 1360)
+    : undefined;
 
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
@@ -220,8 +228,48 @@ const Feed: React.FC = () => {
   const renderListHeaderPanel = useCallback(
     () => (
       <View
-        style={[styles.listHeaderPanel, isWeb && styles.listHeaderPanelWeb]}
+        style={[
+          styles.listHeaderPanel,
+          isWeb && styles.listHeaderPanelWeb,
+          isWeb && { width: headerPanelWidth },
+        ]}
       >
+        {isWeb ? (
+          <SurfaceCard
+            variant="glass"
+            style={[
+              styles.discoveryHero,
+              isWideWeb && styles.discoveryHeroWide,
+              isPhoneWeb && styles.discoveryHeroCompact,
+            ]}
+          >
+            <View
+              style={[
+                styles.discoveryHeroRow,
+                isWideWeb && styles.discoveryHeroRowWide,
+              ]}
+            >
+              <View style={styles.discoveryHeroTextBlock}>
+                <Text style={styles.discoveryHeroEyebrow}>WEB MARKETPLACE</Text>
+                <Text style={styles.discoveryHeroTitle}>
+                  Browse faster from any screen size.
+                </Text>
+                <Text style={styles.discoveryHeroSubtitle}>
+                  Quick filters, instant add-to-cart, stock-aware cards, and
+                  recent reorders are all surfaced above the grid.
+                </Text>
+              </View>
+              <View style={styles.discoveryHeroBadges}>
+                <LiveBadge label="Fresh listings" />
+                <View style={styles.discoveryCountPill}>
+                  <Text style={styles.discoveryCountText}>
+                    {processedListings.length} live
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </SurfaceCard>
+        ) : null}
         <BuyAgainRail
           title="Buy Again"
           subtitle="Fast reorder from your recent favorites"
@@ -316,9 +364,13 @@ const Feed: React.FC = () => {
     [
       isCompactMobile,
       isWeb,
+      isPhoneWeb,
+      isWideWeb,
+      headerPanelWidth,
       quickMode,
       buyAgainListings,
       buyAgainLoading,
+      processedListings.length,
       sortOption,
     ],
   );
@@ -476,10 +528,74 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: Spacing.lg,
     paddingBottom: 2,
-    gap: Spacing.xs,
+    gap: Spacing.sm,
   },
   listHeaderPanelWeb: {
+    alignSelf: "center",
+    paddingHorizontal: 0,
+  },
+  discoveryHero: {
+    width: "100%",
+    maxWidth: 1360,
+    alignSelf: "center",
+    borderColor: "rgba(71, 190, 190, 0.2)",
+  },
+  discoveryHeroCompact: {
+    paddingHorizontal: Spacing.md,
+  },
+  discoveryHeroWide: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+  },
+  discoveryHeroRow: {
+    gap: Spacing.md,
+  },
+  discoveryHeroRowWide: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  discoveryHeroTextBlock: {
+    flex: 1,
+  },
+  discoveryHeroEyebrow: {
+    ...Typography.bodySmall,
+    color: Colors.primary_blue,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  discoveryHeroTitle: {
+    ...Typography.heading4,
+    color: Colors.darkTeal,
+    fontWeight: "800",
+    marginBottom: Spacing.xs,
+  },
+  discoveryHeroSubtitle: {
+    ...Typography.bodyMedium,
+    color: Colors.mutedGray,
+    lineHeight: 22,
+    maxWidth: 760,
+  },
+  discoveryHeroBadges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    alignItems: "center",
+  },
+  discoveryCountPill: {
+    backgroundColor: Colors.white,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: SemanticColors.borderSubtle,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    ...Shadows.sm,
+  },
+  discoveryCountText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
   },
   quickChipsRow: {
     flexDirection: "row",
@@ -530,7 +646,7 @@ const styles = StyleSheet.create({
   },
   metaCard: {
     width: "100%",
-    maxWidth: WebLayout.maxContentWidth,
+    maxWidth: 1360,
     alignSelf: "center",
   },
   sortRow: {
@@ -586,6 +702,7 @@ const styles = StyleSheet.create({
   },
   webListContent: {
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
   },
 });
 

@@ -87,6 +87,7 @@ function ListingCardComponent({
   const queryClient = useQueryClient();
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
+  const isPhoneWeb = isWeb && windowWidth < 520;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [menuVisible, setMenuVisible] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
@@ -98,15 +99,38 @@ function ListingCardComponent({
   const { data: savedListingIds = [] } = useSavedListingIds();
 
   const getCardWidth = () => {
-    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const maxContentWidth = isWeb
+      ? Math.min(windowWidth - (isPhoneWeb ? 24 : 48), 1360)
+      : Math.min(windowWidth, WebLayout.maxContentWidth);
     const totalGap = (numColumns - 1) * Spacing.lg;
-    const horizontalPadding = Spacing.lg * 2;
-    const availableWidth = containerWidth - horizontalPadding - totalGap;
-    return Math.floor(availableWidth / numColumns);
+    const availableWidth = maxContentWidth - totalGap;
+    const columnWidth = Math.floor(availableWidth / numColumns);
+
+    if (!isWeb) {
+      return columnWidth;
+    }
+
+    if (numColumns === 1) {
+      return Math.min(columnWidth, 520);
+    }
+
+    if (numColumns === 2) {
+      return Math.min(columnWidth, 340);
+    }
+
+    if (numColumns === 3) {
+      return Math.min(columnWidth, 300);
+    }
+
+    return Math.min(columnWidth, 272);
   };
 
   const cardWidth = getCardWidth();
-  const cardHeight = cardWidth * 1.25; // Taller aspect ratio for "poster" look
+  const cardHeight = isWeb
+    ? numColumns === 1
+      ? Math.min(cardWidth * 0.86, 420)
+      : cardWidth * 1.12
+    : cardWidth * 1.25;
 
   const price = (listing.price_cents / 100).toLocaleString("en-US", {
     style: "currency",
@@ -270,7 +294,11 @@ function ListingCardComponent({
 
   return (
     <TouchableOpacity
-      style={[styles.cardContainer, { width: cardWidth }]}
+      style={[
+        styles.cardContainer,
+        { width: cardWidth },
+        isWeb && numColumns === 1 && styles.singleColumnContainer,
+      ]}
       onPress={handleCardPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -355,7 +383,7 @@ function ListingCardComponent({
               variant={availableQuantity <= 1 ? "warning" : "success"}
             />
           </View>
-          <Text numberOfLines={2} style={styles.titleText}>
+          <Text numberOfLines={isWeb ? 3 : 2} style={styles.titleText}>
             {listing.title}
           </Text>
         </View>
@@ -434,6 +462,9 @@ function ListingCardComponent({
 const styles = StyleSheet.create({
   cardContainer: {
     marginBottom: Spacing.xl,
+  },
+  singleColumnContainer: {
+    alignSelf: "center",
   },
   card: {
     width: "100%",
@@ -525,8 +556,10 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: Colors.primary_green, // Use brand color for accent
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: "700",
+    lineHeight: 16,
     marginBottom: 4,
     textTransform: "uppercase",
   },
@@ -534,7 +567,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 18,
     fontWeight: "700",
-    lineHeight: 22,
+    lineHeight: 24,
     textShadowColor: "rgba(0, 0, 0, 0.75)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,

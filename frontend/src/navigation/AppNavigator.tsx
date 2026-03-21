@@ -200,6 +200,7 @@ function MainTabs() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
+  const isPhoneWeb = isWeb && width < WebLayout.breakpoints.sm;
   // Only use fixed width centered layout on larger web screens
   const isLargeWeb = isWeb && width > WebLayout.breakpoints.sm;
 
@@ -238,16 +239,16 @@ function MainTabs() {
         tabBarShowLabel: false, // Hide labels for a cleaner look
         tabBarStyle: {
           position: "absolute",
-          bottom: isWeb ? 20 : 25,
-          left: isLargeWeb ? "50%" : 20,
-          right: isLargeWeb ? "auto" : 20,
+          bottom: isWeb ? (isPhoneWeb ? 12 : 20) : 25,
+          left: isLargeWeb ? "50%" : isWeb ? 12 : 20,
+          right: isLargeWeb ? "auto" : isWeb ? 12 : 20,
           width: isLargeWeb ? WebLayout.tabBarMaxWidth : undefined,
           transform: isLargeWeb
             ? [{ translateX: -WebLayout.tabBarMaxWidth / 2 }]
             : undefined,
           backgroundColor: Colors.glass_bg,
           borderRadius: 30, // Capsule shape
-          height: 60,
+          height: isPhoneWeb ? 56 : 60,
           borderTopWidth: 0,
           ...Shadows.glow, // Apply our custom glow
           elevation: 0, // Disable default android shadow
@@ -255,7 +256,7 @@ function MainTabs() {
           borderColor: Colors.glass_border,
         },
         tabBarItemStyle: {
-          height: 60,
+          height: isPhoneWeb ? 56 : 60,
           paddingTop: 0, // Reset default padding
         },
         headerShown: true,

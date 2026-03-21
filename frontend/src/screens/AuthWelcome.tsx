@@ -99,6 +99,8 @@ export default function AuthWelcome() {
   const floatB = useRef(new Animated.Value(0)).current;
 
   const isLargeWeb = isWeb && width >= WebLayout.breakpoints.lg;
+  const isPhoneWeb = isWeb && width < WebLayout.breakpoints.sm;
+  const isUltraWideWeb = isWeb && width >= WebLayout.breakpoints.xl;
   const isTablet = width >= WebLayout.breakpoints.sm;
   const heroMinHeight = isWeb ? undefined : Math.max(height * 0.72, 520);
 
@@ -225,6 +227,7 @@ export default function AuthWelcome() {
             isWeb && styles.pageWeb,
             isTablet && !isWeb && styles.pageTablet,
             isWeb && styles.pageWebNoGap,
+            isUltraWideWeb && styles.pageWebWide,
           ]}
         >
           <Animated.View
@@ -254,7 +257,11 @@ export default function AuthWelcome() {
 
                 <Text style={styles.heroKicker}>DORMDASH MARKETPLACE</Text>
                 <Text
-                  style={[styles.heroTitle, isLargeWeb && styles.heroTitleWeb]}
+                  style={[
+                    styles.heroTitle,
+                    isLargeWeb && styles.heroTitleWeb,
+                    isPhoneWeb && styles.heroTitlePhoneWeb,
+                  ]}
                 >
                   Buy it. Sell it. Get it fast across Penn.
                 </Text>
@@ -272,7 +279,13 @@ export default function AuthWelcome() {
                   ))}
                 </View>
 
-                <View style={[styles.ctaRow, isLargeWeb && styles.ctaRowWeb]}>
+                <View
+                  style={[
+                    styles.ctaRow,
+                    isLargeWeb && styles.ctaRowWeb,
+                    isPhoneWeb && styles.ctaRowPhoneWeb,
+                  ]}
+                >
                   <TouchableOpacity
                     style={[
                       styles.ctaButton,
@@ -338,15 +351,19 @@ export default function AuthWelcome() {
 
           <SurfaceCard
             variant="default"
-            style={[styles.sectionCard, isWeb && styles.firstSectionGapWeb]}
-          >
+              style={[styles.sectionCard, isWeb && styles.firstSectionGapWeb]}
+            >
             <SectionHeader
               title="Selling points"
               subtitle="Everything needed to transact confidently on campus."
               rightSlot={<StatusPill label="Feature-first" tone="neutral" />}
             />
             <View
-              style={[styles.featureGrid, isLargeWeb && styles.featureGridWeb]}
+              style={[
+                styles.featureGrid,
+                isLargeWeb && styles.featureGridWeb,
+                isUltraWideWeb && styles.featureGridWide,
+              ]}
             >
               {SELLING_POINTS.map((point) => (
                 <View key={point.title} style={styles.featureItem}>
@@ -504,8 +521,11 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   pageWeb: {
-    maxWidth: WebLayout.maxContentWidth,
+    maxWidth: 1280,
     alignSelf: "center",
+  },
+  pageWebWide: {
+    maxWidth: 1360,
   },
   pageTablet: {
     alignSelf: "center",
@@ -556,6 +576,10 @@ const styles = StyleSheet.create({
     fontSize: 54,
     lineHeight: 60,
   },
+  heroTitlePhoneWeb: {
+    fontSize: 42,
+    lineHeight: 48,
+  },
   heroSubtitle: {
     ...Typography.bodyLarge,
     color: Colors.mutedGray,
@@ -591,6 +615,9 @@ const styles = StyleSheet.create({
   },
   ctaRowWeb: {
     flexDirection: "row",
+  },
+  ctaRowPhoneWeb: {
+    flexDirection: "column",
   },
   ctaButton: {
     borderRadius: 16,
@@ -665,6 +692,9 @@ const styles = StyleSheet.create({
   featureGridWeb: {
     flexDirection: "row",
     flexWrap: "wrap",
+  },
+  featureGridWide: {
+    justifyContent: "space-between",
   },
   featureItem: {
     flexDirection: "row",

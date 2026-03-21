@@ -64,12 +64,15 @@ const Explore: React.FC = () => {
   const { width: windowWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const isPhoneWeb = isWeb && windowWidth < 520;
+  const isWideWeb = isWeb && windowWidth >= 1120;
 
   // Calculate number of columns based on screen width
   const getNumColumns = () => {
-    if (windowWidth >= 1200) return 5;
-    if (windowWidth >= 900) return 4;
-    if (windowWidth >= 600) return 3;
+    if (isPhoneWeb) return 1;
+    if (windowWidth >= 1440) return 5;
+    if (windowWidth >= 1180) return 4;
+    if (windowWidth >= 820) return 3;
     return 2;
   };
 
@@ -77,9 +80,11 @@ const Explore: React.FC = () => {
 
   // Calculate card width for skeleton
   const getCardWidth = () => {
-    const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
+    const containerWidth = isWeb
+      ? Math.min(windowWidth - (isPhoneWeb ? 24 : 48), 1360)
+      : Math.min(windowWidth, WebLayout.maxContentWidth);
     const totalGap = (numColumns - 1) * Spacing.lg;
-    const horizontalPadding = Spacing.lg * 2;
+    const horizontalPadding = isWeb ? 0 : Spacing.lg * 2;
     const availableWidth = containerWidth - horizontalPadding - totalGap;
     return Math.floor(availableWidth / numColumns);
   };
@@ -322,25 +327,65 @@ const Explore: React.FC = () => {
         ]}
       >
         <View style={[styles.headerContent, isWeb && styles.webHeaderContent]}>
-          <SectionHeader
-            title="Explore"
-            subtitle="Fast campus discovery across listings"
-            rightSlot={<LiveBadge label="Explore live" />}
-            style={styles.heroHeader}
-          />
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={[styles.newListingButton, isWeb && styles.webButton]}
-              onPress={() => navigation.navigate("CreateListing")}
+          {isWeb ? (
+            <SurfaceCard
+              variant="glass"
+              style={[
+                styles.headerCard,
+                isWideWeb && styles.headerCardWide,
+                isPhoneWeb && styles.headerCardCompact,
+              ]}
             >
-              <Plus size={18} color={Colors.white} />
-              <Text style={styles.newListingText}>Create Listing</Text>
-            </TouchableOpacity>
-            <StatusPill
-              label={`${filteredListings.length} results`}
-              tone="info"
-            />
-          </View>
+              <View
+                style={[
+                  styles.headerCardRow,
+                  isWideWeb && styles.headerCardRowWide,
+                ]}
+              >
+                <SectionHeader
+                  title="Explore"
+                  subtitle="Fast campus discovery across listings"
+                  rightSlot={<LiveBadge label="Explore live" />}
+                  style={styles.heroHeader}
+                />
+                <View style={styles.headerActions}>
+                  <TouchableOpacity
+                    style={[styles.newListingButton, styles.webButton]}
+                    onPress={() => navigation.navigate("CreateListing")}
+                  >
+                    <Plus size={18} color={Colors.white} />
+                    <Text style={styles.newListingText}>Create Listing</Text>
+                  </TouchableOpacity>
+                  <StatusPill
+                    label={`${filteredListings.length} results`}
+                    tone="info"
+                  />
+                </View>
+              </View>
+            </SurfaceCard>
+          ) : (
+            <>
+              <SectionHeader
+                title="Explore"
+                subtitle="Fast campus discovery across listings"
+                rightSlot={<LiveBadge label="Explore live" />}
+                style={styles.heroHeader}
+              />
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  style={styles.newListingButton}
+                  onPress={() => navigation.navigate("CreateListing")}
+                >
+                  <Plus size={18} color={Colors.white} />
+                  <Text style={styles.newListingText}>Create Listing</Text>
+                </TouchableOpacity>
+                <StatusPill
+                  label={`${filteredListings.length} results`}
+                  tone="info"
+                />
+              </View>
+            </>
+          )}
         </View>
       </View>
 
@@ -497,18 +542,37 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     paddingHorizontal: Spacing.lg,
   },
+  headerCard: {
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  headerCardWide: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+  },
+  headerCardCompact: {
+    paddingHorizontal: Spacing.md,
+  },
+  headerCardRow: {
+    gap: Spacing.md,
+  },
+  headerCardRowWide: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
   heroHeader: {
-    marginBottom: Spacing.sm,
+    marginBottom: 0,
   },
   webHeaderContent: {
-    maxWidth: WebLayout.maxContentWidth,
+    maxWidth: 1360,
     width: "100%",
     alignSelf: "center",
   },
   headerActions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     gap: Spacing.md,
   },
   headerTitle: {
@@ -555,9 +619,10 @@ const styles = StyleSheet.create({
   quickFiltersRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: Spacing.sm,
     width: "100%",
-    maxWidth: WebLayout.maxContentWidth,
+    maxWidth: 1360,
     marginTop: Spacing.sm,
   },
   quickFilterChip: {
@@ -599,9 +664,10 @@ const styles = StyleSheet.create({
   activeFiltersRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     marginTop: Spacing.sm,
     gap: Spacing.xs,
-    maxWidth: WebLayout.maxContentWidth,
+    maxWidth: 1360,
   },
   activeFiltersText: {
     fontSize: 12,
@@ -626,16 +692,17 @@ const styles = StyleSheet.create({
   row: {
     justifyContent: "flex-start",
     marginBottom: 15,
-    paddingHorizontal: Spacing.lg,
     gap: Spacing.lg,
     width: "100%",
   },
   listContent: {
     paddingTop: 15,
     paddingBottom: 100,
+    paddingHorizontal: Spacing.lg,
   },
   webListContent: {
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
   },
 });
 

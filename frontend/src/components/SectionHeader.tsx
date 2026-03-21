@@ -21,30 +21,42 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      {rightSlot ? <View>{rightSlot}</View> : null}
+      {rightSlot ? <View style={styles.slotWrap}>{rightSlot}</View> : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "flex-end",
+    alignItems: "flex-start",
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: Spacing.md,
   },
   textBlock: {
     flex: 1,
+    minWidth: 0,
     paddingRight: Spacing.md,
+  },
+  slotWrap: {
+    alignItems: "flex-start",
+    flexShrink: 1,
+    marginTop: Spacing.xs,
+    maxWidth: "100%",
   },
   title: {
     ...Typography.heading4,
     color: SemanticColors.textPrimary,
     fontWeight: "700",
+    flexShrink: 1,
+    lineHeight: 28,
   },
   subtitle: {
     ...Typography.bodySmall,
     color: SemanticColors.textSecondary,
+    flexShrink: 1,
+    lineHeight: 18,
     marginTop: Spacing.xs,
   },
 });

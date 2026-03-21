@@ -196,7 +196,7 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
                       disabled={isAdding}
                     >
                       <View style={styles.compactTextWrap}>
-                        <Text style={styles.compactTitle} numberOfLines={1}>
+                        <Text style={styles.compactTitle} numberOfLines={2}>
                           {listing.title}
                         </Text>
                         <Text style={styles.compactPrice}>
@@ -238,11 +238,11 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
                       />
                       <View style={styles.expandedTextWrap}>
                         {!!listing.categories?.name && (
-                          <Text style={styles.category} numberOfLines={1}>
+                          <Text style={styles.category} numberOfLines={2}>
                             {listing.categories.name}
                           </Text>
                         )}
-                        <Text style={styles.expandedTitle} numberOfLines={1}>
+                        <Text style={styles.expandedTitle} numberOfLines={2}>
                           {listing.title}
                         </Text>
                         <Text style={styles.compactPrice}>
@@ -288,7 +288,7 @@ const BuyAgainRail: React.FC<BuyAgainRailProps> = ({
       </ScrollView>
 
       {collapsed && !loading && listings.length > compactItemLimit && (
-        <Text style={styles.moreHint} numberOfLines={1}>
+        <Text style={styles.moreHint}>
           {listings.length - compactItemLimit} more items available
         </Text>
       )}
@@ -303,7 +303,8 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     gap: Spacing.sm,
   },
@@ -321,6 +322,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   expandButton: {
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   compactChip: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 46,
+    minHeight: 56,
     backgroundColor: Colors.white,
     borderRadius: 999,
     borderWidth: 1,
@@ -374,10 +376,12 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     paddingLeft: Spacing.md,
     paddingRight: Spacing.sm,
-    minHeight: 46,
+    minHeight: 56,
     minWidth: Platform.OS === "web" ? 192 : 180,
+    paddingVertical: Spacing.xs,
   },
   compactTextWrap: {
+    flex: 1,
     minWidth: 0,
     flexShrink: 1,
   },
@@ -385,6 +389,7 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.darkTeal,
     fontWeight: "700",
+    lineHeight: 16,
   },
   compactPrice: {
     ...Typography.bodySmall,
@@ -461,6 +466,8 @@ const styles = StyleSheet.create({
   moreHint: {
     ...Typography.bodySmall,
     color: Colors.mutedGray,
+    flexWrap: "wrap",
+    lineHeight: 18,
   },
 });
 

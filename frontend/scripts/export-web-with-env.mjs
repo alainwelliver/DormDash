@@ -41,10 +41,24 @@ function loadDotEnvIntoProcessEnv(dotEnvPath) {
 const dotEnvPath = path.join(process.cwd(), ".env");
 loadDotEnvIntoProcessEnv(dotEnvPath);
 
-const pnpmCmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const child = spawn(pnpmCmd, ["exec", "expo", "export", "--platform", "web"], {
-  stdio: "inherit",
-  env: process.env,
+const isWindows = process.platform === "win32";
+const child = isWindows
+  ? spawn(
+      "cmd.exe",
+      ["/d", "/s", "/c", "pnpm exec expo export --platform web"],
+      {
+        stdio: "inherit",
+        env: process.env,
+      },
+    )
+  : spawn("pnpm", ["exec", "expo", "export", "--platform", "web"], {
+      stdio: "inherit",
+      env: process.env,
+    });
+
+child.on("error", (error) => {
+  console.error("Web export failed to start:", error);
+  process.exitCode = 1;
 });
 
 child.on("exit", (code, signal) => {

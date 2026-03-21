@@ -64,14 +64,19 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderRadius: 999,
     borderWidth: 1,
+    flexShrink: 1,
+    maxWidth: "100%",
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
   },
   text: {
     ...Typography.bodySmall,
+    flexShrink: 1,
     fontWeight: "700",
-    textTransform: "uppercase",
+    lineHeight: 16,
+    textAlign: "center",
     letterSpacing: 0.4,
+    textTransform: "uppercase",
   },
 });
 
