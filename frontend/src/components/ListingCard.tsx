@@ -16,8 +16,7 @@ import {
   Trash2,
   Plus,
   Check,
-  Clock,
-  Star,
+  Heart,
 } from "lucide-react-native";
 import {
   Colors,
@@ -34,6 +33,19 @@ import OptimizedImage from "./OptimizedImage";
 import { supabase } from "../lib/supabase";
 import { alert } from "../lib/utils/platform";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  savedListingQueryKeys,
+  toggleSavedListing,
+  useSavedListingIds,
+} from "../lib/api/savedListings";
+import {
+  formatStockLabel,
+  getListingConditionLabel,
+  getListingStatusLabel,
+  isListingAvailable,
+  type ListingCondition,
+  type ListingStatus,
+} from "../lib/utils/listings";
 
 type ListingCardProps = {
   listing: {
@@ -42,12 +54,19 @@ type ListingCardProps = {
     price_cents: number;
     listing_images: { url: string; sort_order?: number }[];
     created_at?: string;
+    available_quantity?: number | null;
+    condition?: ListingCondition | null;
+    status?: ListingStatus | null;
     categories?: { name: string } | null;
   };
   numColumns?: number;
   showMenu?: boolean;
   onEdit?: (listingId: number) => void;
   onDelete?: (listingId: number) => void;
+  onToggleAvailability?: (
+    listingId: number,
+    nextStatus: Extract<ListingStatus, "active" | "sold">,
+  ) => void;
 };
 
 type MainStackParamList = {
@@ -62,6 +81,7 @@ function ListingCardComponent({
   showMenu = false,
   onEdit,
   onDelete,
+  onToggleAvailability,
 }: ListingCardProps) {
   const navigation = useNavigation<NavProp>();
   const queryClient = useQueryClient();
@@ -71,9 +91,11 @@ function ListingCardComponent({
   const [menuVisible, setMenuVisible] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const addFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const { data: savedListingIds = [] } = useSavedListingIds();
 
   const getCardWidth = () => {
     const containerWidth = Math.min(windowWidth, WebLayout.maxContentWidth);
@@ -95,6 +117,17 @@ function ListingCardComponent({
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
   const imageUrl = sortedImages[0]?.url;
+  const availableQuantity = Math.max(
+    0,
+    Number(listing.available_quantity ?? 0),
+  );
+  const available = isListingAvailable({
+    available_quantity: availableQuantity,
+    status: listing.status,
+  });
+  const isSaved = savedListingIds.includes(Number(listing.id));
+  const conditionLabel = getListingConditionLabel(listing.condition);
+  const statusLabel = getListingStatusLabel(listing.status);
 
   const isNew = () => {
     if (!listing.created_at) return false;
@@ -140,6 +173,12 @@ function ListingCardComponent({
     onDelete?.(listing.id);
   };
 
+  const handleToggleAvailability = () => {
+    setMenuVisible(false);
+    const nextStatus = listing.status === "sold" ? "active" : "sold";
+    onToggleAvailability?.(listing.id, nextStatus);
+  };
+
   useEffect(() => {
     return () => {
       if (addFeedbackTimeoutRef.current) {
@@ -151,6 +190,10 @@ function ListingCardComponent({
   const handleQuickAdd = async (e: any) => {
     e.stopPropagation();
     if (addingToCart) return;
+    if (!available) {
+      alert("Unavailable", "This listing is no longer available.");
+      return;
+    }
 
     try {
       setAddingToCart(true);
@@ -172,6 +215,10 @@ function ListingCardComponent({
       if (existingError) throw existingError;
 
       if (existing) {
+        if (existing.quantity >= availableQuantity) {
+          alert("Stock limit", `Only ${formatStockLabel(availableQuantity)}.`);
+          return;
+        }
         const { error: updateError } = await supabase
           .from("cart_items")
           .update({ quantity: existing.quantity + 1 })
@@ -204,6 +251,23 @@ function ListingCardComponent({
     }
   };
 
+  const handleToggleSaved = async (e: any) => {
+    e.stopPropagation();
+    if (saving) return;
+
+    try {
+      setSaving(true);
+      await toggleSavedListing(Number(listing.id));
+      queryClient.invalidateQueries({ queryKey: savedListingQueryKeys.ids });
+      queryClient.invalidateQueries({ queryKey: savedListingQueryKeys.list });
+    } catch (error: any) {
+      console.error("Toggle saved listing error:", error);
+      alert("Error", error?.message || "Could not update saved items.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[styles.cardContainer, { width: cardWidth }]}
@@ -229,17 +293,45 @@ function ListingCardComponent({
 
         {/* Top Badges */}
         <View style={styles.topRow}>
-          {isNew() ? (
-            <View style={styles.glassBadge}>
-              <Text style={styles.badgeText}>NEW</Text>
-            </View>
-          ) : (
-            <View />
-          )}
+          <View style={styles.topBadgeStack}>
+            {listing.status === "sold" ? (
+              <View style={[styles.glassBadge, styles.soldBadge]}>
+                <Text style={styles.badgeText}>SOLD</Text>
+              </View>
+            ) : isNew() ? (
+              <View style={styles.glassBadge}>
+                <Text style={styles.badgeText}>NEW</Text>
+              </View>
+            ) : null}
+            {!available && listing.status !== "sold" ? (
+              <View style={[styles.glassBadge, styles.pendingBadge]}>
+                <Text style={styles.badgeText}>{statusLabel}</Text>
+              </View>
+            ) : null}
+          </View>
 
           {/* Price Pill */}
-          <View style={styles.pricePill}>
-            <Text style={styles.priceText}>{price}</Text>
+          <View style={styles.topRightStack}>
+            {!showMenu ? (
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  isSaved && styles.saveButtonActive,
+                  saving && styles.saveButtonDisabled,
+                ]}
+                onPress={handleToggleSaved}
+                disabled={saving}
+              >
+                <Heart
+                  color={Colors.white}
+                  size={16}
+                  fill={isSaved ? Colors.white : "transparent"}
+                />
+              </TouchableOpacity>
+            ) : null}
+            <View style={styles.pricePill}>
+              <Text style={styles.priceText}>{price}</Text>
+            </View>
           </View>
         </View>
 
@@ -256,6 +348,13 @@ function ListingCardComponent({
               <Text style={styles.categoryText}>{listing.categories.name}</Text>
             </View>
           )}
+          <View style={styles.metaRow}>
+            <Badge label={conditionLabel} variant="info" />
+            <Badge
+              label={formatStockLabel(availableQuantity)}
+              variant={availableQuantity <= 1 ? "warning" : "success"}
+            />
+          </View>
           <Text numberOfLines={2} style={styles.titleText}>
             {listing.title}
           </Text>
@@ -266,11 +365,12 @@ function ListingCardComponent({
           <TouchableOpacity
             style={[
               styles.fab,
-              (addingToCart || justAdded) && styles.fabDisabled,
+              (!available || addingToCart || justAdded) && styles.fabDisabled,
               justAdded && styles.fabAdded,
+              !available && styles.fabUnavailable,
             ]}
             onPress={handleQuickAdd}
-            disabled={addingToCart}
+            disabled={addingToCart || !available}
           >
             {justAdded ? (
               <Check color={Colors.white} size={20} strokeWidth={3} />
@@ -303,6 +403,16 @@ function ListingCardComponent({
             <TouchableOpacity style={styles.menuItem} onPress={handleEditPress}>
               <Pencil size={20} color={Colors.darkTeal} />
               <Text style={styles.menuItemText}>Edit Listing</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleToggleAvailability}
+            >
+              <Check size={20} color={Colors.primary_blue} />
+              <Text style={styles.menuItemText}>
+                {listing.status === "sold" ? "Mark Active" : "Mark Sold"}
+              </Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity
@@ -346,6 +456,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
+  topBadgeStack: {
+    gap: Spacing.xs,
+  },
+  topRightStack: {
+    alignItems: "flex-end",
+    gap: Spacing.xs,
+  },
   glassBadge: {
     backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: Spacing.md,
@@ -357,6 +474,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
+  },
+  soldBadge: {
+    backgroundColor: "rgba(75,85,99,0.92)",
+  },
+  pendingBadge: {
+    backgroundColor: "rgba(15,23,42,0.78)",
+  },
+  saveButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveButtonActive: {
+    backgroundColor: Colors.primary_accent,
+  },
+  saveButtonDisabled: {
+    opacity: 0.65,
   },
   pricePill: {
     backgroundColor: Colors.white, // Solid white for contrast
@@ -379,6 +516,12 @@ const styles = StyleSheet.create({
     paddingRight: 60, // Avoid overlap with FAB
     backgroundColor: "rgba(0,0,0,0.5)", // Dynamic background
     borderTopRightRadius: 24, // Visual flair
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   categoryText: {
     color: Colors.primary_green, // Use brand color for accent
@@ -415,6 +558,9 @@ const styles = StyleSheet.create({
   },
   fabAdded: {
     backgroundColor: Colors.primary_green,
+  },
+  fabUnavailable: {
+    backgroundColor: Colors.mutedGray,
   },
   menuButton: {
     position: "absolute",

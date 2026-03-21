@@ -32,6 +32,13 @@ import {
   Shadows,
 } from "../assets/styles";
 import { fetchBuyAgainListings } from "../lib/api/repeatBuying";
+import {
+  SORT_OPTIONS,
+  matchesConditionFilter,
+  sortListings,
+  type ListingCondition,
+  type ListingSortOption,
+} from "../lib/utils/listings";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -69,8 +76,11 @@ const Feed: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+  const [minimumCondition, setMinimumCondition] =
+    useState<ListingCondition | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [quickMode, setQuickMode] = useState<"all" | "budget" | "new">("all");
+  const [sortOption, setSortOption] = useState<ListingSortOption>("newest");
 
   const effectivePriceRange = useMemo(() => {
     if (quickMode === "budget") {
@@ -89,11 +99,13 @@ const Feed: React.FC = () => {
       category: selectedCategory,
       tags: selectedTags,
       priceRange: effectivePriceRange,
+      minimumCondition,
     },
     {
       page: 0,
       pageSize: 60,
     },
+    sortOption,
   );
 
   const { data: categories = [] } = useCategories();
@@ -109,13 +121,21 @@ const Feed: React.FC = () => {
   };
 
   const processedListings = useMemo(() => {
-    if (quickMode !== "new") return listings;
-    return [...listings].sort((a, b) => {
-      const left = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const right = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return right - left;
-    });
-  }, [listings, quickMode]);
+    let processed = listings.filter((listing) =>
+      matchesConditionFilter(listing, minimumCondition),
+    );
+
+    if (quickMode === "new") {
+      processed = processed.filter((listing) => {
+        const createdAt = listing.created_at
+          ? new Date(listing.created_at).getTime()
+          : 0;
+        return Date.now() - createdAt <= 3 * 24 * 60 * 60 * 1000;
+      });
+    }
+
+    return sortListings(processed as any, sortOption);
+  }, [listings, minimumCondition, quickMode, sortOption]);
 
   const renderContent = () => {
     if (loading) {
@@ -262,15 +282,45 @@ const Feed: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.sortRow}>
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.sortChip,
+                sortOption === option.value && styles.sortChipActive,
+              ]}
+              onPress={() => setSortOption(option.value)}
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  sortOption === option.value && styles.sortChipTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <SurfaceCard variant="glass" style={styles.metaCard}>
           <Text style={styles.metaTitle}>Discover faster</Text>
           <Text style={styles.metaSubtitle}>
-            Tap + to add instantly. Use quick chips for rapid filtering.
+            Tap + to add instantly. Use quick chips, sorting, and stock signals
+            for faster decisions.
           </Text>
         </SurfaceCard>
       </View>
     ),
-    [isCompactMobile, isWeb, quickMode, buyAgainListings, buyAgainLoading],
+    [
+      isCompactMobile,
+      isWeb,
+      quickMode,
+      buyAgainListings,
+      buyAgainLoading,
+      sortOption,
+    ],
   );
 
   return (
@@ -335,15 +385,18 @@ const Feed: React.FC = () => {
         selectedCategory={selectedCategory}
         selectedTags={selectedTags}
         priceRange={priceRange}
-        onApply={({ category, tags, priceRange }) => {
+        selectedCondition={minimumCondition}
+        onApply={({ category, tags, priceRange, minimumCondition }) => {
           setSelectedCategory(category);
           setSelectedTags(tags);
           setPriceRange(priceRange);
+          setMinimumCondition(minimumCondition);
         }}
         onClear={() => {
           setSelectedCategory(null);
           setSelectedTags([]);
           setPriceRange(null);
+          setMinimumCondition(null);
         }}
       />
     </View>
@@ -479,6 +532,32 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: WebLayout.maxContentWidth,
     alignSelf: "center",
+  },
+  sortRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  sortChip: {
+    backgroundColor: Colors.white,
+    borderColor: SemanticColors.borderSubtle,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+  },
+  sortChipActive: {
+    backgroundColor: Colors.darkTeal,
+    borderColor: Colors.darkTeal,
+  },
+  sortChipText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  sortChipTextActive: {
+    color: Colors.white,
   },
   metaTitle: {
     ...Typography.bodySemibold,

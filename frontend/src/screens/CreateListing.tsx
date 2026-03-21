@@ -35,6 +35,11 @@ import {
   StickyActionBar,
   SurfaceCard,
 } from "../components";
+import {
+  LISTING_CONDITION_OPTIONS,
+  getListingConditionLabel,
+  type ListingCondition,
+} from "../lib/utils/listings";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   { MainTabs: undefined; CreateListing: undefined },
@@ -68,7 +73,9 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<string>("");
+  const [availableQuantity, setAvailableQuantity] = useState<string>("1");
   const [type, setType] = useState<"item" | "service">("item");
+  const [condition, setCondition] = useState<ListingCondition>("good");
   const [categoryId, setCategoryId] = useState<number | null>(null);
 
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -163,6 +170,11 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
     const n = Number((price || "").replace(/[^0-9.]/g, ""));
     return Number.isFinite(n) ? Math.round(n * 100) : 0;
   }, [price]);
+  const parsedQuantity = useMemo(() => {
+    const value = Math.floor(Number(availableQuantity || "1"));
+    if (!Number.isFinite(value)) return 1;
+    return Math.max(1, value);
+  }, [availableQuantity]);
 
   const normalizeTag = (s: string) => s.replace(/^#/, "").trim().toLowerCase();
   const addTagFromText = () => {
@@ -229,6 +241,9 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
         title: title.trim(),
         description: description.trim() || null,
         price_cents,
+        available_quantity: parsedQuantity,
+        condition,
+        status: "active",
         type,
         category_id: categoryId,
       })
@@ -379,6 +394,41 @@ export default function CreateListing({ onCancel, onCreated }: Props) {
                 placeholder="0.00"
                 placeholderTextColor={Colors.borderGray}
               />
+              <Input
+                label="Quantity Available"
+                value={availableQuantity}
+                keyboardType="number-pad"
+                onChangeText={setAvailableQuantity}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputBox}
+                containerStyle={styles.inputContainer}
+                placeholder="1"
+                placeholderTextColor={Colors.borderGray}
+              />
+
+              <Text style={styles.inlineLabel}>Condition</Text>
+              <View style={styles.categoryList}>
+                {LISTING_CONDITION_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.categoryChip,
+                      option === condition && styles.categoryActive,
+                    ]}
+                    onPress={() => setCondition(option)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        option === condition && styles.categoryTextActive,
+                      ]}
+                    >
+                      {getListingConditionLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <View style={styles.toggleContainer}>
                 <TouchableOpacity

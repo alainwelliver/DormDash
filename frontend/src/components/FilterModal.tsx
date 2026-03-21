@@ -10,6 +10,11 @@ import {
 } from "react-native";
 import { X } from "lucide-react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
+import {
+  LISTING_CONDITION_OPTIONS,
+  getListingConditionLabel,
+  type ListingCondition,
+} from "../lib/utils/listings";
 
 interface Category {
   id: number;
@@ -30,11 +35,13 @@ interface Props {
   selectedCategory: number | null;
   selectedTags: number[];
   priceRange: [number, number] | null;
+  selectedCondition?: ListingCondition | null;
 
   onApply: (params: {
     category: number | null;
     tags: number[];
     priceRange: [number, number] | null;
+    minimumCondition: ListingCondition | null;
   }) => void;
 
   onClear: () => void;
@@ -48,17 +55,28 @@ const FilterModal: React.FC<Props> = ({
   selectedCategory,
   selectedTags,
   priceRange,
+  selectedCondition = null,
   onApply,
   onClear,
 }) => {
   const [category, setCategory] = useState<number | null>(selectedCategory);
   const [tagIds, setTagIds] = useState<number[]>(selectedTags);
+  const [minimumCondition, setMinimumCondition] =
+    useState<ListingCondition | null>(selectedCondition);
   const [minPrice, setMinPrice] = useState(
     priceRange ? String(priceRange[0] / 100) : "",
   );
   const [maxPrice, setMaxPrice] = useState(
     priceRange ? String(priceRange[1] / 100) : "",
   );
+
+  useEffect(() => {
+    setCategory(selectedCategory);
+    setTagIds(selectedTags);
+    setMinimumCondition(selectedCondition);
+    setMinPrice(priceRange ? String(priceRange[0] / 100) : "");
+    setMaxPrice(priceRange ? String(priceRange[1] / 100) : "");
+  }, [selectedCategory, selectedTags, selectedCondition, priceRange]);
 
   const toggleTag = (id: number) => {
     setTagIds((prev) =>
@@ -79,6 +97,7 @@ const FilterModal: React.FC<Props> = ({
       category,
       tags: tagIds,
       priceRange: convertedRange,
+      minimumCondition,
     });
 
     onClose();
@@ -87,6 +106,7 @@ const FilterModal: React.FC<Props> = ({
   const clearAll = () => {
     setCategory(null);
     setTagIds([]);
+    setMinimumCondition(null);
     setMinPrice("");
     setMaxPrice("");
     onClear();
@@ -150,6 +170,33 @@ const FilterModal: React.FC<Props> = ({
                     ]}
                   >
                     #{tag.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.sectionTitle}>Minimum Condition</Text>
+            <View style={styles.chipRow}>
+              {LISTING_CONDITION_OPTIONS.map((condition) => (
+                <TouchableOpacity
+                  key={condition}
+                  style={[
+                    styles.chip,
+                    minimumCondition === condition && styles.chipActive,
+                  ]}
+                  onPress={() =>
+                    setMinimumCondition(
+                      minimumCondition === condition ? null : condition,
+                    )
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      minimumCondition === condition && styles.chipTextActive,
+                    ]}
+                  >
+                    {getListingConditionLabel(condition)}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -39,6 +39,13 @@ import {
   WebLayout,
 } from "../assets/styles";
 import { fetchBuyAgainListings } from "../lib/api/repeatBuying";
+import {
+  SORT_OPTIONS,
+  matchesConditionFilter,
+  sortListings,
+  type ListingCondition,
+  type ListingSortOption,
+} from "../lib/utils/listings";
 
 type MainStackNavigationProp = NativeStackNavigationProp<
   {
@@ -50,7 +57,7 @@ type MainStackNavigationProp = NativeStackNavigationProp<
 
 const LISTINGS_PAGE_SIZE = 80;
 const EXPLORE_LISTING_SELECT =
-  "id, title, description, price_cents, created_at, listing_images(url, sort_order), categories(name)";
+  "id, title, description, price_cents, created_at, available_quantity, condition, status, listing_images(url, sort_order), categories(name)";
 
 const Explore: React.FC = () => {
   const navigation = useNavigation<MainStackNavigationProp>();
@@ -91,8 +98,11 @@ const Explore: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
+  const [minimumCondition, setMinimumCondition] =
+    useState<ListingCondition | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [quickMode, setQuickMode] = useState<"all" | "budget" | "fresh">("all");
+  const [sortOption, setSortOption] = useState<ListingSortOption>("newest");
   const { data: buyAgainListings = [], isLoading: buyAgainLoading } = useQuery({
     queryKey: ["buyAgainListings", "explore"],
     queryFn: () => fetchBuyAgainListings(8),
@@ -103,6 +113,7 @@ const Explore: React.FC = () => {
     setSelectedCategory(null);
     setSelectedTags([]);
     setPriceRange(null);
+    setMinimumCondition(null);
     setQuickMode("all");
   }, []);
 
@@ -111,9 +122,16 @@ const Explore: React.FC = () => {
     if (selectedCategory) count += 1;
     if (selectedTags.length > 0) count += 1;
     if (priceRange) count += 1;
+    if (minimumCondition) count += 1;
     if (quickMode !== "all") count += 1;
     return count;
-  }, [selectedCategory, selectedTags.length, priceRange, quickMode]);
+  }, [
+    selectedCategory,
+    selectedTags.length,
+    priceRange,
+    minimumCondition,
+    quickMode,
+  ]);
 
   const loadFilterData = async () => {
     const { data: cats } = await supabase
@@ -155,8 +173,13 @@ const Explore: React.FC = () => {
     if (error) {
       console.error("Error fetching listings:", error.message);
     } else {
-      setListings(data || []);
-      setFilteredListings(data || []);
+      const activeListings = (data || []).filter(
+        (listing: any) =>
+          listing.status === "active" &&
+          Number(listing.available_quantity || 0) > 0,
+      );
+      setListings(activeListings);
+      setFilteredListings(activeListings);
     }
     setLoading(false);
     setRefreshing(false);
@@ -170,7 +193,7 @@ const Explore: React.FC = () => {
     useCallback(() => {
       setLoading(true);
       fetchListings();
-    }, [selectedCategory, selectedTags, priceRange]),
+    }, [selectedCategory, selectedTags, priceRange, minimumCondition]),
   );
 
   useEffect(() => {
@@ -189,8 +212,12 @@ const Explore: React.FC = () => {
       });
     }
 
+    processed = processed.filter((listing) =>
+      matchesConditionFilter(listing, minimumCondition),
+    );
+
     if (searchQuery.trim() === "") {
-      setFilteredListings(processed);
+      setFilteredListings(sortListings(processed as any, sortOption));
     } else {
       const filtered = processed.filter((listing) => {
         const query = searchQuery.toLowerCase();
@@ -200,9 +227,9 @@ const Explore: React.FC = () => {
           .includes(query);
         return titleMatch || descriptionMatch;
       });
-      setFilteredListings(filtered);
+      setFilteredListings(sortListings(filtered as any, sortOption));
     }
-  }, [searchQuery, listings, quickMode]);
+  }, [searchQuery, listings, quickMode, minimumCondition, sortOption]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -379,6 +406,27 @@ const Explore: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
+        <View style={styles.quickFiltersRow}>
+          {SORT_OPTIONS.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.quickFilterChip,
+                sortOption === option.value && styles.quickFilterChipActive,
+              ]}
+              onPress={() => setSortOption(option.value)}
+            >
+              <Text
+                style={[
+                  styles.quickFilterText,
+                  sortOption === option.value && styles.quickFilterTextActive,
+                ]}
+              >
+                {option.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         {/* Active filters indicator */}
         {activeFilterCount > 0 && (
           <SurfaceCard variant="glass" style={styles.activeFiltersRow}>
@@ -414,15 +462,18 @@ const Explore: React.FC = () => {
         selectedCategory={selectedCategory}
         selectedTags={selectedTags}
         priceRange={priceRange}
-        onApply={({ category, tags, priceRange }) => {
+        selectedCondition={minimumCondition}
+        onApply={({ category, tags, priceRange, minimumCondition }) => {
           setSelectedCategory(category);
           setSelectedTags(tags);
           setPriceRange(priceRange);
+          setMinimumCondition(minimumCondition);
         }}
         onClear={() => {
           setSelectedCategory(null);
           setSelectedTags([]);
           setPriceRange(null);
+          setMinimumCondition(null);
         }}
       />
     </View>

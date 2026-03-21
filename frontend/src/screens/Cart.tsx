@@ -51,6 +51,12 @@ import {
   SurfaceCard,
 } from "../components";
 import {
+  formatStockLabel,
+  isListingAvailable,
+  type ListingCondition,
+  type ListingStatus,
+} from "../lib/utils/listings";
+import {
   addSavedCartToCart,
   createSavedCartFromCurrentCart,
   fetchSavedCarts,
@@ -70,6 +76,9 @@ interface CartItem {
   price_cents: number;
   image_url?: string | null;
   quantity: number;
+  available_quantity?: number | null;
+  condition?: ListingCondition | null;
+  status?: ListingStatus | null;
 }
 
 const Cart: React.FC = () => {
@@ -115,6 +124,9 @@ const Cart: React.FC = () => {
             id,
             title,
             price_cents,
+            available_quantity,
+            condition,
+            status,
             listing_images ( url )
           )
         `,
@@ -132,6 +144,9 @@ const Cart: React.FC = () => {
         title: item.listings.title,
         price_cents: item.listings.price_cents,
         quantity: item.quantity,
+        available_quantity: item.listings.available_quantity ?? 0,
+        condition: item.listings.condition ?? null,
+        status: item.listings.status ?? "active",
         image_url: item.listings.listing_images?.[0]?.url ?? null,
       }));
     },
@@ -142,7 +157,16 @@ const Cart: React.FC = () => {
   useEffect(() => {
     if (cartData) {
       setCartItems(cartData);
-      setSelectedItems(cartData.map((i) => i.id));
+      setSelectedItems(
+        cartData
+          .filter((item) =>
+            isListingAvailable({
+              available_quantity: item.available_quantity,
+              status: item.status,
+            }),
+          )
+          .map((i) => i.id),
+      );
     }
   }, [cartData]);
 
@@ -160,7 +184,15 @@ const Cart: React.FC = () => {
     const item = cartItems.find((i) => i.id === cartItemId);
     if (!item) return;
 
-    const newQty = Math.max(1, item.quantity + change);
+    const maxQty = Math.max(1, Number(item.available_quantity || 1));
+    const newQty = Math.min(maxQty, Math.max(1, item.quantity + change));
+
+    if (newQty === item.quantity) {
+      if (change > 0) {
+        alert("Stock limit", `Only ${formatStockLabel(item.available_quantity)}.`);
+      }
+      return;
+    }
 
     const { error } = await supabase
       .from("cart_items")
@@ -220,14 +252,29 @@ const Cart: React.FC = () => {
   };
 
   const handleCheckout = () => {
-    if (selectedItems.length === 0) {
+    const itemsToCheckout = cartItems.filter((item) =>
+      selectedItems.includes(item.id),
+    );
+    const unavailableItems = itemsToCheckout.filter(
+      (item) =>
+        !isListingAvailable({
+          available_quantity: item.available_quantity,
+          status: item.status,
+        }) || item.quantity > Number(item.available_quantity || 0),
+    );
+
+    if (itemsToCheckout.length === 0) {
       alert("No Items Selected", "Please select at least one item.");
       return;
     }
 
-    const itemsToCheckout = cartItems.filter((item) =>
-      selectedItems.includes(item.id),
-    );
+    if (unavailableItems.length > 0) {
+      alert(
+        "Update your cart",
+        "One or more selected items are sold out or exceed the remaining stock.",
+      );
+      return;
+    }
 
     navigation.navigate("Checkout", { selectedItems: itemsToCheckout });
   };
@@ -425,16 +472,23 @@ const Cart: React.FC = () => {
           </View>
         </SurfaceCard>
 
-        {cartItems.map((item) => (
-          <SurfaceCard
-            key={item.id}
-            variant="default"
-            style={styles.cartItemCard}
-          >
+        {cartItems.map((item) => {
+          const itemAvailable = isListingAvailable({
+            available_quantity: item.available_quantity,
+            status: item.status,
+          });
+
+          return (
+            <SurfaceCard
+              key={item.id}
+              variant="default"
+              style={styles.cartItemCard}
+            >
             {/* Checkbox */}
             <TouchableOpacity
               style={styles.checkbox}
               onPress={() => toggleItemSelection(item.id)}
+              disabled={!itemAvailable}
             >
               {selectedItems.includes(item.id) ? (
                 <CheckSquare color={Colors.primary_blue} size={20} />
@@ -460,12 +514,23 @@ const Cart: React.FC = () => {
               <Text style={styles.itemPrice}>
                 {formatPrice(item.price_cents)}
               </Text>
+              <Text
+                style={[
+                  styles.itemMetaText,
+                  !itemAvailable && styles.itemUnavailableText,
+                ]}
+              >
+                {itemAvailable
+                  ? formatStockLabel(item.available_quantity)
+                  : "Unavailable"}
+              </Text>
 
               {/* Quantity */}
               <View style={styles.quantityContainer}>
                 <TouchableOpacity
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, -1)}
+                  disabled={!itemAvailable}
                 >
                   <Minus color={Colors.darkTeal} size={18} />
                 </TouchableOpacity>
@@ -475,6 +540,7 @@ const Cart: React.FC = () => {
                 <TouchableOpacity
                   style={styles.quantityButton}
                   onPress={() => updateQuantity(item.id, 1)}
+                  disabled={!itemAvailable}
                 >
                   <Plus color={Colors.darkTeal} size={18} />
                 </TouchableOpacity>
@@ -488,8 +554,9 @@ const Cart: React.FC = () => {
             >
               <Trash2 color={Colors.error} size={24} />
             </TouchableOpacity>
-          </SurfaceCard>
-        ))}
+            </SurfaceCard>
+          );
+        })}
 
         {/* Breakdown moved to ScrollView for better space efficiency */}
         <View style={styles.breakdownContainer}>
@@ -801,6 +868,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Colors.primary_blue,
     marginBottom: Spacing.sm,
+  },
+  itemMetaText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginBottom: Spacing.xs,
+  },
+  itemUnavailableText: {
+    color: Colors.error,
+    fontWeight: "700",
   },
   quantityContainer: {
     flexDirection: "row",

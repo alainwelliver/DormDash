@@ -227,6 +227,33 @@ const Checkout: React.FC = () => {
     });
   };
 
+  const getUnavailableSelectedItems = async () => {
+    const listingIds = Array.from(
+      new Set(selectedItems.map((item) => item.listing_id)),
+    );
+    if (listingIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("id, title, available_quantity, status")
+      .in("id", listingIds);
+
+    if (error) throw error;
+
+    const listingMap = new Map(
+      (data || []).map((row: any) => [Number(row.id), row]),
+    );
+
+    return selectedItems.filter((item) => {
+      const listing = listingMap.get(Number(item.listing_id));
+      if (!listing) return true;
+      return (
+        listing.status !== "active" ||
+        Number(listing.available_quantity || 0) < Number(item.quantity || 0)
+      );
+    });
+  };
+
   const handlePlaceOrder = () => {
     if (deliveryMethod === "delivery" && !selectedAddress) {
       alert("Error", "Please select a delivery address");
@@ -275,6 +302,16 @@ const Checkout: React.FC = () => {
                   setPlacingOrder(false);
                   return;
                 }
+              }
+
+              const unavailableItems = await getUnavailableSelectedItems();
+              if (unavailableItems.length > 0) {
+                alert(
+                  "Update your cart",
+                  "One or more items are sold out or no longer have enough stock.",
+                );
+                setPlacingOrder(false);
+                return;
               }
 
               const deliveryAddr =

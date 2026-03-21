@@ -11,7 +11,6 @@ import {
   TextInput,
   Animated,
   Dimensions,
-  FlatList,
   Modal,
   Pressable,
   Platform,
@@ -29,12 +28,14 @@ import {
   User,
   ShoppingCart,
   MessageCircle,
+  Heart,
+  Flag,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Check,
 } from "lucide-react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
@@ -42,6 +43,19 @@ import { alert } from "../lib/utils/platform";
 import { StatusPill, StickyActionBar, SurfaceCard } from "../components";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getOrCreateConversation } from "../lib/api/messages";
+import {
+  savedListingQueryKeys,
+  toggleSavedListing,
+  useSavedListingIds,
+} from "../lib/api/savedListings";
+import {
+  formatStockLabel,
+  getListingConditionLabel,
+  getListingStatusLabel,
+  isListingAvailable,
+  type ListingCondition,
+  type ListingStatus,
+} from "../lib/utils/listings";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isWeb = Platform.OS === "web";
@@ -61,9 +75,13 @@ type ProductDetailProps = NativeStackScreenProps<
 
 interface Listing {
   id: number;
+  user_id: string;
   title: string;
   description: string;
   price_cents: number;
+  available_quantity: number;
+  condition?: ListingCondition | null;
+  status?: ListingStatus | null;
   type: string;
   category_id: number;
   categories?: { name: string } | null;
@@ -76,6 +94,8 @@ interface UserProfile {
   avatar_url?: string;
   rating?: number;
   review_count?: number;
+  active_listings_count?: number;
+  member_since?: string | null;
 }
 
 interface Review {
@@ -87,6 +107,8 @@ interface Review {
   created_at: string;
   reviewer_name?: string;
 }
+
+const REPORT_REASONS = ["Spam", "Scam", "Inaccurate", "Unsafe"] as const;
 
 export default function ProductDetail({
   route,
@@ -104,9 +126,15 @@ export default function ProductDetail({
   const [addingToCart, setAddingToCart] = useState(false);
   const [openingConversation, setOpeningConversation] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [savingListing, setSavingListing] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportReason, setReportReason] = useState("Spam");
+  const [reportDetails, setReportDetails] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
   const imageScrollRef = useRef<ScrollView>(null);
   const addToCartScale = useRef(new Animated.Value(1)).current;
+  const { data: savedListingIds = [] } = useSavedListingIds();
 
   // React Query for listing data - instant on return visits
   const { data: listing, isLoading: listingLoading } = useQuery({
@@ -128,9 +156,23 @@ export default function ProductDetail({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("seller_profiles")
-        .select("*")
+        .select("id, display_name, username, avatar_url, avg_rating, total_reviews")
         .eq("id", listing!.user_id)
         .single();
+
+      const { count: activeListingsCount } = await supabase
+        .from("listings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", listing!.user_id)
+        .eq("status", "active");
+
+      const { data: oldestListing } = await supabase
+        .from("listings")
+        .select("created_at")
+        .eq("user_id", listing!.user_id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
         return {
@@ -139,9 +181,15 @@ export default function ProductDetail({
           avatar_url: null,
           avg_rating: 0,
           total_reviews: 0,
+          active_listings_count: activeListingsCount || 0,
+          member_since: oldestListing?.created_at || null,
         };
       }
-      return data;
+      return {
+        ...data,
+        active_listings_count: activeListingsCount || 0,
+        member_since: oldestListing?.created_at || null,
+      };
     },
     enabled: !!listing?.user_id,
     select: (data) => ({
@@ -150,6 +198,8 @@ export default function ProductDetail({
       avatar_url: data.avatar_url || undefined,
       rating: parseFloat(data.avg_rating) || 0,
       review_count: data.total_reviews || 0,
+      active_listings_count: Number(data.active_listings_count || 0),
+      member_since: data.member_since || null,
     }),
   });
 
@@ -159,24 +209,52 @@ export default function ProductDetail({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reviews")
-        .select(
-          `
-          *,
-          seller_profiles!reviews_reviewer_id_fkey(display_name)
-        `,
-        )
+        .select("id, listing_id, reviewer_id, rating, comment, created_at")
         .eq("listing_id", listingId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Map the nested seller_profiles data to reviewer_name
-      return (data || []).map((review: any) => ({
+
+      const rows = (data || []) as Review[];
+      const reviewerIds = Array.from(
+        new Set(rows.map((review) => review.reviewer_id).filter(Boolean)),
+      );
+
+      let reviewerNameMap = new Map<string, string | null>();
+      if (reviewerIds.length > 0) {
+        const { data: reviewers, error: reviewerError } = await supabase
+          .from("seller_profiles")
+          .select("id, display_name")
+          .in("id", reviewerIds);
+
+        if (reviewerError) throw reviewerError;
+
+        reviewerNameMap = new Map(
+          (reviewers || []).map((reviewer: any) => [
+            reviewer.id,
+            reviewer.display_name || null,
+          ]),
+        );
+      }
+
+      return rows.map((review) => ({
         ...review,
-        reviewer_name: review.seller_profiles?.display_name || null,
+        reviewer_name: reviewerNameMap.get(review.reviewer_id) || null,
       }));
     },
   });
 
   const loading = listingLoading;
+  const availableQuantity = Math.max(
+    0,
+    Number(listing?.available_quantity ?? 0),
+  );
+  const isSaved = savedListingIds.includes(Number(listingId));
+  const listingAvailable = listing
+    ? isListingAvailable({
+        status: listing.status,
+        available_quantity: availableQuantity,
+      })
+    : false;
 
   // Check if current user is owner
   useEffect(() => {
@@ -190,6 +268,13 @@ export default function ProductDetail({
     };
     if (listing) checkOwnership();
   }, [listing]);
+
+  useEffect(() => {
+    if (!listing) return;
+    setSelectedQuantity((current) =>
+      Math.min(Math.max(1, current), Math.max(1, availableQuantity || 1)),
+    );
+  }, [listing, availableQuantity]);
 
   const handleImageScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -247,7 +332,10 @@ export default function ProductDetail({
         return;
       }
 
-      if (!listing) return;
+      if (!listing || !listingAvailable) {
+        alert("Unavailable", "This listing is no longer available.");
+        return;
+      }
 
       // Check if item already exists in cart
       const { data: existing, error: existingError } = await supabase
@@ -264,33 +352,54 @@ export default function ProductDetail({
 
       // If in cart → increment quantity
       if (existing) {
+        if (existing.quantity + selectedQuantity > availableQuantity) {
+          alert(
+            "Stock limit",
+            `Only ${formatStockLabel(availableQuantity)} for this listing.`,
+          );
+          return;
+        }
+
         const { error: updateError } = await supabase
           .from("cart_items")
-          .update({ quantity: existing.quantity + 1 })
+          .update({ quantity: existing.quantity + selectedQuantity })
           .eq("id", existing.id);
 
         if (updateError) throw updateError;
       } else {
-        // Insert new cart item
+        if (selectedQuantity > availableQuantity) {
+          alert(
+            "Stock limit",
+            `Only ${formatStockLabel(availableQuantity)} for this listing.`,
+          );
+          return;
+        }
+
         const { error: insertError } = await supabase
           .from("cart_items")
           .insert({
             user_id: userId,
             listing_id: listing.id,
-            quantity: 1,
+            quantity: selectedQuantity,
           });
 
         if (insertError) throw insertError;
       }
 
-      alert("Added to Cart", `${listing.title} was added to your cart.`, [
-        { text: "Continue", style: "cancel" },
-        {
-          text: "View Cart",
-          onPress: () =>
-            navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
-        },
-      ]);
+      alert(
+        "Added to Cart",
+        selectedQuantity === 1
+          ? `${listing.title} was added to your cart.`
+          : `${selectedQuantity} of ${listing.title} were added to your cart.`,
+        [
+          { text: "Continue", style: "cancel" },
+          {
+            text: "View Cart",
+            onPress: () =>
+              navigation.navigate("MainTabs" as any, { screen: "CartTab" }),
+          },
+        ],
+      );
 
       // Invalidate cart cache so Cart screen shows updated data immediately
       queryClient.invalidateQueries({ queryKey: ["cart", userId] });
@@ -444,6 +553,91 @@ export default function ProductDetail({
     );
   };
 
+  const handleToggleSaved = async () => {
+    if (!listing || savingListing) return;
+
+    try {
+      setSavingListing(true);
+      await toggleSavedListing(Number(listing.id));
+      queryClient.invalidateQueries({ queryKey: savedListingQueryKeys.ids });
+      queryClient.invalidateQueries({ queryKey: savedListingQueryKeys.list });
+    } catch (error: any) {
+      console.error("Save listing error:", error);
+      alert("Error", error?.message || "Could not update saved items.");
+    } finally {
+      setSavingListing(false);
+    }
+  };
+
+  const handleQuantityChange = (delta: number) => {
+    if (!listingAvailable) return;
+    setSelectedQuantity((current) =>
+      Math.min(Math.max(1, current + delta), Math.max(1, availableQuantity)),
+    );
+  };
+
+  const handleToggleAvailability = async () => {
+    if (!listing) return;
+    const nextStatus = listing.status === "sold" ? "active" : "sold";
+    const nextQuantity =
+      nextStatus === "sold" ? 0 : Math.max(1, availableQuantity || 1);
+
+    try {
+      setMenuVisible(false);
+      const { error } = await supabase
+        .from("listings")
+        .update({
+          status: nextStatus,
+          available_quantity: nextQuantity,
+        })
+        .eq("id", listing.id);
+
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["listing", listing.id] });
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+    } catch (error) {
+      console.error("Update availability error:", error);
+      alert("Error", "Could not update listing status.");
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!listing || submittingReport) return;
+
+    try {
+      setSubmittingReport(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        alert("Login Required", "Please log in to report this listing.");
+        return;
+      }
+
+      const { error } = await supabase.from("listing_reports").upsert(
+        {
+          reporter_id: user.id,
+          listing_id: listing.id,
+          reason: reportReason,
+          details: reportDetails.trim() || null,
+        },
+        { onConflict: "reporter_id,listing_id" },
+      );
+
+      if (error) throw error;
+
+      setReportVisible(false);
+      setReportDetails("");
+      alert("Report sent", "Thanks. We will review this listing.");
+    } catch (error) {
+      console.error("Listing report error:", error);
+      alert("Error", "Could not submit the report right now.");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   const calculateAverageRating = (): number => {
     if (reviews.length === 0) return 0;
     const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
@@ -544,6 +738,16 @@ export default function ProductDetail({
             >
               <Pencil size={20} color={Colors.darkTeal} />
               <Text style={styles.menuItemText}>Edit Listing</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleToggleAvailability}
+            >
+              <Check size={20} color={Colors.primary_blue} />
+              <Text style={styles.menuItemText}>
+                {listing.status === "sold" ? "Mark Active" : "Mark Sold"}
+              </Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity
@@ -656,10 +860,51 @@ export default function ProductDetail({
             {listing.categories?.name ? (
               <StatusPill label={listing.categories.name} tone="info" />
             ) : null}
+            <StatusPill
+              label={getListingConditionLabel(listing.condition)}
+              tone="info"
+            />
+            <StatusPill
+              label={formatStockLabel(availableQuantity)}
+              tone={availableQuantity <= 1 ? "warning" : "success"}
+            />
+            <StatusPill
+              label={getListingStatusLabel(listing.status)}
+              tone={listingAvailable ? "success" : "warning"}
+            />
             <StatusPill label="Campus Pickup" tone="success" />
           </View>
 
           <Text style={styles.description}>{listing.description}</Text>
+
+          {!isOwner ? (
+            <View style={styles.buyerActionRow}>
+              <TouchableOpacity
+                style={[
+                  styles.secondaryInlineButton,
+                  savingListing && styles.secondaryInlineButtonDisabled,
+                ]}
+                onPress={handleToggleSaved}
+                disabled={savingListing}
+              >
+                <Heart
+                  size={16}
+                  color={Colors.primary_blue}
+                  fill={isSaved ? Colors.primary_blue : "transparent"}
+                />
+                <Text style={styles.secondaryInlineButtonText}>
+                  {isSaved ? "Saved" : "Save"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryInlineButton}
+                onPress={() => setReportVisible(true)}
+              >
+                <Flag size={16} color={Colors.primary_blue} />
+                <Text style={styles.secondaryInlineButtonText}>Report</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {isOwner ? (
             <View style={styles.ownerActionsRow}>
@@ -670,6 +915,16 @@ export default function ProductDetail({
               >
                 <Pencil size={18} color={Colors.primary_blue} />
                 <Text style={styles.ownerEditButtonText}>Edit Listing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.ownerEditButton}
+                onPress={handleToggleAvailability}
+                disabled={deleting}
+              >
+                <Check size={18} color={Colors.primary_blue} />
+                <Text style={styles.ownerEditButtonText}>
+                  {listing.status === "sold" ? "Mark Active" : "Mark Sold"}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -692,6 +947,21 @@ export default function ProductDetail({
               )}
               <View style={styles.sellerInfo}>
                 <Text style={styles.sellerName}>{seller.username}</Text>
+                <View style={styles.trustRow}>
+                  <ShieldCheck size={14} color={Colors.primary_green} />
+                  <Text style={styles.trustText}>
+                    {seller.active_listings_count || 0} active listing
+                    {(seller.active_listings_count || 0) === 1 ? "" : "s"}
+                    {seller.member_since
+                      ? ` · Member since ${new Date(
+                          seller.member_since,
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })}`
+                      : ""}
+                  </Text>
+                </View>
                 {seller.rating !== undefined && seller.review_count > 0 ? (
                   <View>
                     {renderStars(Math.round(seller.rating))}
@@ -831,15 +1101,102 @@ export default function ProductDetail({
         )}
       </ScrollView>
 
+      <Modal
+        visible={reportVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReportVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setReportVisible(false)}
+        >
+          <View style={styles.reportCard}>
+            <Text style={styles.reportTitle}>Report Listing</Text>
+            <Text style={styles.reportSubtitle}>
+              Flag spam, scams, inaccurate details, or unsafe content.
+            </Text>
+            <View style={styles.reportReasonsRow}>
+              {REPORT_REASONS.map((reason) => (
+                <TouchableOpacity
+                  key={reason}
+                  style={[
+                    styles.reportReasonChip,
+                    reportReason === reason && styles.reportReasonChipActive,
+                  ]}
+                  onPress={() => setReportReason(reason)}
+                >
+                  <Text
+                    style={[
+                      styles.reportReasonText,
+                      reportReason === reason &&
+                        styles.reportReasonTextActive,
+                    ]}
+                  >
+                    {reason}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Optional details"
+              placeholderTextColor={Colors.lightGray}
+              multiline
+              numberOfLines={4}
+              value={reportDetails}
+              onChangeText={setReportDetails}
+              editable={!submittingReport}
+            />
+            <TouchableOpacity
+              style={[
+                styles.submitReviewButton,
+                submittingReport && styles.submitReviewButtonDisabled,
+              ]}
+              onPress={handleSubmitReport}
+              disabled={submittingReport}
+            >
+              {submittingReport ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <Text style={styles.submitReviewButtonText}>Submit Report</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+
       {/* Add to Cart Button */}
       <StickyActionBar style={styles.buyButtonContainer}>
-        <Animated.View
-          style={{ transform: [{ scale: addToCartScale }], width: "100%" }}
-        >
+        <Animated.View style={{ transform: [{ scale: addToCartScale }] }}>
+          <View style={styles.purchaseControls}>
+            <View style={styles.quantityPicker}>
+              <TouchableOpacity
+                style={styles.quantityPickerButton}
+                onPress={() => handleQuantityChange(-1)}
+                disabled={!listingAvailable || selectedQuantity <= 1}
+              >
+                <Minus color={Colors.darkTeal} size={18} />
+              </TouchableOpacity>
+              <Text style={styles.quantityPickerText}>{selectedQuantity}</Text>
+              <TouchableOpacity
+                style={styles.quantityPickerButton}
+                onPress={() => handleQuantityChange(1)}
+                disabled={
+                  !listingAvailable || selectedQuantity >= availableQuantity
+                }
+              >
+                <Plus color={Colors.darkTeal} size={18} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.stockFootnote}>
+              {formatStockLabel(availableQuantity)}
+            </Text>
+          </View>
           <TouchableOpacity
             style={[styles.buyButton, addingToCart && styles.buyButtonDisabled]}
             onPress={handleAddToCart}
-            disabled={addingToCart}
+            disabled={addingToCart || !listingAvailable}
             activeOpacity={0.8}
           >
             {addingToCart ? (
@@ -851,7 +1208,9 @@ export default function ProductDetail({
                   size={24}
                   style={{ marginRight: Spacing.sm }}
                 />
-                <Text style={styles.buyButtonText}>Add to Cart</Text>
+                <Text style={styles.buyButtonText}>
+                  {listingAvailable ? "Add to Cart" : "Unavailable"}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -981,8 +1340,35 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: Spacing.lg,
   },
+  buyerActionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  secondaryInlineButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.white,
+  },
+  secondaryInlineButtonDisabled: {
+    opacity: 0.65,
+  },
+  secondaryInlineButtonText: {
+    ...Typography.bodySmall,
+    color: Colors.primary_blue,
+    fontWeight: "700",
+  },
   ownerActionsRow: {
     marginTop: Spacing.xs,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
   },
   ownerEditButton: {
     alignSelf: "flex-start",
@@ -1033,6 +1419,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sellerInfo: {
+    flex: 1,
+  },
+  trustRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  trustText: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
     flex: 1,
   },
   messageSellerButton: {
@@ -1142,6 +1539,36 @@ const styles = StyleSheet.create({
   // Buy Button
   buyButtonContainer: {
     bottom: 0,
+  },
+  purchaseControls: {
+    marginBottom: Spacing.sm,
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  quantityPicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+  },
+  quantityPickerButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantityPickerText: {
+    minWidth: 32,
+    textAlign: "center",
+    ...Typography.bodyLarge,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  stockFootnote: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
   },
   buyButton: {
     backgroundColor: Colors.primary_blue,
@@ -1269,5 +1696,48 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: Colors.error || "#E74C3C",
+  },
+  reportCard: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    width: "86%",
+    maxWidth: 420,
+    padding: Spacing.lg,
+  },
+  reportTitle: {
+    ...Typography.heading4,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  reportSubtitle: {
+    ...Typography.bodySmall,
+    color: Colors.mutedGray,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  reportReasonsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  reportReasonChip: {
+    borderWidth: 1,
+    borderColor: Colors.borderGray,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+  },
+  reportReasonChipActive: {
+    backgroundColor: Colors.primary_blue,
+    borderColor: Colors.primary_blue,
+  },
+  reportReasonText: {
+    ...Typography.bodySmall,
+    color: Colors.darkTeal,
+    fontWeight: "700",
+  },
+  reportReasonTextActive: {
+    color: Colors.white,
   },
 });

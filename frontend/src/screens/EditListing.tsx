@@ -35,6 +35,13 @@ import {
   StickyActionBar,
   SurfaceCard,
 } from "../components";
+import {
+  LISTING_CONDITION_OPTIONS,
+  type ListingCondition,
+  type ListingStatus,
+  getListingConditionLabel,
+  getListingStatusLabel,
+} from "../lib/utils/listings";
 
 type MainStackParamList = {
   MainTabs: undefined;
@@ -75,7 +82,10 @@ export default function EditListing({ route, navigation }: EditListingProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<string>("");
+  const [availableQuantity, setAvailableQuantity] = useState<string>("1");
   const [type, setType] = useState<"item" | "service">("item");
+  const [condition, setCondition] = useState<ListingCondition>("good");
+  const [status, setStatus] = useState<ListingStatus>("active");
   const [categoryId, setCategoryId] = useState<number | null>(null);
 
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -179,7 +189,12 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           setPrice(
             listing.price_cents ? (listing.price_cents / 100).toString() : "",
           );
+          setAvailableQuantity(
+            String(Math.max(0, Number(listing.available_quantity ?? 1))),
+          );
           setType(listing.type || "item");
+          setCondition((listing.condition || "good") as ListingCondition);
+          setStatus((listing.status || "active") as ListingStatus);
           setCategoryId(listing.category_id);
 
           const { data: pickupData } = await supabase
@@ -235,6 +250,11 @@ export default function EditListing({ route, navigation }: EditListingProps) {
     const n = Number((price || "").replace(/[^0-9.]/g, ""));
     return Number.isFinite(n) ? Math.round(n * 100) : 0;
   }, [price]);
+  const parsedQuantity = useMemo(() => {
+    const value = Math.floor(Number(availableQuantity || "0"));
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, value);
+  }, [availableQuantity]);
 
   const normalizeTag = (s: string) => s.replace(/^#/, "").trim().toLowerCase();
   const addTagFromText = () => {
@@ -324,6 +344,9 @@ export default function EditListing({ route, navigation }: EditListingProps) {
           title: title.trim(),
           description: description.trim() || null,
           price_cents,
+          available_quantity: status === "sold" ? 0 : parsedQuantity,
+          condition,
+          status: status === "sold" || parsedQuantity <= 0 ? "sold" : status,
           type,
           category_id: categoryId,
         })
@@ -498,6 +521,66 @@ export default function EditListing({ route, navigation }: EditListingProps) {
                 placeholder="0.00"
                 placeholderTextColor={Colors.borderGray}
               />
+              <Input
+                label="Quantity Available"
+                value={availableQuantity}
+                keyboardType="number-pad"
+                onChangeText={setAvailableQuantity}
+                inputStyle={styles.inputText}
+                labelStyle={styles.inputLabel}
+                inputContainerStyle={styles.inputBox}
+                containerStyle={styles.inputContainer}
+                placeholder="0"
+                placeholderTextColor={Colors.borderGray}
+              />
+
+              <Text style={styles.inlineLabel}>Condition</Text>
+              <View style={styles.categoryList}>
+                {LISTING_CONDITION_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.categoryChip,
+                      option === condition && styles.categoryActive,
+                    ]}
+                    onPress={() => setCondition(option)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        option === condition && styles.categoryTextActive,
+                      ]}
+                    >
+                      {getListingConditionLabel(option)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inlineLabel}>Availability</Text>
+              <View style={styles.categoryList}>
+                {(["active", "pending", "sold"] as ListingStatus[]).map(
+                  (option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={[
+                        styles.categoryChip,
+                        option === status && styles.categoryActive,
+                      ]}
+                      onPress={() => setStatus(option)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryText,
+                          option === status && styles.categoryTextActive,
+                        ]}
+                      >
+                        {getListingStatusLabel(option)}
+                      </Text>
+                    </TouchableOpacity>
+                  ),
+                )}
+              </View>
 
               <View style={styles.toggleContainer}>
                 <TouchableOpacity

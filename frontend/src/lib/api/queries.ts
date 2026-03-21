@@ -1,5 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase";
+import type {
+  ListingCondition,
+  ListingSortOption,
+} from "../utils/listings";
+import {
+  matchesConditionFilter,
+  sortListings,
+} from "../utils/listings";
 
 // ============ Query Keys ============
 export const queryKeys = {
@@ -27,6 +35,7 @@ interface ListingFilters {
   category?: number | null;
   tags?: number[];
   priceRange?: [number, number] | null;
+  minimumCondition?: ListingCondition | null;
 }
 
 interface ListingQueryOptions {
@@ -37,11 +46,12 @@ interface ListingQueryOptions {
 const DEFAULT_LISTINGS_PAGE_SIZE = 40;
 const MAX_LISTINGS_PAGE_SIZE = 100;
 const LISTING_CARD_SELECT =
-  "id, title, price_cents, created_at, listing_images(url, sort_order), categories(name)";
+  "id, title, price_cents, created_at, available_quantity, condition, status, listing_images(url, sort_order), categories(name)";
 
 export const fetchListings = async (
   filters: ListingFilters = {},
   options: ListingQueryOptions = {},
+  sort: ListingSortOption = "newest",
 ) => {
   const page = Math.max(0, options.page ?? 0);
   const pageSize = Math.min(
@@ -55,6 +65,8 @@ export const fetchListings = async (
     .from("listings")
     .select(LISTING_CARD_SELECT)
     .order("created_at", { ascending: false })
+    .eq("status", "active")
+    .gt("available_quantity", 0)
     .range(rangeStart, rangeEnd);
 
   if (filters.category) {
@@ -74,12 +86,16 @@ export const fetchListings = async (
   const { data, error } = await query;
 
   if (error) throw error;
-  return data || [];
+  const filtered = (data || []).filter((listing: any) =>
+    matchesConditionFilter(listing, filters.minimumCondition || null),
+  );
+  return sortListings(filtered, sort);
 };
 
 export const useListings = (
   filters: ListingFilters = {},
   options: ListingQueryOptions = {},
+  sort: ListingSortOption = "newest",
 ) => {
   const normalizedOptions: ListingQueryOptions = {
     page: Math.max(0, options.page ?? 0),
@@ -90,8 +106,8 @@ export const useListings = (
   };
 
   return useQuery({
-    queryKey: queryKeys.listings(filters, normalizedOptions),
-    queryFn: () => fetchListings(filters, normalizedOptions),
+    queryKey: [...queryKeys.listings(filters, normalizedOptions), sort],
+    queryFn: () => fetchListings(filters, normalizedOptions, sort),
   });
 };
 

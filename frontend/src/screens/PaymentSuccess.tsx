@@ -164,7 +164,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
 
         const { data: items, error: orderItemsError } = await supabase
           .from("order_items")
-          .select("listing_id")
+          .select("listing_id, quantity")
           .eq("order_id", orderId);
 
         if (orderItemsError) {
@@ -174,6 +174,35 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
         const listingIds = Array.from(
           new Set((items || []).map((item: any) => Number(item.listing_id))),
         ).filter((id) => Number.isFinite(id));
+
+        if ((items || []).length > 0) {
+          const { data: listingRows } = await supabase
+            .from("listings")
+            .select("id, available_quantity")
+            .in("id", listingIds);
+
+          const listingMap = new Map(
+            (listingRows || []).map((row: any) => [Number(row.id), row]),
+          );
+
+          for (const item of items || []) {
+            const listingRow = listingMap.get(Number(item.listing_id));
+            if (!listingRow) continue;
+            const nextQuantity = Math.max(
+              0,
+              Number(listingRow.available_quantity || 0) -
+                Number(item.quantity || 0),
+            );
+
+            await supabase
+              .from("listings")
+              .update({
+                available_quantity: nextQuantity,
+                status: nextQuantity <= 0 ? "sold" : "active",
+              })
+              .eq("id", Number(item.listing_id));
+          }
+        }
 
         // 6. Clear cart items for the ordered listings.
         if (listingIds.length > 0) {

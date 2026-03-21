@@ -148,6 +148,49 @@ const MyListings: React.FC = () => {
     );
   };
 
+  const handleToggleAvailability = async (
+    listingId: number,
+    nextStatus: "active" | "sold",
+  ) => {
+    try {
+      const nextQuantity =
+        nextStatus === "sold"
+          ? 0
+          : Math.max(
+              1,
+              Number(
+                listings.find((listing) => listing.id === listingId)
+                  ?.available_quantity ?? 1,
+              ),
+            );
+
+      const { error } = await supabase
+        .from("listings")
+        .update({
+          status: nextStatus,
+          available_quantity: nextQuantity,
+        })
+        .eq("id", listingId);
+
+      if (error) throw error;
+
+      setListings((prev) =>
+        prev.map((listing) =>
+          listing.id === listingId
+            ? {
+                ...listing,
+                status: nextStatus,
+                available_quantity: nextQuantity,
+              }
+            : listing,
+        ),
+      );
+    } catch (error) {
+      console.error("Error updating listing availability:", error);
+      showAlert("Error", "Failed to update listing status.");
+    }
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -180,6 +223,7 @@ const MyListings: React.FC = () => {
             showMenu
             onEdit={handleEditListing}
             onDelete={handleDeleteListing}
+            onToggleAvailability={handleToggleAvailability}
           />
         )}
         keyExtractor={(item) => item.id.toString()}

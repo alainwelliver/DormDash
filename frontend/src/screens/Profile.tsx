@@ -23,6 +23,7 @@ import {
   X,
   RefreshCw,
   MessageCircle,
+  Heart,
 } from "lucide-react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -64,6 +65,7 @@ type ProfileNavigationProp = NativeStackNavigationProp<{
   PastOrders: undefined;
   Inbox: undefined;
   SavedCarts: undefined;
+  SavedListings: undefined;
   AddressList: undefined;
   PaymentList: undefined;
 }>;
@@ -330,6 +332,12 @@ const Profile: React.FC = () => {
       IconComponent: MessageCircle,
       route: "Inbox",
       badge: "Inbox",
+    },
+    {
+      title: "Saved Items",
+      IconComponent: Heart,
+      route: "SavedListings",
+      badge: "Wishlist",
     },
     {
       title: "Saved Routines",

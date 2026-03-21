@@ -71,6 +71,7 @@ const linking: LinkingOptions<any> = {
       MyListings: "my-listings",
       PastOrders: "past-orders",
       SavedCarts: "saved-carts",
+      SavedListings: "saved-items",
       OrderDetails: "order/:orderId",
       Inbox: "messages",
       Conversation: "messages/:conversationId",
@@ -106,6 +107,7 @@ import Profile from "../screens/Profile";
 import MyListings from "../screens/ProfileMyListings";
 import PastOrders from "../screens/ProfilePastOrders";
 import SavedCarts from "../screens/ProfileSavedCarts";
+import SavedListings from "../screens/ProfileSavedListings";
 import OrderDetails from "../screens/OrderDetails";
 import Inbox from "../screens/Inbox";
 import Conversation from "../screens/Conversation";
@@ -173,6 +175,7 @@ type MainStackParamList = {
   MyListings: undefined;
   PastOrders: undefined;
   SavedCarts: undefined;
+  SavedListings: undefined;
   OrderDetails: { orderId: number };
   Inbox: undefined;
   Conversation: { conversationId: number; listingId?: number };
@@ -403,6 +406,7 @@ export default function AppNavigator() {
           <MainStack.Screen name="MyListings" component={MyListings} />
           <MainStack.Screen name="PastOrders" component={PastOrders} />
           <MainStack.Screen name="SavedCarts" component={SavedCarts} />
+          <MainStack.Screen name="SavedListings" component={SavedListings} />
           <MainStack.Screen name="OrderDetails" component={OrderDetails} />
           <MainStack.Screen name="Inbox" component={Inbox} />
           <MainStack.Screen
