@@ -11,6 +11,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle, Mail, Home, Receipt, MapPin } from "lucide-react-native";
 import type { NavigationProp, RouteProp } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { supabase } from "../lib/supabase";
 
@@ -20,6 +21,7 @@ type Props = {
 };
 
 const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
+  const queryClient = useQueryClient();
   const [processingOrder, setProcessingOrder] = useState(true);
   const [processingWarning, setProcessingWarning] = useState<string | null>(
     null,
@@ -126,93 +128,59 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           return;
         }
 
-        // 4. Mark order as paid when still pending (idempotent).
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({
-            status: "paid",
-            paid_at: new Date().toISOString(),
-          })
-          .eq("id", orderId)
-          .eq("user_id", user.id)
-          .eq("status", "pending_payment");
+        // 4. Finalize payment/inventory exactly once in the database.
+        const { data: finalizeResult, error: finalizeError } = await supabase.rpc(
+          "finalize_paid_order",
+          { p_order_id: orderId },
+        );
 
-        if (updateError) {
-          console.error("Error finalizing order:", updateError);
+        if (finalizeError) {
+          console.error("Error finalizing paid order:", finalizeError);
           setProcessingWarning(
-            "Payment succeeded, but order finalization needs a retry from your Orders page.",
+            "Payment succeeded, but inventory finalization needs a retry from your Orders page.",
           );
-        } else if (orderBeforeFinalize.status === "pending_payment") {
-          console.log("Order finalized successfully:", orderId);
-        }
-
-        // 5. Resolve final order state and ordered listing IDs.
-        const { data: orderData, error: orderDataError } = await supabase
-          .from("orders")
-          .select("id, status, delivery_method")
-          .eq("id", orderId)
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (orderDataError || !orderData) {
-          console.error("Error loading finalized order:", orderDataError);
           setProcessingOrder(false);
           return;
         }
 
+        const finalizedOrder = Array.isArray(finalizeResult)
+          ? finalizeResult[0]
+          : finalizeResult;
+
+        if (!finalizedOrder) {
+          console.error("No finalization result returned for order:", orderId);
+          setProcessingWarning(
+            "Payment succeeded, but we could not confirm the final order state. Please check your Orders page.",
+          );
+          setProcessingOrder(false);
+          return;
+        }
+
+        console.log(
+          "Order finalized successfully:",
+          orderId,
+          "finalized_now:",
+          Boolean(finalizedOrder.finalized_now),
+        );
+
+        // 5. Resolve final order state.
+        const orderData = {
+          id: Number(finalizedOrder.order_id ?? orderId),
+          status: String(finalizedOrder.status ?? orderBeforeFinalize.status),
+          delivery_method: String(
+            finalizedOrder.delivery_method ?? orderBeforeFinalize.delivery_method,
+          ),
+        };
+
         setIsPickupOrder(orderData.delivery_method === "pickup");
 
-        const { data: items, error: orderItemsError } = await supabase
-          .from("order_items")
-          .select("listing_id, quantity")
-          .eq("order_id", orderId);
-
-        if (orderItemsError) {
-          console.error("Error loading order items:", orderItemsError);
-        }
-
-        const listingIds = Array.from(
-          new Set((items || []).map((item: any) => Number(item.listing_id))),
-        ).filter((id) => Number.isFinite(id));
-
-        if ((items || []).length > 0) {
-          const { data: listingRows } = await supabase
-            .from("listings")
-            .select("id, available_quantity")
-            .in("id", listingIds);
-
-          const listingMap = new Map(
-            (listingRows || []).map((row: any) => [Number(row.id), row]),
-          );
-
-          for (const item of items || []) {
-            const listingRow = listingMap.get(Number(item.listing_id));
-            if (!listingRow) continue;
-            const nextQuantity = Math.max(
-              0,
-              Number(listingRow.available_quantity || 0) -
-                Number(item.quantity || 0),
-            );
-
-            await supabase
-              .from("listings")
-              .update({
-                available_quantity: nextQuantity,
-                status: nextQuantity <= 0 ? "sold" : "active",
-              })
-              .eq("id", Number(item.listing_id));
-          }
-        }
-
-        // 6. Clear cart items for the ordered listings.
-        if (listingIds.length > 0) {
-          await supabase
-            .from("cart_items")
-            .delete()
-            .eq("user_id", user.id)
-            .in("listing_id", listingIds);
-          console.log("Cart cleared for listings:", listingIds);
-        }
+        // 6. Flush stale cached marketplace data so sold-out listings disappear immediately.
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["cart"] }),
+          queryClient.invalidateQueries({ queryKey: ["listing"] }),
+          queryClient.invalidateQueries({ queryKey: ["listings"] }),
+          queryClient.invalidateQueries({ queryKey: ["buyAgainListings"] }),
+        ]);
 
         // 7. If delivery, create delivery_orders records for the dasher flow.
         if (
@@ -258,7 +226,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
     };
 
     finalizeOrder();
-  }, []);
+  }, [queryClient, route.params]);
 
   const handleGoHome = () => {
     if (Platform.OS === "web") {
