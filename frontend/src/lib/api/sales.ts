@@ -16,6 +16,9 @@ export interface SellerSale {
   seller_seen: boolean;
   buyer_id: string;
   buyer_name: string;
+  buyer_confirmed: boolean | null;
+  buyer_flag_reason: string | null;
+  seller_dispute_seen: boolean;
 }
 
 // ============ Query Keys ============
@@ -23,6 +26,7 @@ export interface SellerSale {
 const salesQueryKeys = {
   sales: ["seller-sales"] as const,
   unseenCount: ["unseen-sales-count"] as const,
+  disputeCount: ["unseen-dispute-count"] as const,
 };
 
 // ============ API Functions ============
@@ -97,6 +101,31 @@ export const useMarkSalesAsSeen = () => {
       // Invalidate and refetch sales queries
       queryClient.invalidateQueries({ queryKey: salesQueryKeys.sales });
       queryClient.invalidateQueries({ queryKey: salesQueryKeys.unseenCount });
+    },
+  });
+};
+
+/**
+ * Marks all disputed orders as seen for the authenticated seller
+ * Uses the mark_disputes_seen RPC function from the database
+ */
+export const markDisputesAsSeen = async (): Promise<void> => {
+  const { error } = await supabase.rpc("mark_disputes_seen");
+  if (error) throw error;
+};
+
+/**
+ * Hook to mark disputed orders as seen
+ * Invalidates sales query after mutation so dispute indicators refresh
+ * @returns Mutation object
+ */
+export const useMarkDisputesSeen = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: markDisputesAsSeen,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesQueryKeys.sales });
     },
   });
 };

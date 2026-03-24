@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
   Linking,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -20,6 +21,9 @@ import {
   ShoppingCart,
   MessageCircle,
   Navigation,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
 } from "lucide-react-native";
 import {
   useFocusEffect,
@@ -35,6 +39,7 @@ import { getMapTileUrlTemplate } from "../lib/osm";
 import { addOrderToCart, summarizeBatchResults } from "../lib/api/repeatBuying";
 import { getOrCreateConversation } from "../lib/api/messages";
 import { buildOpenInMapsUrl } from "../lib/mapsLinking";
+import { confirmOrderReceipt, flagOrderIssue } from "../lib/api/orders";
 
 type OrderDetailsNavigationProp = NativeStackNavigationProp<any>;
 
@@ -63,6 +68,9 @@ interface Order {
   total_cents: number;
   created_at: string;
   paid_at: string | null;
+  buyer_confirmed: boolean | null;
+  buyer_confirmed_at: string | null;
+  buyer_flag_reason: string | null;
   order_items: OrderItem[];
 }
 
@@ -149,6 +157,14 @@ const getDeliveryTrackingLabel = (status: string) => {
   }
 };
 
+const FLAG_REASONS = [
+  "Item not received",
+  "Not as described",
+  "Wrong item(s)",
+  "Item damaged or defective",
+  "Other",
+];
+
 const pickActiveDelivery = (deliveries: DeliveryOrder[]) => {
   return (
     deliveries.find((delivery) => delivery.status === "picked_up") ||
@@ -179,6 +195,9 @@ const OrderDetails: React.FC = () => {
   const [reordering, setReordering] = useState(false);
   const [openingConversationForListing, setOpeningConversationForListing] =
     useState<number | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [trackingNowMs, setTrackingNowMs] = useState(() => Date.now());
   const mapTileUrlTemplate = useMemo(() => getMapTileUrlTemplate(), []);
@@ -187,6 +206,26 @@ const OrderDetails: React.FC = () => {
     if (!order) return false;
     return order.status === "paid" || order.status === "pending_payment";
   }, [order]);
+
+  // Show the confirmation card when:
+  // - Pickup orders: immediately after payment (buyer arranges pickup independently)
+  // - Delivery orders: once all delivery_orders have reached 'delivered'
+  const showConfirmationCard = useMemo(() => {
+    if (!order || order.status !== "paid") return false;
+    if (order.delivery_method === "pickup") return true;
+    if (order.delivery_method === "delivery") {
+      return (
+        deliveryOrders.length > 0 &&
+        deliveryOrders.every((d) => d.status === "delivered")
+      );
+    }
+    return false;
+  }, [order, deliveryOrders]);
+
+  const isConfirmWindowOpen = useMemo(() => {
+    if (!order?.paid_at) return false;
+    return new Date(order.paid_at).getTime() > Date.now() - 48 * 60 * 60 * 1000;
+  }, [order?.paid_at]);
 
   const activeDelivery = useMemo(
     () => pickActiveDelivery(deliveryOrders),
@@ -255,9 +294,9 @@ const OrderDetails: React.FC = () => {
       }
 
       const withCoordsSelect =
-        "id, status, delivery_method, delivery_address, delivery_lat, delivery_lng, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, listing_id, title, price_cents, quantity)";
+        "id, status, delivery_method, delivery_address, delivery_lat, delivery_lng, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, buyer_confirmed, buyer_confirmed_at, buyer_flag_reason, order_items(id, listing_id, title, price_cents, quantity)";
       const withoutCoordsSelect =
-        "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, order_items(id, listing_id, title, price_cents, quantity)";
+        "id, status, delivery_method, delivery_address, subtotal_cents, tax_cents, delivery_fee_cents, total_cents, created_at, paid_at, buyer_confirmed, buyer_confirmed_at, buyer_flag_reason, order_items(id, listing_id, title, price_cents, quantity)";
 
       let orderData: any = null;
       let orderError: any = null;
@@ -547,6 +586,39 @@ const OrderDetails: React.FC = () => {
       );
     } finally {
       setOpeningConversationForListing(null);
+    }
+  };
+
+  const handleConfirmReceipt = async () => {
+    if (!order || confirming) return;
+    setConfirming(true);
+    try {
+      await confirmOrderReceipt(order.id);
+      setOrder((prev) =>
+        prev ? { ...prev, buyer_confirmed: true, buyer_confirmed_at: new Date().toISOString() } : prev,
+      );
+    } catch (e: any) {
+      alert("Error", e?.message || "Couldn't confirm receipt. Please try again.");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleReportIssue = async (reason: string) => {
+    if (!order || reporting) return;
+    setShowReportModal(false);
+    setReporting(true);
+    try {
+      await flagOrderIssue(order.id, reason);
+      setOrder((prev) =>
+        prev
+          ? { ...prev, buyer_confirmed: false, buyer_confirmed_at: new Date().toISOString(), buyer_flag_reason: reason }
+          : prev,
+      );
+    } catch (e: any) {
+      alert("Error", e?.message || "Couldn't report issue. Please try again.");
+    } finally {
+      setReporting(false);
     }
   };
 
@@ -906,6 +978,82 @@ const OrderDetails: React.FC = () => {
             ))}
           </View>
 
+          {showConfirmationCard ? (
+            <>
+              <Text style={styles.sectionTitle}>Receipt Confirmation</Text>
+              <View style={styles.card}>
+                {order.buyer_confirmed === true ? (
+                  <View style={styles.confirmBadge}>
+                    <CheckCircle size={18} color={Colors.primary_green} />
+                    <Text style={[styles.confirmBadgeText, { color: Colors.primary_green }]}>
+                      You confirmed receipt
+                    </Text>
+                  </View>
+                ) : order.buyer_confirmed === false ? (
+                  <View style={styles.confirmBadge}>
+                    <AlertTriangle size={18} color={Colors.warning} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.confirmBadgeText, { color: Colors.warning }]}>
+                        Issue reported
+                      </Text>
+                      {order.buyer_flag_reason ? (
+                        <Text style={styles.confirmBadgeReason}>
+                          {order.buyer_flag_reason}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : isConfirmWindowOpen ? (
+                  <>
+                    <Text style={styles.confirmPrompt}>
+                      Did you receive your order as expected?
+                    </Text>
+                    <Text style={styles.confirmSubprompt}>
+                      You have 48 hours from payment to confirm or report an issue.
+                    </Text>
+                    <View style={styles.confirmActions}>
+                      <TouchableOpacity
+                        style={[styles.confirmButton, confirming && { opacity: 0.7 }]}
+                        onPress={handleConfirmReceipt}
+                        disabled={confirming || reporting}
+                      >
+                        {confirming ? (
+                          <ActivityIndicator color={Colors.white} size="small" />
+                        ) : (
+                          <>
+                            <CheckCircle size={16} color={Colors.white} />
+                            <Text style={styles.confirmButtonText}>Confirm Receipt</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.reportButton, reporting && { opacity: 0.7 }]}
+                        onPress={() => setShowReportModal(true)}
+                        disabled={confirming || reporting}
+                      >
+                        {reporting ? (
+                          <ActivityIndicator color={Colors.warning} size="small" />
+                        ) : (
+                          <>
+                            <AlertTriangle size={16} color={Colors.warning} />
+                            <Text style={styles.reportButtonText}>Report an Issue</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.confirmBadge}>
+                    <Clock size={18} color={Colors.mutedGray} />
+                    <Text style={[styles.confirmBadgeText, { color: Colors.mutedGray }]}>
+                      Auto-confirmed
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </>
+          ) : null}
+
           {(order.order_items || []).length > 0 ? (
             <TouchableOpacity
               style={[styles.orderAgainButton, reordering && { opacity: 0.75 }]}
@@ -941,6 +1089,35 @@ const OrderDetails: React.FC = () => {
           ) : null}
         </ScrollView>
       )}
+
+      <Modal
+        visible={showReportModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowReportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Report an Issue</Text>
+            <Text style={styles.modalSubtitle}>What went wrong with your order?</Text>
+            {FLAG_REASONS.map((reason) => (
+              <TouchableOpacity
+                key={reason}
+                style={styles.modalReasonButton}
+                onPress={() => handleReportIssue(reason)}
+              >
+                <Text style={styles.modalReasonText}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowReportModal(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1247,6 +1424,122 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     fontFamily: Typography.buttonText.fontFamily,
+  },
+  confirmPrompt: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    marginBottom: Spacing.xs,
+  },
+  confirmSubprompt: {
+    fontSize: 13,
+    color: Colors.mutedGray,
+    fontFamily: Typography.bodySmall.fontFamily,
+    marginBottom: Spacing.md,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  confirmButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    backgroundColor: Colors.primary_green,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.sm,
+  },
+  confirmButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.white,
+    fontFamily: Typography.buttonText.fontFamily,
+  },
+  reportButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.warning,
+    backgroundColor: Colors.white,
+  },
+  reportButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.warning,
+    fontFamily: Typography.buttonText.fontFamily,
+  },
+  confirmBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  confirmBadgeText: {
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: Typography.bodyMedium.fontFamily,
+  },
+  confirmBadgeReason: {
+    fontSize: 13,
+    color: Colors.mutedGray,
+    fontFamily: Typography.bodySmall.fontFamily,
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+    fontFamily: Typography.heading4.fontFamily,
+    marginBottom: Spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: Colors.mutedGray,
+    fontFamily: Typography.bodySmall.fontFamily,
+    marginBottom: Spacing.md,
+  },
+  modalReasonButton: {
+    paddingVertical: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+  },
+  modalReasonText: {
+    fontSize: 15,
+    color: Colors.darkTeal,
+    fontFamily: Typography.bodyMedium.fontFamily,
+  },
+  modalCancelButton: {
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.mutedGray,
+    fontFamily: Typography.bodyMedium.fontFamily,
   },
 });
 
