@@ -10,13 +10,14 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TrendingUp, ChevronLeft, Package } from "lucide-react-native";
+import { TrendingUp, ChevronLeft, Package, AlertTriangle } from "lucide-react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import {
   useSellerSales,
   useMarkSalesAsSeen,
+  useMarkDisputesSeen,
   type SellerSale,
 } from "../lib/api/sales";
 
@@ -40,11 +41,13 @@ const formatDate = (iso: string | null) => {
 
 const SaleCard: React.FC<{ item: SellerSale }> = ({ item }) => {
   const isUnseen = !item.seller_seen;
+  const isDisputed = item.buyer_confirmed === false;
   return (
-    <View style={[styles.saleCard, isUnseen && styles.saleCardUnseen]}>
+    <View style={[styles.saleCard, isUnseen && styles.saleCardUnseen, isDisputed && styles.saleCardDisputed]}>
       {isUnseen && <View style={styles.unseenDot} />}
+      {isDisputed && <View style={styles.disputedDot} />}
       <View style={styles.saleIconContainer}>
-        <TrendingUp color={Colors.primary_green} size={28} />
+        <TrendingUp color={isDisputed ? Colors.warning : Colors.primary_green} size={28} />
       </View>
       <View style={styles.saleInfo}>
         <Text style={styles.saleTitle} numberOfLines={2}>
@@ -55,6 +58,15 @@ const SaleCard: React.FC<{ item: SellerSale }> = ({ item }) => {
           {item.delivery_method === "delivery" ? "Delivery" : "Pickup"}
         </Text>
         <Text style={styles.saleMeta}>Buyer: {item.buyer_name}</Text>
+        {isDisputed ? (
+          <View style={styles.disputedRow}>
+            <AlertTriangle size={13} color={Colors.warning} />
+            <Text style={styles.disputedText}>
+              Disputed
+              {item.buyer_flag_reason ? `: ${item.buyer_flag_reason}` : ""}
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.saleAmountRow}>
           <Text style={styles.saleQty}>Qty {item.quantity}</Text>
           <Text style={styles.saleAmount}>
@@ -102,12 +114,14 @@ const MySales: React.FC = () => {
     isRefetching,
   } = useSellerSales();
   const markSeenMutation = useMarkSalesAsSeen();
+  const markDisputesSeenMutation = useMarkDisputesSeen();
 
-  // Mark all unseen sales as seen whenever the screen gains focus.
+  // Mark all unseen sales and unseen disputes as seen whenever the screen gains focus.
   // This resets the badge count and removes the unseen highlight on cards.
   useFocusEffect(
     useCallback(() => {
       markSeenMutation.mutate();
+      markDisputesSeenMutation.mutate();
     }, []),
   );
 
@@ -274,6 +288,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary_green,
   },
+  saleCardDisputed: {
+    backgroundColor: "#FFFBF0",
+    borderWidth: 1,
+    borderColor: Colors.warning,
+  },
   unseenDot: {
     width: 8,
     height: 8,
@@ -282,6 +301,26 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: Spacing.md,
     right: Spacing.md,
+  },
+  disputedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.warning,
+    position: "absolute",
+    top: Spacing.md,
+    right: Spacing.md,
+  },
+  disputedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: Spacing.xs,
+  },
+  disputedText: {
+    fontSize: 12,
+    color: Colors.warning,
+    fontWeight: "600",
   },
   saleIconContainer: {
     marginRight: Spacing.md,
