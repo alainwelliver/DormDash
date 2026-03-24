@@ -9,6 +9,7 @@ export const createCheckoutSession = action({
     name: v.string(),
     price: v.number(), // price in cents
     orderId: v.optional(v.number()),
+    bountyId: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const stripeSecretKey = process.env.STRIPE_SECRET;
@@ -20,9 +21,11 @@ export const createCheckoutSession = action({
 
     const baseSuccessUrl =
       process.env.SUCCESS_URL || "https://www.dormdash.xyz/payment-success";
-    const successUrl = args.orderId
-      ? `${baseSuccessUrl}?orderId=${args.orderId}`
-      : baseSuccessUrl;
+    const successUrl = args.bountyId
+      ? `${baseSuccessUrl}?bountyId=${args.bountyId}`
+      : args.orderId
+        ? `${baseSuccessUrl}?orderId=${args.orderId}`
+        : baseSuccessUrl;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
