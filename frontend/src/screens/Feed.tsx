@@ -44,6 +44,7 @@ type MainStackNavigationProp = NativeStackNavigationProp<
   {
     Feed: undefined;
     CreateListing: undefined;
+    PlaceBounty: undefined;
   },
   "Feed"
 >;
@@ -421,6 +422,13 @@ const Feed: React.FC = () => {
               style={styles.compactSellButton}
             >
               <Plus size={18} color={Colors.white} strokeWidth={3} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              accessibilityLabel="Place a bounty"
+              onPress={() => navigation.navigate("PlaceBounty")}
+            >
+              <Zap size={20} color={Colors.primary_green} />
             </TouchableOpacity>
           </View>
         </View>

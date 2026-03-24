@@ -358,21 +358,33 @@ const PlaceBounty: React.FC = () => {
         </View>
 
         {/* Bottom padding for sticky bar */}
-        <View style={{ height: 100 }} />
+        <View style={{ height: 140 }} />
       </ScrollView>
 
       <StickyActionBar>
-        <TouchableOpacity
-          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
-          onPress={() => void handleSubmit()}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color={Colors.white} size="small" />
-          ) : (
-            <Text style={styles.submitButtonText}>Continue to Payment</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.actionButtonRow}>
+          <TouchableOpacity
+            style={styles.cancelAction}
+            onPress={() => navigation.goBack()}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelActionText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.continueAction,
+              submitting && styles.continueActionDisabled,
+            ]}
+            onPress={() => void handleSubmit()}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <Text style={styles.continueActionText}>Continue to Payment</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </StickyActionBar>
 
       {/* Address Selection Modal */}
@@ -558,21 +570,43 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodyMedium.fontFamily,
     color: Colors.mutedGray,
   },
-  submitButton: {
-    backgroundColor: Colors.primary_green,
-    borderRadius: BorderRadius.large,
-    paddingVertical: Spacing.lg,
+  actionButtonRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    width: "100%",
+  },
+  cancelAction: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 999,
+    paddingVertical: Spacing.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  submitButtonDisabled: {
+  cancelActionText: {
+    ...Typography.buttonText,
+    color: Colors.primary_blue,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  continueAction: {
+    flex: 1,
+    backgroundColor: Colors.primary_green,
+    borderRadius: 999,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  continueActionDisabled: {
     opacity: 0.6,
   },
-  submitButtonText: {
-    fontSize: 18,
-    fontFamily: Typography.bodyLarge.fontFamily,
-    fontWeight: "700",
+  continueActionText: {
+    ...Typography.buttonText,
     color: Colors.white,
+    fontSize: 15,
+    fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,

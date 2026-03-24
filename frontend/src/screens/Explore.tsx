@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Plus, SlidersHorizontal, FilterX } from "lucide-react-native";
+import { Plus, SlidersHorizontal, FilterX, Zap } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -54,6 +54,7 @@ type MainStackNavigationProp = NativeStackNavigationProp<
   {
     Explore: undefined;
     CreateListing: undefined;
+    PlaceBounty: undefined;
   },
   "Explore"
 >;
@@ -356,6 +357,13 @@ const Explore: React.FC = () => {
                     <Plus size={18} color={Colors.white} />
                     <Text style={styles.newListingText}>Create Listing</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.placeBountyButton, styles.webButton]}
+                    onPress={() => navigation.navigate("PlaceBounty")}
+                  >
+                    <Zap size={18} color={Colors.primary_green} />
+                    <Text style={styles.placeBountyText}>Place Bounty</Text>
+                  </TouchableOpacity>
                   <StatusPill
                     label={`${filteredListings.length} results`}
                     tone="info"
@@ -378,6 +386,13 @@ const Explore: React.FC = () => {
                 >
                   <Plus size={18} color={Colors.white} />
                   <Text style={styles.newListingText}>Create Listing</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.placeBountyButton}
+                  onPress={() => navigation.navigate("PlaceBounty")}
+                >
+                  <Zap size={18} color={Colors.primary_green} />
+                  <Text style={styles.placeBountyText}>Place Bounty</Text>
                 </TouchableOpacity>
                 <StatusPill
                   label={`${filteredListings.length} results`}
@@ -592,6 +607,20 @@ const styles = StyleSheet.create({
   },
   newListingText: {
     color: Colors.white,
+    fontSize: Typography.bodySmall.fontSize,
+    fontWeight: "700",
+  },
+  placeBountyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.white,
+    borderRadius: 999,
+  },
+  placeBountyText: {
+    color: Colors.primary_green,
     fontSize: Typography.bodySmall.fontSize,
     fontWeight: "700",
   },
