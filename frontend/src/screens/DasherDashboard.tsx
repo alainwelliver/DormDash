@@ -45,6 +45,8 @@ import {
   haversineDistanceMiles,
 } from "../lib/utils/distance";
 import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
+import { fetchOpenBounties, fetchDasherActiveBounties } from "../lib/api/bounties";
+import type { Bounty } from "../lib/api/bounties";
 import {
   LiveBadge,
   SectionHeader,
@@ -55,6 +57,7 @@ import {
 type DasherDashboardNavigationProp = NativeStackNavigationProp<{
   DasherRegister: undefined;
   DeliveryDetail: { deliveryOrderId: number };
+  BountyFulfill: { bountyId: number };
 }>;
 
 const DasherDashboard: React.FC = () => {
@@ -68,6 +71,8 @@ const DasherDashboard: React.FC = () => {
     DeliveryOrder[]
   >([]);
   const [myDeliveries, setMyDeliveries] = useState<DeliveryOrder[]>([]);
+  const [openBounties, setOpenBounties] = useState<Bounty[]>([]);
+  const [myActiveBounties, setMyActiveBounties] = useState<Bounty[]>([]);
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{
     lat: number;
@@ -136,28 +141,33 @@ const DasherDashboard: React.FC = () => {
 
       setDasherInfo(dasher);
 
-      const [availableResult, mineResult] = await Promise.all([
-        supabase
-          .from("delivery_orders")
-          .select(
-            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-          )
-          .eq("status", "pending")
-          .is("dasher_id", null)
-          .order("created_at", { ascending: false })
-          .limit(50),
-        supabase
-          .from("delivery_orders")
-          .select(
-            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-          )
-          .eq("dasher_id", user.id)
-          .in("status", ["accepted", "picked_up"])
-          .order("created_at", { ascending: false }),
-      ]);
+      const [availableResult, mineResult, openBountiesResult, myBountiesResult] =
+        await Promise.all([
+          supabase
+            .from("delivery_orders")
+            .select(
+              "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+            )
+            .eq("status", "pending")
+            .is("dasher_id", null)
+            .order("created_at", { ascending: false })
+            .limit(50),
+          supabase
+            .from("delivery_orders")
+            .select(
+              "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+            )
+            .eq("dasher_id", user.id)
+            .in("status", ["accepted", "picked_up"])
+            .order("created_at", { ascending: false }),
+          fetchOpenBounties().catch(() => [] as Bounty[]),
+          fetchDasherActiveBounties().catch(() => [] as Bounty[]),
+        ]);
 
       setAvailableDeliveries(availableResult.data || []);
       setMyDeliveries(mineResult.data || []);
+      setOpenBounties(openBountiesResult);
+      setMyActiveBounties(myBountiesResult);
 
       if (!hasLoadedOnce) {
         setHasLoadedOnce(true);
@@ -264,6 +274,13 @@ const DasherDashboard: React.FC = () => {
             ) {
               queueRealtimeRefresh();
             }
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "bounties" },
+          () => {
+            queueRealtimeRefresh();
           },
         )
         .on(
@@ -465,6 +482,92 @@ const DasherDashboard: React.FC = () => {
       deliveryOrderId: order.id,
     });
   };
+
+  const openBountyFulfill = (bountyId: number) => {
+    navigation.navigate("BountyFulfill", { bountyId });
+  };
+
+  const renderAvailableBounty = ({ item }: { item: Bounty }) => (
+    <SurfaceCard style={styles.deliveryCard} variant="default">
+      <View style={styles.deliveryHeader}>
+        <View style={styles.earningsBadge}>
+          <Text style={styles.earningsText}>{formatPrice(item.bounty_amount_cents)}</Text>
+        </View>
+        <View style={{ alignItems: "flex-end" }}>
+          <Text style={styles.deliveryTime}>
+            Due{" "}
+            {new Date(item.deadline).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.deliveryRoute}>
+        <View style={styles.routePoint}>
+          <Package color={Colors.warning} size={20} />
+          <Text style={styles.routeLabel}>Buy at</Text>
+        </View>
+        <Text style={styles.routeAddress} numberOfLines={1}>
+          {item.store_name}
+        </Text>
+      </View>
+
+      <View style={styles.routeDivider}>
+        <View style={styles.routeLine} />
+        <ArrowDown color={Colors.mutedGray} size={16} />
+        <View style={styles.routeLine} />
+      </View>
+
+      <View style={styles.deliveryRoute}>
+        <View style={styles.routePoint}>
+          <MapPin color={Colors.primary_green} size={20} />
+          <Text style={styles.routeLabel}>Deliver</Text>
+        </View>
+        <Text style={styles.routeAddress} numberOfLines={1}>
+          {item.delivery_address}
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.acceptButton}
+        onPress={() => openBountyFulfill(item.id)}
+      >
+        <Text style={styles.acceptButtonText}>View &amp; Claim</Text>
+      </TouchableOpacity>
+    </SurfaceCard>
+  );
+
+  const renderMyActiveBounty = ({ item }: { item: Bounty }) => (
+    <SurfaceCard
+      style={[styles.deliveryCard, styles.myDeliveryCard]}
+      variant="mint"
+    >
+      <View style={styles.deliveryHeader}>
+        <View style={[styles.statusBadge, styles.statusBadgeActive]}>
+          <Text style={[styles.statusText, styles.statusTextActive]}>
+            {item.status === "claimed" ? "Buy Item" : "En Route"}
+          </Text>
+        </View>
+        <Text style={styles.deliveryEarnings}>
+          {formatPrice(item.bounty_amount_cents)}
+        </Text>
+      </View>
+
+      <Text style={[styles.routeAddress, { marginBottom: Spacing.sm }]} numberOfLines={2}>
+        {item.item_description}
+      </Text>
+
+      <TouchableOpacity
+        style={[styles.mapButton, styles.mapButtonStandalone]}
+        onPress={() => openBountyFulfill(item.id)}
+      >
+        <Navigation color={Colors.primary_blue} size={16} />
+        <Text style={styles.mapButtonText}>Open Bounty</Text>
+      </TouchableOpacity>
+    </SurfaceCard>
+  );
 
   const renderAvailableDelivery = ({ item }: { item: DeliveryOrder }) => (
     <SurfaceCard style={styles.deliveryCard} variant="default">
@@ -740,6 +843,27 @@ const DasherDashboard: React.FC = () => {
         renderItem={null}
         ListHeaderComponent={
           <>
+            {/* My Active Bounties */}
+            {myActiveBounties.length > 0 && (
+              <View style={[styles.section, isWeb && styles.sectionWeb]}>
+                <SectionHeader
+                  title="My Active Bounties"
+                  subtitle="Bounties you've claimed"
+                  rightSlot={
+                    <StatusPill
+                      label={`${myActiveBounties.length} active`}
+                      tone="warning"
+                    />
+                  }
+                />
+                {myActiveBounties.map((bounty) => (
+                  <View key={bounty.id}>
+                    {renderMyActiveBounty({ item: bounty })}
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* My Active Deliveries */}
             {myDeliveries.length > 0 && (
               <View style={[styles.section, isWeb && styles.sectionWeb]}>
@@ -802,6 +926,51 @@ const DasherDashboard: React.FC = () => {
                 availableDeliveries.map((delivery) => (
                   <View key={delivery.id}>
                     {renderAvailableDelivery({ item: delivery })}
+                  </View>
+                ))
+              )}
+            </View>
+
+            {/* Open Bounties */}
+            <View style={[styles.section, isWeb && styles.sectionWeb]}>
+              <SectionHeader
+                title="Open Bounties"
+                subtitle="Buy and deliver items for a profit"
+                rightSlot={
+                  <StatusPill
+                    label={`${openBounties.length} open`}
+                    tone="info"
+                  />
+                }
+              />
+              {dasherInfo?.status === "offline" ? (
+                <View style={styles.offlineMessage}>
+                  <Info color={Colors.mutedGray} size={24} />
+                  <Text style={styles.offlineMessageText}>
+                    Go online to see open bounties
+                  </Text>
+                </View>
+              ) : dasherInfo?.status === "busy" ? (
+                <View style={styles.offlineMessage}>
+                  <Info color={Colors.mutedGray} size={24} />
+                  <Text style={styles.offlineMessageText}>
+                    Complete your active delivery or bounty first.
+                  </Text>
+                </View>
+              ) : openBounties.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Package color={Colors.lightGray} size={60} />
+                  <Text style={styles.emptyStateText}>
+                    No open bounties right now
+                  </Text>
+                  <Text style={styles.emptyStateSubtext}>
+                    Pull down to refresh
+                  </Text>
+                </View>
+              ) : (
+                openBounties.map((bounty) => (
+                  <View key={bounty.id}>
+                    {renderAvailableBounty({ item: bounty })}
                   </View>
                 ))
               )}
