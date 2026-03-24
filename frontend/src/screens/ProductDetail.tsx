@@ -39,6 +39,7 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
+import { useReviews } from "../lib/api/queries";
 import {
   Colors,
   Typography,
@@ -113,6 +114,7 @@ interface Review {
   comment?: string;
   created_at: string;
   reviewer_name?: string;
+  verified_purchase?: boolean;
 }
 
 const REPORT_REASONS = ["Spam", "Scam", "Inaccurate", "Unsafe"] as const;
@@ -197,45 +199,8 @@ export default function ProductDetail({
     }),
   });
 
-  // React Query for reviews
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["reviews", listingId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("id, listing_id, reviewer_id, rating, comment, created_at")
-        .eq("listing_id", listingId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const rows = (data || []) as Review[];
-      const reviewerIds = Array.from(
-        new Set(rows.map((review) => review.reviewer_id).filter(Boolean)),
-      );
-
-      let reviewerNameMap = new Map<string, string | null>();
-      if (reviewerIds.length > 0) {
-        const { data: reviewers, error: reviewerError } = await supabase
-          .from("seller_profiles")
-          .select("id, display_name")
-          .in("id", reviewerIds);
-
-        if (reviewerError) throw reviewerError;
-
-        reviewerNameMap = new Map(
-          (reviewers || []).map((reviewer: any) => [
-            reviewer.id,
-            reviewer.display_name || null,
-          ]),
-        );
-      }
-
-      return rows.map((review) => ({
-        ...review,
-        reviewer_name: reviewerNameMap.get(review.reviewer_id) || null,
-      }));
-    },
-  });
+  // React Query for reviews (now includes reviewer names and verified purchase status)
+  const { data: reviews = [] } = useReviews(listingId);
 
   const loading = listingLoading;
   const availableQuantity = Math.max(
@@ -634,7 +599,7 @@ export default function ProductDetail({
 
   const calculateAverageRating = (): number => {
     if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+    const sum = reviews.reduce((acc: number, review: Review) => acc + review.rating, 0);
     return sum / reviews.length;
   };
 
@@ -1114,13 +1079,27 @@ export default function ProductDetail({
               </Text>
             </View>
 
-            {reviews.map((review) => (
+            {reviews.map((review: Review) => (
               <React.Fragment key={review.id}>
                 <SurfaceCard variant="outlined" style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
-                    <Text style={styles.reviewerName}>
-                      {review.reviewer_name || "Anonymous"}
-                    </Text>
+                    <View style={styles.reviewerInfo}>
+                      <Text style={styles.reviewerName}>
+                        {review.reviewer_name || "Anonymous"}
+                      </Text>
+                      {review.verified_purchase && (
+                        <View style={styles.verifiedBadge}>
+                          <ShieldCheck
+                            size={14}
+                            color={Colors.primary_green}
+                            strokeWidth={2.5}
+                          />
+                          <Text style={styles.verifiedText}>
+                            Verified Purchase
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     {renderStars(review.rating)}
                   </View>
                   {review.comment && (
@@ -1612,13 +1591,30 @@ const styles = StyleSheet.create({
   reviewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: Spacing.sm,
+  },
+  reviewerInfo: {
+    flex: 1,
+    flexDirection: "column",
+    gap: Spacing.xs,
   },
   reviewerName: {
     ...Typography.bodyMedium,
     fontWeight: "600",
     color: Colors.darkTeal,
+  },
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  verifiedText: {
+    ...Typography.bodySmall,
+    fontSize: 12,
+    color: Colors.primary_green,
+    fontWeight: "500",
   },
   reviewComment: {
     ...Typography.bodyMedium,

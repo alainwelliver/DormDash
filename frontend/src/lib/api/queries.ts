@@ -224,10 +224,7 @@ export const useSeller = (userId: string | null) => {
 // ============ Reviews ============
 export const fetchReviews = async (listingId: number) => {
   const { data, error } = await supabase
-    .from("reviews")
-    .select("id, listing_id, reviewer_id, rating, comment, created_at")
-    .eq("listing_id", listingId)
-    .order("created_at", { ascending: false });
+    .rpc("get_reviews_with_verification", { p_listing_id: listingId });
 
   if (error) throw error;
   return data || [];
