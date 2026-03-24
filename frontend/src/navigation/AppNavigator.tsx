@@ -84,6 +84,10 @@ const linking: LinkingOptions<any> = {
       PaymentFailed: "payment-failed",
       DasherRegister: "dasher-register",
       DeliveryDetail: "delivery/:deliveryOrderId",
+      PlaceBounty: "place-bounty",
+      BountyDetail: "bounty/:bountyId",
+      BountyFulfill: "bounty-fulfill/:bountyId",
+      MyBounties: "my-bounties",
     },
   },
 };
@@ -121,6 +125,10 @@ import EditListing from "../screens/EditListing";
 import DasherDashboard from "../screens/DasherDashboard";
 import DasherRegister from "../screens/DasherRegister";
 import DeliveryDetail from "../screens/DeliveryDetail";
+import PlaceBounty from "../screens/PlaceBounty";
+import BountyDetail from "../screens/BountyDetail";
+import BountyFulfill from "../screens/BountyFulfill";
+import MyBounties from "../screens/ProfileMyBounties";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -169,6 +177,7 @@ type MainStackParamList = {
     priceCents: number;
     listingTitle: string;
     orderData?: OrderData;
+    bountyId?: number;
   };
   ProductDetail: { listingId: number };
   Checkout: { selectedItems: CartItem[] };
@@ -189,6 +198,10 @@ type MainStackParamList = {
   PaymentFailed: undefined;
   DasherRegister: undefined;
   DeliveryDetail: { deliveryOrderId: number };
+  PlaceBounty: undefined;
+  BountyDetail: { bountyId: number };
+  BountyFulfill: { bountyId: number };
+  MyBounties: undefined;
   ResetPassword: undefined;
 };
 
@@ -462,6 +475,26 @@ export default function AppNavigator() {
           <MainStack.Screen
             name="ResetPassword"
             component={AuthResetPassword}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="PlaceBounty"
+            component={PlaceBounty}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="BountyDetail"
+            component={BountyDetail}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="BountyFulfill"
+            component={BountyFulfill}
+            options={{ headerShown: false }}
+          />
+          <MainStack.Screen
+            name="MyBounties"
+            component={MyBounties}
             options={{ headerShown: false }}
           />
         </MainStack.Navigator>

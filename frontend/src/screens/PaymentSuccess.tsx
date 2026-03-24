@@ -9,7 +9,15 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CheckCircle, Mail, Home, Receipt, MapPin } from "lucide-react-native";
+import {
+  CheckCircle,
+  Mail,
+  Home,
+  Receipt,
+  MapPin,
+  Zap,
+} from "lucide-react-native";
+import { finalizePaidBounty } from "../lib/api/bounties";
 import type { NavigationProp, RouteProp } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
@@ -27,6 +35,7 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
     null,
   );
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [bountyId, setBountyId] = useState<number | null>(null);
   const [isPickupOrder, setIsPickupOrder] = useState(false);
   const hasFinalizedRef = useRef(false);
 
@@ -62,15 +71,20 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
           return;
         }
 
-        // 2. Resolve orderId from multiple sources (in priority order)
+        // 2. Resolve bountyId or orderId from multiple sources (in priority order)
+        let resolvedBountyId: number | null = null;
         let orderId: number | null = null;
 
-        // 2a. URL query param (most reliable — embedded in Stripe success_url)
+        // 2a. URL query params (most reliable — embedded in Stripe success_url)
         if (Platform.OS === "web") {
           try {
             const urlParams = new URLSearchParams(window.location.search);
+            const urlBountyId = urlParams.get("bountyId");
             const urlOrderId = urlParams.get("orderId");
-            if (urlOrderId) {
+            if (urlBountyId) {
+              resolvedBountyId = Number(urlBountyId);
+              console.log("Got bountyId from URL:", resolvedBountyId);
+            } else if (urlOrderId) {
               orderId = Number(urlOrderId);
               console.log("Got orderId from URL:", orderId);
             }
@@ -80,29 +94,55 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
         }
 
         // 2b. Route params (React Navigation parses query params into route.params)
-        if (!orderId && route.params) {
+        if (!resolvedBountyId && !orderId && route.params) {
+          const routeBountyId = (route.params as any).bountyId;
           const routeOrderId = (route.params as any).orderId;
-          if (routeOrderId) {
+          if (routeBountyId) {
+            resolvedBountyId = Number(routeBountyId);
+            console.log("Got bountyId from route params:", resolvedBountyId);
+          } else if (routeOrderId) {
             orderId = Number(routeOrderId);
             console.log("Got orderId from route params:", orderId);
           }
         }
 
         // 2c. AsyncStorage (set before Stripe redirect)
-        if (!orderId) {
+        if (!resolvedBountyId && !orderId) {
+          const pendingBountyId = await AsyncStorage.getItem("pendingBountyId");
           const pendingOrderId = await AsyncStorage.getItem("pendingOrderId");
-          if (pendingOrderId) {
+          if (pendingBountyId) {
+            resolvedBountyId = Number(pendingBountyId);
+            console.log("Got bountyId from AsyncStorage:", resolvedBountyId);
+          } else if (pendingOrderId) {
             orderId = Number(pendingOrderId);
             console.log("Got orderId from AsyncStorage:", orderId);
           }
         }
 
+        // ── BOUNTY FLOW ──────────────────────────────────────────────────────
+        if (resolvedBountyId && !Number.isNaN(resolvedBountyId)) {
+          setBountyId(resolvedBountyId);
+          try {
+            await finalizePaidBounty(resolvedBountyId);
+            console.log("Bounty finalized successfully:", resolvedBountyId);
+          } catch (err) {
+            console.error("Error finalizing bounty:", err);
+            setProcessingWarning(
+              "Payment succeeded, but bounty finalization needs a retry. Please contact support.",
+            );
+          }
+          await AsyncStorage.removeItem("pendingBountyId");
+          setProcessingOrder(false);
+          return;
+        }
+
+        // ── ORDER FLOW ───────────────────────────────────────────────────────
         if (orderId && !Number.isNaN(orderId)) {
           setOrderId(orderId);
         }
 
         if (!orderId || Number.isNaN(orderId)) {
-          console.warn("No orderId found in URL, route params, or storage");
+          console.warn("No orderId or bountyId found in URL, route params, or storage");
           setProcessingWarning(
             "We could not confirm which order to finalize. Please check your order history.",
           );
@@ -257,6 +297,13 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
+  const handleViewMyBounties = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "MainTabs" }, { name: "MyBounties" }],
+    });
+  };
+
   if (processingOrder) {
     return (
       <SafeAreaView style={styles.container}>
@@ -281,8 +328,9 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
         {/* Success Message */}
         <Text style={styles.title}>Payment Successful!</Text>
         <Text style={styles.subtitle}>
-          Thank you for your purchase. Your order has been confirmed and is
-          being processed.
+          {bountyId
+            ? "Your bounty is now live! A dasher will claim it and deliver your item."
+            : "Thank you for your purchase. Your order has been confirmed and is being processed."}
         </Text>
 
         {processingWarning ? (
@@ -310,17 +358,31 @@ const PaymentSuccess: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.primaryButtonText}>Back to Home</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleViewOrders}
-          >
-            <Receipt
-              size={20}
-              color={Colors.primary_blue}
-              style={{ marginRight: Spacing.sm }}
-            />
-            <Text style={styles.secondaryButtonText}>View Orders</Text>
-          </TouchableOpacity>
+          {bountyId ? (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleViewMyBounties}
+            >
+              <Zap
+                size={20}
+                color={Colors.primary_blue}
+                style={{ marginRight: Spacing.sm }}
+              />
+              <Text style={styles.secondaryButtonText}>View My Bounties</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleViewOrders}
+            >
+              <Receipt
+                size={20}
+                color={Colors.primary_blue}
+                style={{ marginRight: Spacing.sm }}
+              />
+              <Text style={styles.secondaryButtonText}>View Orders</Text>
+            </TouchableOpacity>
+          )}
 
           {isPickupOrder && orderId ? (
             <TouchableOpacity

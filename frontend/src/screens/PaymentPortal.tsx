@@ -41,8 +41,9 @@ type MainStackParamList = {
     priceCents: number;
     listingTitle: string;
     orderData?: OrderData;
+    bountyId?: number;
   };
-  PaymentSuccess: { orderId?: number } | undefined;
+  PaymentSuccess: { orderId?: number; bountyId?: number } | undefined;
   PaymentFailed: undefined;
 };
 type PaymentPortalRouteProp = RouteProp<MainStackParamList, "PaymentPortal">;
@@ -57,7 +58,7 @@ type Props = {
 };
 
 const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
-  const { priceCents, listingTitle, orderData } = route.params;
+  const { priceCents, listingTitle, orderData, bountyId } = route.params;
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const hasHandledRedirectRef = useRef(false);
@@ -70,6 +71,11 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     const fetchCheckoutSession = async () => {
       try {
+        // Store pending bounty ID before redirecting to Stripe (bounty flow)
+        if (bountyId) {
+          await AsyncStorage.setItem("pendingBountyId", String(bountyId));
+        }
+
         // Store pending order ID before redirecting to Stripe
         if (orderData) {
           const orderId = (orderData as any).orderId;
@@ -96,9 +102,11 @@ const PaymentPortal: React.FC<Props> = ({ route, navigation }) => {
             body: JSON.stringify({
               name: listingTitle,
               price: priceCents,
-              ...(orderData && (orderData as any).orderId
-                ? { orderId: (orderData as any).orderId }
-                : {}),
+              ...(bountyId
+                ? { bountyId }
+                : orderData && (orderData as any).orderId
+                  ? { orderId: (orderData as any).orderId }
+                  : {}),
             }),
           },
         );
