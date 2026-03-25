@@ -15,10 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.xiangc21sorganization.dormdash",
       "icon": "./assets/dormdash-logo.png",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "DormDash uses your location to show nearby deliveries and navigation routes.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "DormDash uses background location while you deliver so customers can track your order."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "DormDash uses background location while you deliver so customers can track your order.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -33,7 +35,12 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE"
+        "FOREGROUND_SERVICE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {
@@ -51,6 +58,13 @@
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/dormdash-logo.png",
+          "color": "#3B82F6"
         }
       ]
     ],

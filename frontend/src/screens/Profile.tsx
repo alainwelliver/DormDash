@@ -48,6 +48,7 @@ import {
   pickSingleImage,
   uploadImageToSupabase,
 } from "../lib/utils/platform";
+import { deactivatePushToken } from "../lib/notifications";
 
 interface UserProfile {
   name: string;
@@ -238,6 +239,8 @@ const Profile: React.FC = () => {
         style: "destructive",
         onPress: async () => {
           try {
+            // Deactivate push token before signing out
+            await deactivatePushToken();
             const { error } = await supabase.auth.signOut({ scope: "local" });
             if (error && error.name !== "AuthSessionMissingError") {
               console.error("Sign-out failed", error);

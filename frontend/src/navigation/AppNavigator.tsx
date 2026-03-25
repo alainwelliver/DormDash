@@ -129,6 +129,7 @@ import PlaceBounty from "../screens/PlaceBounty";
 import BountyDetail from "../screens/BountyDetail";
 import BountyFulfill from "../screens/BountyFulfill";
 import MyBounties from "../screens/ProfileMyBounties";
+import { NotificationProvider } from "../providers/NotificationProvider";
 
 type AuthStackParamList = {
   Welcome: undefined;
@@ -414,90 +415,92 @@ export default function AppNavigator() {
           />
         </AuthStack.Navigator>
       ) : (
-        <MainStack.Navigator screenOptions={{ headerShown: false }}>
-          <MainStack.Screen name="MainTabs" component={MainTabs} />
-          <MainStack.Screen name="Checkout" component={Checkout} />
-          <MainStack.Screen name="MyListings" component={MyListings} />
-          <MainStack.Screen name="PastOrders" component={PastOrders} />
-          <MainStack.Screen name="SavedCarts" component={SavedCarts} />
-          <MainStack.Screen name="SavedListings" component={SavedListings} />
-          <MainStack.Screen name="OrderDetails" component={OrderDetails} />
-          <MainStack.Screen name="Inbox" component={Inbox} />
-          <MainStack.Screen
-            name="Conversation"
-            component={Conversation}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen name="AddressList" component={AddressList} />
-          <MainStack.Screen name="AddAddress" component={AddAddress} />
-          <MainStack.Screen name="PaymentList" component={PaymentList} />
-          <MainStack.Screen name="AddPayment" component={AddPayment} />
-          <MainStack.Screen
-            name="CreateListing"
-            component={CreateListing}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="EditListing"
-            component={EditListing}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="ProductDetail"
-            component={ProductDetail}
-            options={{ headerShown: false, title: "Product Details" }}
-          />
-          <MainStack.Screen
-            name="PaymentPortal"
-            component={PaymentPortal}
-            options={{ headerShown: true, title: "Complete Payment" }}
-          />
-          <MainStack.Screen
-            name="PaymentSuccess"
-            component={PaymentSuccess}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="PaymentFailed"
-            component={PaymentFailed}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="DasherRegister"
-            component={DasherRegister}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="DeliveryDetail"
-            component={DeliveryDetail}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="ResetPassword"
-            component={AuthResetPassword}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="PlaceBounty"
-            component={PlaceBounty}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="BountyDetail"
-            component={BountyDetail}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="BountyFulfill"
-            component={BountyFulfill}
-            options={{ headerShown: false }}
-          />
-          <MainStack.Screen
-            name="MyBounties"
-            component={MyBounties}
-            options={{ headerShown: false }}
-          />
-        </MainStack.Navigator>
+        <NotificationProvider>
+          <MainStack.Navigator screenOptions={{ headerShown: false }}>
+            <MainStack.Screen name="MainTabs" component={MainTabs} />
+            <MainStack.Screen name="Checkout" component={Checkout} />
+            <MainStack.Screen name="MyListings" component={MyListings} />
+            <MainStack.Screen name="PastOrders" component={PastOrders} />
+            <MainStack.Screen name="SavedCarts" component={SavedCarts} />
+            <MainStack.Screen name="SavedListings" component={SavedListings} />
+            <MainStack.Screen name="OrderDetails" component={OrderDetails} />
+            <MainStack.Screen name="Inbox" component={Inbox} />
+            <MainStack.Screen
+              name="Conversation"
+              component={Conversation}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen name="AddressList" component={AddressList} />
+            <MainStack.Screen name="AddAddress" component={AddAddress} />
+            <MainStack.Screen name="PaymentList" component={PaymentList} />
+            <MainStack.Screen name="AddPayment" component={AddPayment} />
+            <MainStack.Screen
+              name="CreateListing"
+              component={CreateListing}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="EditListing"
+              component={EditListing}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="ProductDetail"
+              component={ProductDetail}
+              options={{ headerShown: false, title: "Product Details" }}
+            />
+            <MainStack.Screen
+              name="PaymentPortal"
+              component={PaymentPortal}
+              options={{ headerShown: true, title: "Complete Payment" }}
+            />
+            <MainStack.Screen
+              name="PaymentSuccess"
+              component={PaymentSuccess}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="PaymentFailed"
+              component={PaymentFailed}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="DasherRegister"
+              component={DasherRegister}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="DeliveryDetail"
+              component={DeliveryDetail}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="ResetPassword"
+              component={AuthResetPassword}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="PlaceBounty"
+              component={PlaceBounty}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="BountyDetail"
+              component={BountyDetail}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="BountyFulfill"
+              component={BountyFulfill}
+              options={{ headerShown: false }}
+            />
+            <MainStack.Screen
+              name="MyBounties"
+              component={MyBounties}
+              options={{ headerShown: false }}
+            />
+          </MainStack.Navigator>
+        </NotificationProvider>
       )}
     </NavigationContainer>
   );
