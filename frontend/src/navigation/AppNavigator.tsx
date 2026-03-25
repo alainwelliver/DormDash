@@ -313,7 +313,7 @@ function MainTabs() {
         name="DashTab"
         component={DasherDashboard}
         options={{
-          headerTitle: () => <Text style={headerStyles.title}>Dash</Text>,
+          headerShown: false,
           tabBarIcon: ({ focused, color }) =>
             renderTabIcon(Bike, focused, color),
         }}
@@ -322,7 +322,7 @@ function MainTabs() {
         name="ProfileTab"
         component={Profile}
         options={{
-          headerTitle: () => <Text style={headerStyles.title}>Profile</Text>,
+          headerShown: false,
           tabBarIcon: ({ focused, color }) =>
             renderTabIcon(User, focused, color),
         }}

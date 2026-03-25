@@ -13,6 +13,8 @@ export interface DasherInfo {
   vehicle_type: string;
   total_deliveries: number;
   total_earnings_cents: number;
+  total_cashed_out_cents?: number | null;
+  available_to_transfer_cents?: number | null;
 }
 
 export interface DeliveryOrder {

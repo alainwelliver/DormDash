@@ -24,6 +24,8 @@ import {
   ChevronRight,
   X,
   Plus,
+  Sparkles,
+  Zap,
 } from "lucide-react-native";
 import {
   useNavigation,
@@ -34,6 +36,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
 import { supabase } from "../lib/supabase";
 import { placeBounty } from "../lib/api/bounties";
+import { estimateItemPrice } from "../lib/api/priceEstimation";
 import { SectionHeader, StickyActionBar } from "../components";
 
 type PlaceBountyNavigationProp = NativeStackNavigationProp<{
@@ -87,6 +90,34 @@ const PlaceBounty: React.FC = () => {
 
   const [submitting, setSubmitting] = useState(false);
 
+  // Price estimation state (manual trigger)
+  const [estimate, setEstimate] = useState(
+    null as null | Awaited<ReturnType<typeof estimateItemPrice>>,
+  );
+  const [estimationLoading, setEstimationLoading] = useState(false);
+  const [estimationError, setEstimationError] = useState<string | null>(null);
+  const [showEstimate, setShowEstimate] = useState(false);
+
+  const handleEstimateClick = async () => {
+    setEstimationLoading(true);
+    setEstimationError(null);
+    setShowEstimate(false);
+    try {
+      const result = await estimateItemPrice(
+        itemDescription,
+        storeName,
+        storeLocation,
+      );
+      setEstimate(result);
+      setShowEstimate(true);
+    } catch (err: any) {
+      setEstimationError(err?.message || "Failed to estimate price");
+      setShowEstimate(false);
+    } finally {
+      setEstimationLoading(false);
+    }
+  };
+
   const fetchAddresses = useCallback(async () => {
     setLoadingAddresses(true);
     try {
@@ -128,6 +159,19 @@ const PlaceBounty: React.FC = () => {
       return `${parts[0]}.${parts[1].slice(0, 2)}`;
     }
     return cleaned;
+  };
+
+  const applyRecommendedAmount = () => {
+    if (estimate) {
+      const recommendedDollars = (
+        estimate.recommendedBountyAmount / 100
+      ).toFixed(2);
+      setBountyAmountDollars(recommendedDollars);
+    }
+  };
+
+  const formatPriceDisplay = (cents: number): string => {
+    return `$${(cents / 100).toFixed(2)}`;
   };
 
   const buildDeadlineISO = (): string | null => {
@@ -291,7 +335,56 @@ const PlaceBounty: React.FC = () => {
           <View style={styles.fieldLabel}>
             <DollarSign color={Colors.primary_blue} size={16} />
             <Text style={styles.fieldLabelText}>Bounty Amount</Text>
+            <TouchableOpacity
+              style={styles.aiSuggestButton}
+              onPress={handleEstimateClick}
+              disabled={
+                estimationLoading ||
+                !itemDescription.trim() ||
+                !storeName.trim()
+              }
+            >
+              {estimationLoading ? (
+                <ActivityIndicator color={Colors.primary_blue} size={12} />
+              ) : (
+                <Sparkles color={Colors.primary_blue} size={14} />
+              )}
+              <Text style={styles.aiSuggestButtonText}>Recommended price</Text>
+            </TouchableOpacity>
           </View>
+
+          {estimationError && (
+            <Text style={{ color: Colors.error, fontSize: 12, marginTop: 4 }}>
+              {estimationError}
+            </Text>
+          )}
+
+          {showEstimate && estimate && (
+            <View style={styles.estimationCompact}>
+              <View style={styles.estimationCompactRow}>
+                <Text style={styles.estimationCompactLabel}>Recommended:</Text>
+                <Text style={styles.estimationCompactPrice}>
+                  {formatPriceDisplay(estimate.recommendedBountyAmount)}
+                </Text>
+                <TouchableOpacity
+                  style={styles.applySmallButton}
+                  onPress={applyRecommendedAmount}
+                >
+                  <Text style={styles.applySmallButtonText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.estimationCompactDetail}>
+                Item ~{formatPriceDisplay(estimate.estimatedItemPrice)} +{" "}
+                {formatPriceDisplay(estimate.dasherProfit)} dasher compensation
+              </Text>
+              {estimate.mismatchWarning && (
+                <Text style={styles.estimationCompactWarning}>
+                  ⚠ {estimate.mismatchWarning}
+                </Text>
+              )}
+            </View>
+          )}
+
           <TextInput
             style={styles.textInput}
             value={bountyAmountDollars}
@@ -693,6 +786,72 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodyMedium.fontFamily,
     fontWeight: "600",
     color: Colors.primary_blue,
+  },
+  aiSuggestButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: "rgba(59, 130, 246, 0.08)",
+    marginLeft: Spacing.sm,
+  },
+  aiSuggestButtonText: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+    color: Colors.primary_blue,
+  },
+  estimationCompact: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(59, 130, 246, 0.05)",
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  estimationCompactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  estimationCompactLabel: {
+    fontSize: 13,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    color: Colors.darkTeal,
+  },
+  estimationCompactPrice: {
+    fontSize: 15,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.primary_green,
+    flex: 1,
+  },
+  applySmallButton: {
+    backgroundColor: Colors.primary_blue,
+    borderRadius: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  applySmallButtonText: {
+    color: Colors.white,
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    fontWeight: "600",
+  },
+  estimationCompactDetail: {
+    fontSize: 11,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+    marginTop: 2,
+  },
+  estimationCompactWarning: {
+    fontSize: 11,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.error,
+    fontWeight: "600",
+    marginTop: 4,
   },
 });
 
