@@ -810,131 +810,134 @@ const DasherDashboard: React.FC = () => {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Page Header */}
-      <View
-        style={[
-          styles.pageHeader,
-          Platform.OS === "web" && styles.pageHeaderWeb,
-        ]}
-      >
-        <View style={styles.pageHeaderTop}>
-          <Text style={styles.pageTitle}>Dash</Text>
-          <LiveBadge label="Dispatch live" />
-        </View>
-      </View>
-
-      {/* Stats Header */}
-      <View style={[styles.statsHeader, isWeb && styles.statsHeaderWeb]}>
-        {/* Primary Stats Section - Deliveries & Total Earned */}
-        <View style={styles.statsSection}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {dasherInfo?.total_deliveries || 0}
-              </Text>
-              <Text style={styles.statLabel}>Deliveries</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {formatPrice(dasherInfo?.total_earnings_cents || 0)}
-              </Text>
-              <Text style={styles.statLabel}>Total earned</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Secondary Stats Section - Cashed Out & Available */}
-        <View style={styles.secondaryStatsSection}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {formatPrice(dasherInfo?.total_cashed_out_cents || 0)}
-              </Text>
-              <Text style={styles.statLabel}>Cashed out</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {formatPrice(availableToTransferCents)}
-              </Text>
-              <Text style={styles.statLabel}>Ready to transfer</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Payout Section */}
-        <View style={styles.payoutSection}>
-          <TouchableOpacity
-            style={[
-              styles.transferButton,
-              availableToTransferCents <= 0 && styles.transferButtonDisabled,
-            ]}
-            onPress={handleTransferPress}
-            disabled={availableToTransferCents <= 0}
-          >
-            <Text style={styles.transferButtonText}>Transfer to bank</Text>
-            <ArrowRight color={Colors.white} size={18} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Status Section */}
-        <View style={styles.statusSection}>
-          {/* Online Toggle */}
-          <TouchableOpacity
-            style={[
-              styles.statusToggle,
-              dasherInfo?.status === "online" && styles.statusToggleOnline,
-              dasherInfo?.status === "busy" && styles.statusToggleBusy,
-            ]}
-            onPress={toggleOnlineStatus}
-            disabled={togglingStatus}
-          >
-            {togglingStatus ? (
-              <ActivityIndicator color={Colors.white} size="small" />
-            ) : (
-              <>
-                <View
-                  style={[
-                    styles.statusDot,
-                    {
-                      backgroundColor: getStatusColor(
-                        dasherInfo?.status || "offline",
-                      ),
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.statusToggleText,
-                    dasherInfo?.status === "online" &&
-                      styles.statusToggleTextOnline,
-                    dasherInfo?.status === "busy" &&
-                      styles.statusToggleTextBusy,
-                  ]}
-                >
-                  {getStatusLabel(dasherInfo?.status)}
-                </Text>
-                <Power
-                  color={
-                    dasherInfo?.status === "online" ||
-                    dasherInfo?.status === "busy"
-                      ? Colors.white
-                      : Colors.mutedGray
-                  }
-                  size={20}
-                />
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
       <FlatList
         data={[]}
         renderItem={null}
         ListHeaderComponent={
           <>
+            {/* Page Header */}
+            <View
+              style={[
+                styles.pageHeader,
+                Platform.OS === "web" && styles.pageHeaderWeb,
+              ]}
+            >
+              <View style={styles.pageHeaderTop}>
+                <Text style={styles.pageTitle}>Dash</Text>
+                <LiveBadge label="Dispatch live" />
+              </View>
+            </View>
+
+            {/* Stats Header */}
+            <View style={[styles.statsHeader, isWeb && styles.statsHeaderWeb]}>
+              {/* Primary Stats Section - Deliveries & Total Earned */}
+              <View style={styles.statsSection}>
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {dasherInfo?.total_deliveries || 0}
+                    </Text>
+                    <Text style={styles.statLabel}>Deliveries</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {formatPrice(dasherInfo?.total_earnings_cents || 0)}
+                    </Text>
+                    <Text style={styles.statLabel}>Total earned</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Secondary Stats Section - Cashed Out & Available */}
+              <View style={styles.secondaryStatsSection}>
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {formatPrice(dasherInfo?.total_cashed_out_cents || 0)}
+                    </Text>
+                    <Text style={styles.statLabel}>Cashed out</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={styles.statValue}>
+                      {formatPrice(availableToTransferCents)}
+                    </Text>
+                    <Text style={styles.statLabel}>Ready to transfer</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Payout Section */}
+              <View style={styles.payoutSection}>
+                <TouchableOpacity
+                  style={[
+                    styles.transferButton,
+                    availableToTransferCents <= 0 &&
+                      styles.transferButtonDisabled,
+                  ]}
+                  onPress={handleTransferPress}
+                  disabled={availableToTransferCents <= 0}
+                >
+                  <Text style={styles.transferButtonText}>
+                    Transfer to bank
+                  </Text>
+                  <ArrowRight color={Colors.white} size={18} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Status Section */}
+              <View style={styles.statusSection}>
+                {/* Online Toggle */}
+                <TouchableOpacity
+                  style={[
+                    styles.statusToggle,
+                    dasherInfo?.status === "online" &&
+                      styles.statusToggleOnline,
+                    dasherInfo?.status === "busy" && styles.statusToggleBusy,
+                  ]}
+                  onPress={toggleOnlineStatus}
+                  disabled={togglingStatus}
+                >
+                  {togglingStatus ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <>
+                      <View
+                        style={[
+                          styles.statusDot,
+                          {
+                            backgroundColor: getStatusColor(
+                              dasherInfo?.status || "offline",
+                            ),
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusToggleText,
+                          dasherInfo?.status === "online" &&
+                            styles.statusToggleTextOnline,
+                          dasherInfo?.status === "busy" &&
+                            styles.statusToggleTextBusy,
+                        ]}
+                      >
+                        {getStatusLabel(dasherInfo?.status)}
+                      </Text>
+                      <Power
+                        color={
+                          dasherInfo?.status === "online" ||
+                          dasherInfo?.status === "busy"
+                            ? Colors.white
+                            : Colors.mutedGray
+                        }
+                        size={20}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
             {/* My Active Bounties */}
             {myActiveBounties.length > 0 && (
               <View style={[styles.section, isWeb && styles.sectionWeb]}>
