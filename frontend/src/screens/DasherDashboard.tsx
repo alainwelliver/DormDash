@@ -45,7 +45,10 @@ import {
   haversineDistanceMiles,
 } from "../lib/utils/distance";
 import type { DasherInfo, DasherStatus, DeliveryOrder } from "../types/dasher";
-import { fetchOpenBounties, fetchDasherActiveBounties } from "../lib/api/bounties";
+import {
+  fetchOpenBounties,
+  fetchDasherActiveBounties,
+} from "../lib/api/bounties";
 import type { Bounty } from "../lib/api/bounties";
 import {
   LiveBadge,
@@ -141,28 +144,32 @@ const DasherDashboard: React.FC = () => {
 
       setDasherInfo(dasher);
 
-      const [availableResult, mineResult, openBountiesResult, myBountiesResult] =
-        await Promise.all([
-          supabase
-            .from("delivery_orders")
-            .select(
-              "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-            )
-            .eq("status", "pending")
-            .is("dasher_id", null)
-            .order("created_at", { ascending: false })
-            .limit(50),
-          supabase
-            .from("delivery_orders")
-            .select(
-              "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
-            )
-            .eq("dasher_id", user.id)
-            .in("status", ["accepted", "picked_up"])
-            .order("created_at", { ascending: false }),
-          fetchOpenBounties().catch(() => [] as Bounty[]),
-          fetchDasherActiveBounties().catch(() => [] as Bounty[]),
-        ]);
+      const [
+        availableResult,
+        mineResult,
+        openBountiesResult,
+        myBountiesResult,
+      ] = await Promise.all([
+        supabase
+          .from("delivery_orders")
+          .select(
+            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+          )
+          .eq("status", "pending")
+          .is("dasher_id", null)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("delivery_orders")
+          .select(
+            "*, delivery_pickups(pickup_address, pickup_building_name, pickup_lat, pickup_lng)",
+          )
+          .eq("dasher_id", user.id)
+          .in("status", ["accepted", "picked_up"])
+          .order("created_at", { ascending: false }),
+        fetchOpenBounties().catch(() => [] as Bounty[]),
+        fetchDasherActiveBounties().catch(() => [] as Bounty[]),
+      ]);
 
       setAvailableDeliveries(availableResult.data || []);
       setMyDeliveries(mineResult.data || []);
@@ -422,6 +429,8 @@ const DasherDashboard: React.FC = () => {
           total_deliveries: (dasherInfo.total_deliveries || 0) + 1,
           total_earnings_cents:
             (dasherInfo.total_earnings_cents || 0) + order.delivery_fee_cents,
+          available_to_transfer_cents:
+            getAvailableToTransferCents(dasherInfo) + order.delivery_fee_cents,
         });
         alert(
           "Delivery Complete!",
@@ -443,6 +452,14 @@ const DasherDashboard: React.FC = () => {
       style: "currency",
       currency: "USD",
     });
+  };
+
+  const getAvailableToTransferCents = (info: DasherInfo | null) => {
+    if (!info) return 0;
+    if (typeof info.available_to_transfer_cents === "number") {
+      return info.available_to_transfer_cents;
+    }
+    return info.total_earnings_cents || 0;
   };
 
   const getStatusColor = (status: DasherStatus) => {
@@ -487,11 +504,30 @@ const DasherDashboard: React.FC = () => {
     navigation.navigate("BountyFulfill", { bountyId });
   };
 
+  const handleTransferPress = () => {
+    const availableToTransferCents = getAvailableToTransferCents(dasherInfo);
+
+    if (availableToTransferCents <= 0) {
+      alert(
+        "No funds available",
+        "You do not have any earnings to transfer yet.",
+      );
+      return;
+    }
+
+    alert(
+      "Transfers coming soon",
+      `You currently have ${formatPrice(availableToTransferCents)} available to transfer.`,
+    );
+  };
+
   const renderAvailableBounty = ({ item }: { item: Bounty }) => (
     <SurfaceCard style={styles.deliveryCard} variant="default">
       <View style={styles.deliveryHeader}>
         <View style={styles.earningsBadge}>
-          <Text style={styles.earningsText}>{formatPrice(item.bounty_amount_cents)}</Text>
+          <Text style={styles.earningsText}>
+            {formatPrice(item.bounty_amount_cents)}
+          </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={styles.deliveryTime}>
@@ -555,7 +591,10 @@ const DasherDashboard: React.FC = () => {
         </Text>
       </View>
 
-      <Text style={[styles.routeAddress, { marginBottom: Spacing.sm }]} numberOfLines={2}>
+      <Text
+        style={[styles.routeAddress, { marginBottom: Spacing.sm }]}
+        numberOfLines={2}
+      >
         {item.item_description}
       </Text>
 
@@ -765,77 +804,130 @@ const DasherDashboard: React.FC = () => {
     );
   }
 
+  const availableToTransferCents = getAvailableToTransferCents(dasherInfo);
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Stats Header */}
-      <View style={[styles.statsHeader, isWeb && styles.statsHeaderWeb]}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {dasherInfo?.total_deliveries || 0}
-            </Text>
-            <Text style={styles.statLabel}>Deliveries</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {formatPrice(dasherInfo?.total_earnings_cents || 0)}
-            </Text>
-            <Text style={styles.statLabel}>Earned</Text>
-          </View>
-        </View>
-        <View style={styles.liveBadgeRow}>
+      {/* Page Header */}
+      <View
+        style={[
+          styles.pageHeader,
+          Platform.OS === "web" && styles.pageHeaderWeb,
+        ]}
+      >
+        <View style={styles.pageHeaderTop}>
+          <Text style={styles.pageTitle}>Dash</Text>
           <LiveBadge label="Dispatch live" />
         </View>
+      </View>
 
-        {/* Online Toggle */}
-        <TouchableOpacity
-          style={[
-            styles.statusToggle,
-            dasherInfo?.status === "online" && styles.statusToggleOnline,
-            dasherInfo?.status === "busy" && styles.statusToggleBusy,
-          ]}
-          onPress={toggleOnlineStatus}
-          disabled={togglingStatus}
-        >
-          {togglingStatus ? (
-            <ActivityIndicator color={Colors.white} size="small" />
-          ) : (
-            <>
-              <View
-                style={[
-                  styles.statusDot,
-                  {
-                    backgroundColor: getStatusColor(
-                      dasherInfo?.status || "offline",
-                    ),
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.statusToggleText,
-                  dasherInfo?.status === "online" &&
-                    styles.statusToggleTextOnline,
-                  dasherInfo?.status === "busy" && styles.statusToggleTextBusy,
-                ]}
-              >
-                {getStatusLabel(dasherInfo?.status)}
+      {/* Stats Header */}
+      <View style={[styles.statsHeader, isWeb && styles.statsHeaderWeb]}>
+        {/* Primary Stats Section - Deliveries & Total Earned */}
+        <View style={styles.statsSection}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {dasherInfo?.total_deliveries || 0}
               </Text>
-              <Power
-                color={
-                  dasherInfo?.status === "online" ||
-                  dasherInfo?.status === "busy"
-                    ? Colors.white
-                    : Colors.mutedGray
-                }
-                size={20}
-              />
-            </>
-          )}
-        </TouchableOpacity>
+              <Text style={styles.statLabel}>Deliveries</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {formatPrice(dasherInfo?.total_earnings_cents || 0)}
+              </Text>
+              <Text style={styles.statLabel}>Total earned</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Secondary Stats Section - Cashed Out & Available */}
+        <View style={styles.secondaryStatsSection}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {formatPrice(dasherInfo?.total_cashed_out_cents || 0)}
+              </Text>
+              <Text style={styles.statLabel}>Cashed out</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {formatPrice(availableToTransferCents)}
+              </Text>
+              <Text style={styles.statLabel}>Ready to transfer</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Payout Section */}
+        <View style={styles.payoutSection}>
+          <TouchableOpacity
+            style={[
+              styles.transferButton,
+              availableToTransferCents <= 0 && styles.transferButtonDisabled,
+            ]}
+            onPress={handleTransferPress}
+            disabled={availableToTransferCents <= 0}
+          >
+            <Text style={styles.transferButtonText}>Transfer to bank</Text>
+            <ArrowRight color={Colors.white} size={18} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Status Section */}
+        <View style={styles.statusSection}>
+          {/* Online Toggle */}
+          <TouchableOpacity
+            style={[
+              styles.statusToggle,
+              dasherInfo?.status === "online" && styles.statusToggleOnline,
+              dasherInfo?.status === "busy" && styles.statusToggleBusy,
+            ]}
+            onPress={toggleOnlineStatus}
+            disabled={togglingStatus}
+          >
+            {togglingStatus ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <>
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor: getStatusColor(
+                        dasherInfo?.status || "offline",
+                      ),
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusToggleText,
+                    dasherInfo?.status === "online" &&
+                      styles.statusToggleTextOnline,
+                    dasherInfo?.status === "busy" &&
+                      styles.statusToggleTextBusy,
+                  ]}
+                >
+                  {getStatusLabel(dasherInfo?.status)}
+                </Text>
+                <Power
+                  color={
+                    dasherInfo?.status === "online" ||
+                    dasherInfo?.status === "busy"
+                      ? Colors.white
+                      : Colors.mutedGray
+                  }
+                  size={20}
+                />
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -996,11 +1088,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  // Page Header
+  pageHeader: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    backgroundColor: Colors.base_bg,
+  },
+  pageHeaderWeb: {
+    maxWidth: WebLayout.maxContentWidth,
+    alignSelf: "center",
+    width: "100%",
+  },
+  pageHeaderTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontFamily: Typography.heading3.fontFamily,
+    fontWeight: "700",
+    color: Colors.darkTeal,
+  },
   // Stats Header
   statsHeader: {
     backgroundColor: Colors.white,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.xxl,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray,
   },
@@ -1009,15 +1124,32 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
+  statsSection: {
+    marginBottom: Spacing.lg,
+  },
+  secondaryStatsSection: {
+    marginBottom: Spacing.xxl,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.lightGray,
+  },
   statsRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing.md,
   },
-  liveBadgeRow: {
+  payoutSection: {
+    marginBottom: Spacing.xxl,
+  },
+  statusSection: {
     alignItems: "center",
-    marginBottom: Spacing.md,
+  },
+  payoutCard: {
+    backgroundColor: Colors.lightMint,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    width: "100%",
   },
   statItem: {
     alignItems: "center",
@@ -1039,6 +1171,25 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: Colors.lightGray,
   },
+  transferButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    backgroundColor: Colors.primary_blue,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    width: "100%",
+  },
+  transferButtonDisabled: {
+    backgroundColor: Colors.grayDisabled,
+  },
+  transferButtonText: {
+    fontSize: 16,
+    fontFamily: Typography.buttonText.fontFamily,
+    fontWeight: "700",
+    color: Colors.white,
+  },
   // Status Toggle
   statusToggle: {
     flexDirection: "row",
@@ -1049,6 +1200,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
     gap: Spacing.sm,
+    width: "100%",
   },
   statusToggleOnline: {
     backgroundColor: Colors.primary_green,
