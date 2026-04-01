@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 
 export interface PriceEstimateResponse {
-  estimatedItemPrice: number; // in cents
-  recommendedBountyAmount: number; // in cents
+  unitPrice: number; // single-item price in cents
+  quantity: number;
+  subtotal: number; // unitPrice * quantity in cents
+  tax: number; // Philadelphia 8% sales tax in cents
+  estimatedItemPrice: number; // subtotal + tax in cents
+  recommendedBountyAmount: number; // estimatedItemPrice + dasher comp in cents
   dasherProfit: number; // in cents
   dasherProfitPercentage: number; // percentage
   confidence: "high" | "medium" | "low";
@@ -12,18 +16,20 @@ export interface PriceEstimateResponse {
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? "";
 
-function calculateDasherCompensation(estimatedItemPrice: number) {
+const PHILLY_TAX_RATE = 0.08; // Philadelphia, PA sales tax
+
+function calculateDasherCompensation(subtotalWithTax: number) {
   let recommendedMargin: number;
-  if (estimatedItemPrice < 500) {
+  if (subtotalWithTax < 500) {
     recommendedMargin = 300;
-  } else if (estimatedItemPrice < 1500) {
+  } else if (subtotalWithTax < 1500) {
     recommendedMargin = 400;
   } else {
     recommendedMargin = 600;
   }
   return {
     recommendedMargin,
-    recommendedBountyAmount: estimatedItemPrice + recommendedMargin,
+    recommendedBountyAmount: subtotalWithTax + recommendedMargin,
   };
 }
 
@@ -31,9 +37,10 @@ export const estimateItemPrice = async (
   itemDescription: string,
   storeName: string,
   storeLocation: string,
+  quantity: number = 1,
 ): Promise<PriceEstimateResponse> => {
   try {
-    const prompt = `You are a price estimation assistant for a campus delivery app near the University of Pennsylvania in Philadelphia. A student wants someone to pick up an item for them.
+    const prompt = `You are a price estimation assistant for a campus delivery app. You must return ACCURATE real-world menu/shelf prices for items at stores near the University of Pennsylvania in Philadelphia, PA.
 
 Item requested: "${itemDescription}"
 Store: "${storeName}"
@@ -41,18 +48,23 @@ Store location/address: "${storeLocation}"
 
 Respond with a JSON object (no markdown, no code fences, just the raw JSON) with these fields:
 {
-  "estimatedItemPriceCents": <number — your best estimate of the item's price in US cents at this specific store>,
+  "unitPriceCents": <number — the price of ONE unit of this item in US cents at this specific store, based on real 2025-2026 menu/shelf prices>,
   "confidence": "<'high' if you're quite sure about the price, 'medium' if it's a reasonable guess, 'low' if very uncertain>",
-  "reasoning": "<1-2 sentence explanation of your estimate, referencing the specific store and item>",
-  "mismatchWarning": "<null if the store likely sells this item, OR a short warning string if the store is unlikely to carry this item — e.g. 'Target typically doesn't sell freshly made iced coffee'>"
+  "reasoning": "<1-2 sentence explanation referencing the specific store, item, and current real-world price>",
+  "mismatchWarning": "<null if the store likely sells this item, OR a short warning string if the store is unlikely to carry this item>"
 }
 
-Guidelines:
-- Use real-world 2025-2026 pricing for well-known stores (Starbucks, Wawa, CVS, Target, Whole Foods, etc.)
-- Account for Philadelphia / University City area pricing
-- For unknown stores, estimate based on the type of store and item
-- Be accurate — students rely on this to set fair bounty amounts
-- The mismatchWarning should only be set when the store clearly doesn't sell that type of item`;
+CRITICAL PRICING RULES:
+- Return the price of ONE single item only — quantity is handled separately by the app
+- Use REAL current menu prices for chain stores. Examples of accurate 2025-2026 Philadelphia-area prices:
+  * Starbucks Iced White Chocolate Mocha (Grande): ~$6.25-$6.75
+  * Starbucks Caramel Frappuccino (Grande): ~$5.95-$6.45
+  * Wawa Hoagie (Shortie): ~$5.99-$7.49
+  * Chick-fil-A Sandwich Meal: ~$9.59-$10.99
+  * CVS snacks/drinks: use standard retail pricing
+- For local/independent stores near UPenn, estimate based on typical University City pricing
+- unitPriceCents must be the price of a SINGLE item, not the total
+- Do NOT lowball prices — accuracy matters more than conservatism`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -63,7 +75,7 @@ Guidelines:
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 300,
       }),
     });
@@ -76,7 +88,11 @@ Guidelines:
     const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
     const parsed = JSON.parse(raw);
 
-    const estimatedItemPrice = Math.max(50, Math.round(Number(parsed.estimatedItemPriceCents)));
+    const unitPrice = Math.max(50, Math.round(Number(parsed.unitPriceCents)));
+    const subtotal = unitPrice * quantity;
+    const tax = Math.round(subtotal * PHILLY_TAX_RATE);
+    const estimatedItemPrice = subtotal + tax;
+
     const confidence: "high" | "medium" | "low" =
       ["high", "medium", "low"].includes(parsed.confidence) ? parsed.confidence : "medium";
     const reasoning = typeof parsed.reasoning === "string" ? parsed.reasoning : "AI-based estimate.";
@@ -85,6 +101,10 @@ Guidelines:
     const { recommendedMargin, recommendedBountyAmount } = calculateDasherCompensation(estimatedItemPrice);
 
     return {
+      unitPrice,
+      quantity,
+      subtotal,
+      tax,
       estimatedItemPrice,
       recommendedBountyAmount,
       dasherProfit: recommendedMargin,
@@ -96,10 +116,14 @@ Guidelines:
   } catch (error) {
     console.error("Price estimation error:", error);
     return {
-      estimatedItemPrice: 1000,
-      recommendedBountyAmount: 1300,
+      unitPrice: 650,
+      quantity: 1,
+      subtotal: 650,
+      tax: 52,
+      estimatedItemPrice: 702,
+      recommendedBountyAmount: 1002,
       dasherProfit: 300,
-      dasherProfitPercentage: 30,
+      dasherProfitPercentage: 43,
       confidence: "low",
       reasoning: "Using default estimate due to estimation service unavailability.",
     };
