@@ -253,7 +253,11 @@ function MainTabs() {
         tabBarShowLabel: false, // Hide labels for a cleaner look
         tabBarStyle: {
           position: "absolute",
-          bottom: isWeb ? (isPhoneWeb ? 12 : 20) : 25,
+          bottom: isWeb
+            ? isPhoneWeb
+              ? 12
+              : 20
+            : Math.max(25, insets.bottom + 8),
           left: isLargeWeb ? "50%" : isWeb ? 12 : 20,
           right: isLargeWeb ? "auto" : isWeb ? 12 : 20,
           width: isLargeWeb ? WebLayout.tabBarMaxWidth : undefined,

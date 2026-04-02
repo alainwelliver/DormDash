@@ -24,13 +24,11 @@ import {
   ChevronRight,
   X,
   Plus,
+  Minus,
   Sparkles,
   Zap,
 } from "lucide-react-native";
-import {
-  useNavigation,
-  useFocusEffect,
-} from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Typography, Spacing, BorderRadius } from "../assets/styles";
 import { alert } from "../lib/utils/platform";
@@ -77,6 +75,7 @@ const PlaceBounty: React.FC = () => {
   const navigation = useNavigation<PlaceBountyNavigationProp>();
 
   const [itemDescription, setItemDescription] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [storeName, setStoreName] = useState("");
   const [storeLocation, setStoreLocation] = useState("");
   const [bountyAmountDollars, setBountyAmountDollars] = useState("");
@@ -107,6 +106,7 @@ const PlaceBounty: React.FC = () => {
         itemDescription,
         storeName,
         storeLocation,
+        quantity,
       );
       setEstimate(result);
       setShowEstimate(true);
@@ -246,7 +246,10 @@ const PlaceBounty: React.FC = () => {
       });
     } catch (err: any) {
       console.error("Error placing bounty:", err);
-      alert("Error", err?.message || "Failed to place bounty. Please try again.");
+      alert(
+        "Error",
+        err?.message || "Failed to place bounty. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -297,6 +300,46 @@ const PlaceBounty: React.FC = () => {
             numberOfLines={3}
             maxLength={300}
           />
+        </View>
+
+        {/* Quantity */}
+        <View style={styles.fieldGroup}>
+          <View style={styles.fieldLabel}>
+            <ShoppingBag color={Colors.primary_blue} size={16} />
+            <Text style={styles.fieldLabelText}>Quantity</Text>
+          </View>
+          <View style={styles.quantityStepper}>
+            <TouchableOpacity
+              style={[
+                styles.quantityButton,
+                quantity <= 1 && styles.quantityButtonDisabled,
+              ]}
+              onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+            >
+              <Minus
+                color={quantity <= 1 ? Colors.mutedGray : Colors.primary_blue}
+                size={12}
+              />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.quantityInput}
+              value={String(quantity)}
+              onChangeText={(t) => {
+                const n = parseInt(t.replace(/[^0-9]/g, ""), 10);
+                if (isNaN(n) || t === "") setQuantity(1);
+                else setQuantity(Math.min(99, Math.max(1, n)));
+              }}
+              keyboardType="number-pad"
+              maxLength={2}
+            />
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={() => setQuantity((q) => Math.min(99, q + 1))}
+            >
+              <Plus color={Colors.primary_blue} size={12} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Store Name */}
@@ -373,10 +416,39 @@ const PlaceBounty: React.FC = () => {
                   <Text style={styles.applySmallButtonText}>Apply</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.estimationCompactDetail}>
-                Item ~{formatPriceDisplay(estimate.estimatedItemPrice)} +{" "}
-                {formatPriceDisplay(estimate.dasherProfit)} dasher compensation
-              </Text>
+              <View style={styles.breakdownContainer}>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {estimate.quantity > 1
+                      ? `${estimate.quantity} × item`
+                      : "Item price"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>
+                    {estimate.quantity > 1
+                      ? `${estimate.quantity} × ${formatPriceDisplay(estimate.unitPrice)} = ${formatPriceDisplay(estimate.subtotal)}`
+                      : formatPriceDisplay(estimate.subtotal)}
+                  </Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Philly tax (8%)</Text>
+                  <Text style={styles.breakdownValue}>
+                    {formatPriceDisplay(estimate.tax)}
+                  </Text>
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>Dasher compensation</Text>
+                  <Text style={styles.breakdownValue}>
+                    {formatPriceDisplay(estimate.dasherProfit)}
+                  </Text>
+                </View>
+                <View style={styles.breakdownDivider} />
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownTotalLabel}>You pay</Text>
+                  <Text style={styles.breakdownTotalValue}>
+                    {formatPriceDisplay(estimate.recommendedBountyAmount)}
+                  </Text>
+                </View>
+              </View>
               {estimate.mismatchWarning && (
                 <Text style={styles.estimationCompactWarning}>
                   ⚠ {estimate.mismatchWarning}
@@ -394,7 +466,8 @@ const PlaceBounty: React.FC = () => {
             keyboardType="decimal-pad"
           />
           <Text style={styles.fieldHint}>
-            You pay this total. The dasher buys the item and keeps the difference as profit.
+            You pay this total. The dasher buys the item and keeps the
+            difference as profit.
           </Text>
         </View>
 
@@ -424,7 +497,9 @@ const PlaceBounty: React.FC = () => {
               maxLength={5}
             />
           </View>
-          <Text style={styles.fieldHint}>24-hour time (e.g. 14:30 = 2:30 PM)</Text>
+          <Text style={styles.fieldHint}>
+            24-hour time (e.g. 14:30 = 2:30 PM)
+          </Text>
         </View>
 
         {/* Delivery Address */}
@@ -497,7 +572,10 @@ const PlaceBounty: React.FC = () => {
             </View>
 
             {loadingAddresses ? (
-              <ActivityIndicator color={Colors.primary_blue} style={{ marginTop: 20 }} />
+              <ActivityIndicator
+                color={Colors.primary_blue}
+                style={{ marginTop: 20 }}
+              />
             ) : addresses.length === 0 ? (
               <View style={styles.noAddresses}>
                 <Text style={styles.noAddressesText}>No saved addresses.</Text>
@@ -520,7 +598,8 @@ const PlaceBounty: React.FC = () => {
                   <TouchableOpacity
                     style={[
                       styles.addressItem,
-                      selectedAddress?.id === item.id && styles.addressItemSelected,
+                      selectedAddress?.id === item.id &&
+                        styles.addressItemSelected,
                     ]}
                     onPress={() => {
                       setSelectedAddress(item);
@@ -542,7 +621,9 @@ const PlaceBounty: React.FC = () => {
                     }}
                   >
                     <Plus color={Colors.primary_blue} size={16} />
-                    <Text style={styles.addAddressRowText}>Add New Address</Text>
+                    <Text style={styles.addAddressRowText}>
+                      Add New Address
+                    </Text>
                   </TouchableOpacity>
                 }
               />
@@ -622,6 +703,43 @@ const styles = StyleSheet.create({
   multilineInput: {
     minHeight: 80,
     textAlignVertical: "top",
+  },
+  quantityStepper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  quantityButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary_blue,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quantityButtonDisabled: {
+    borderColor: Colors.mutedGray,
+    opacity: 0.5,
+  },
+  quantityValue: {
+    fontSize: 18,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    minWidth: 28,
+    textAlign: "center",
+  },
+  quantityInput: {
+    fontSize: 14,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+    minWidth: 28,
+    textAlign: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.primary_blue,
+    paddingVertical: 2,
   },
   fieldHint: {
     marginTop: Spacing.xs,
@@ -845,6 +963,42 @@ const styles = StyleSheet.create({
     fontFamily: Typography.bodySmall.fontFamily,
     color: Colors.mutedGray,
     marginTop: 2,
+  },
+  breakdownContainer: {
+    marginTop: 6,
+    gap: 3,
+  },
+  breakdownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  breakdownLabel: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.mutedGray,
+  },
+  breakdownValue: {
+    fontSize: 12,
+    fontFamily: Typography.bodySmall.fontFamily,
+    color: Colors.darkTeal,
+  },
+  breakdownDivider: {
+    height: 1,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    marginVertical: 3,
+  },
+  breakdownTotalLabel: {
+    fontSize: 13,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "600",
+    color: Colors.darkTeal,
+  },
+  breakdownTotalValue: {
+    fontSize: 13,
+    fontFamily: Typography.bodyMedium.fontFamily,
+    fontWeight: "700",
+    color: Colors.primary_green,
   },
   estimationCompactWarning: {
     fontSize: 11,
